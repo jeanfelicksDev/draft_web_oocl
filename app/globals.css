@@ -1,0 +1,608 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+:root {
+  --bg-dark: #ffffff;
+  --sidebar-bg: #ffffff;
+  --card-bg: #ffffff;
+  --primary: #FF6699;
+  --primary-shadow: #CC527A;
+  --primary-hover: #FF4D8C;
+  --secondary: #e5e5e5;
+  --text-main: #4b4b4b;
+  --text-muted: #afafaf;
+  --accent-teal: #E60012;
+  --accent-teal-shadow: #B3000E;
+  --danger: #ff4b4b;
+  --danger-shadow: #ea2b2b;
+  --success: #FF6699;
+  --border-color: #6b7280;
+  --input-bg: #ffffff;
+  --surface-hover: #f7f7f7;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-dark: #131f24;
+    --sidebar-bg: #131f24;
+    --card-bg: #131f24;
+    --primary: #FF6699;
+    --primary-shadow: #CC527A;
+    --primary-hover: #FF4D8C;
+    --secondary: #37464f;
+    --border-color: #9ca3af;
+    --text-main: #ffffff;
+    --text-muted: #77858f;
+    --accent-teal: #E60012;
+    --accent-teal-shadow: #B3000E;
+    --danger: #ff4b4b;
+    --danger-shadow: #ea2b2b;
+    --success: #FF6699;
+    --border-color: #37464f;
+    --input-bg: #131f24;
+    --surface-hover: #202f36;
+  }
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Nunito', 'Varela Round', system-ui, sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-weight: 700;
+  /* Duolingo uses bold text frequently */
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes dropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Base Components */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex-grow: 1;
+  padding: 3rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.content-header h1 {
+  font-size: 2.2rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-main);
+  font-weight: 800;
+}
+
+/* Forms */
+.form-container {
+  background-color: var(--card-bg);
+  padding: 2.5rem;
+  border-radius: 24px;
+  /* Duolingo rarely uses soft shadows, they use solid borders */
+  border: 2px solid var(--border-color);
+  box-shadow: 0 4px 0 var(--border-color);
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-main);
+  text-transform: none;
+  /* Removed uppercase */
+  letter-spacing: normal;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 0.8rem 1.2rem;
+  background-color: var(--input-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 16px;
+  color: #0a1f5c;
+  font-size: 1.65rem;
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+  transition: all 0.2s ease-in-out;
+  text-transform: uppercase;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent-teal);
+  box-shadow: 0 0 0 4px rgba(230, 0, 18, 0.2);
+}
+
+/* Green background when a field has a value */
+input.input-filled,
+select.input-filled,
+textarea.input-filled {
+  background-color: rgba(255, 102, 153, 0.08);
+  border-color: var(--primary);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Buttons - Duolingo Chunky Style */
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+  padding: 0.8rem 1.8rem;
+  border-radius: 16px;
+  font-weight: 800;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  border: none;
+  border-bottom: 4px solid var(--primary-shadow);
+  transition: all 0.1s;
+  font-family: 'Nunito', sans-serif;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+.btn-primary:active,
+.btn-primary:disabled {
+  transform: translateY(4px);
+  border-bottom-width: 0px;
+  margin-bottom: 4px;
+  /* compensate for border loss */
+}
+
+.btn-primary:disabled {
+  background-color: var(--secondary);
+  color: var(--text-muted);
+  border-bottom: 4px solid var(--border-color);
+  cursor: not-allowed;
+  transform: none;
+  margin-bottom: 0;
+}
+
+.btn-outline {
+  background: var(--input-bg);
+  border: 2px solid var(--border-color);
+  border-bottom: 4px solid var(--border-color);
+  color: var(--text-main);
+  padding: 0.8rem 1.8rem;
+  border-radius: 16px;
+  font-weight: 800;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.1s;
+  font-family: 'Nunito', sans-serif;
+}
+
+.btn-outline:hover {
+  background: var(--surface-hover);
+}
+
+.btn-outline:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+  margin-bottom: 2px;
+}
+
+.btn-remove {
+  background-color: var(--danger);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  border: none;
+  border-bottom: 4px solid var(--danger-shadow);
+  transition: all 0.1s;
+  font-family: 'Nunito', sans-serif;
+}
+
+.btn-remove:hover {
+  background-color: #ff3333;
+}
+
+.btn-remove:active {
+  transform: translateY(4px);
+  border-bottom-width: 0px;
+  margin-bottom: 4px;
+}
+
+.btn-delete-modal {
+  background-color: var(--accent-teal);
+  color: white;
+  padding: 0.8rem 1.8rem;
+  border-radius: 16px;
+  font-weight: 800;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  border: none;
+  border-bottom: 4px solid var(--accent-teal-shadow);
+  transition: all 0.1s;
+  font-family: 'Nunito', sans-serif;
+  min-width: 160px;
+  /* Ensure a consistent size */
+}
+
+.btn-delete-modal:hover {
+  background-color: #ff1a2e;
+}
+
+.btn-delete-modal:active {
+  transform: translateY(4px);
+  border-bottom-width: 0px;
+  margin-bottom: 4px;
+}
+
+.btn-success {
+  background-color: var(--accent-teal);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  border: none;
+  border-bottom: 4px solid var(--accent-teal-shadow);
+  transition: all 0.1s;
+  font-family: 'Nunito', sans-serif;
+}
+
+.btn-success:hover {
+  background-color: #ff1a2e;
+}
+
+.btn-success:active {
+  transform: translateY(4px);
+  border-bottom-width: 0px;
+  margin-bottom: 4px;
+}
+
+/* Custom Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.modal-content {
+  background-color: var(--card-bg);
+  border: 2px solid var(--border-color);
+  padding: 2.5rem;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 550px;
+  animation: fadeIn 0.2s ease-out;
+  box-shadow: 0 4px 0 var(--border-color);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-content h2 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 1.5rem;
+}
+
+/* Combobox */
+.combobox-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.combobox-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  background-color: var(--card-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 4px 0 var(--border-color);
+  z-index: 40;
+  max-height: 250px;
+  overflow-y: auto;
+  animation: dropdownFade 0.2s ease-out;
+}
+
+.combobox-item {
+  padding: 1rem 1.2rem;
+  cursor: pointer;
+  transition: background-color 0.1s;
+  border-bottom: 2px solid var(--border-color);
+  font-weight: 700;
+}
+
+.combobox-item:last-child {
+  border-bottom: none;
+}
+
+.combobox-item:hover {
+  background-color: var(--surface-hover);
+}
+
+.combobox-add-new {
+  position: sticky;
+  bottom: 0;
+  background-color: var(--card-bg);
+  padding: 1rem 1.2rem;
+  color: #58cc02;
+  font-weight: 800;
+  cursor: pointer;
+  border-top: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.1s;
+}
+
+.combobox-add-new:hover {
+  background-color: var(--surface-hover);
+}
+
+/* Errors */
+.error-msg {
+  color: var(--danger);
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.error-msg::before {
+  content: "!";
+  display: inline-flex;
+  background-color: var(--danger);
+  color: white;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+}
+
+/* Tweaks for container table */
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 2px solid var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+th,
+td {
+  padding: 1rem;
+  border-bottom: 2px solid var(--border-color);
+  text-align: left;
+}
+
+th {
+  background-color: var(--surface-hover);
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+/* Container Table Specifics */
+.container-table th,
+.container-table td {
+  padding: 0.5rem 0.3rem;
+}
+
+.container-table th:first-child,
+.container-table td:first-child {
+  padding-left: 1rem;
+}
+
+.container-table th:last-child,
+.container-table td:last-child {
+  padding-right: 1rem;
+}
+
+.container-table input {
+  padding: 0.6rem 0.6rem;
+  font-size: 0.95rem;
+}
+
+.col-conteneur {
+  width: 22%;
+}
+
+.col-plomb {
+  width: 20%;
+}
+
+/* Hide number input arrows */
+.container-table input[type=number]::-webkit-inner-spin-button,
+.container-table input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.container-table input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Booking Sidebar Right */
+.booking-sidebar {
+  width: 300px;
+  background-color: var(--sidebar-bg);
+  border-left: 2px solid var(--border-color);
+  padding: 2rem 1.5rem;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+}
+
+.booking-sidebar h3 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.booking-card {
+  background: var(--card-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.booking-card:hover {
+  border-color: var(--primary);
+  background-color: var(--surface-hover);
+  transform: translateY(-2px);
+}
+
+.booking-card.active {
+  border-color: var(--primary);
+  background-color: rgba(88, 204, 2, 0.05);
+  box-shadow: 0 4px 0 var(--primary-shadow);
+}
+
+.booking-card-num {
+  font-weight: 800;
+  color: var(--primary);
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.booking-card-date {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Status badges on booking cards */
+.badge-validated {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.15rem 0.55rem;
+  border-radius: 20px;
+  background-color: rgba(88, 204, 2, 0.12);
+  color: var(--primary);
+  border: 1.5px solid var(--primary);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.badge-draft {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.15rem 0.55rem;
+  border-radius: 20px;
+  background-color: rgba(255, 165, 0, 0.12);
+  color: #d97706;
+  border: 1.5px solid #d97706;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* Draft card gets orange accent */
+.booking-card.draft {
+  border-color: #d97706;
+}
+
+.booking-card.draft:hover {
+  border-color: #d97706;
+  background-color: rgba(217, 119, 6, 0.04);
+}
+
+.booking-card.draft.active {
+  border-color: #d97706;
+  background-color: rgba(217, 119, 6, 0.08);
+  box-shadow: 0 4px 0 #b45309;
+}

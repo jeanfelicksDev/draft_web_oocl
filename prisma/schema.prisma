@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // IMPORTANT: Pour Vercel/Production, remplacez "sqlite" par "postgresql"
+  // et assurez-vous que DATABASE_URL dans vos variables d'environnement
+  // pointe vers une base de données PostgreSQL (ex: Supabase, Neon, Vercel Postgres).
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  companyName String?
+  role      String   @default("CLIENT") // CLIENT or ADMIN
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  shippers       Shipper[]
+  consignees     Consignee[]
+  notifys        Notify[]
+  alsoNotifys    AlsoNotify[]
+  forwarders     Forwarder[]
+  freightBuyers  FreightBuyer[]
+  goods          Goods[]
+  ports          Port[]
+  cities         City[]
+  typesReleased  TypeReleased[]
+  billsOfLading  BillOfLading[]
+}
+
+model Shipper {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  country   String
+  city      String
+  phone     String
+  email     String
+  vat       String?
+  eori      String?
+  bin       String?
+  usci      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Relations
+  billsOfLading BillOfLading[]
+}
+
+model Consignee {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  country   String
+  city      String
+  phone     String
+  email     String
+  vat       String?
+  eori      String?
+  bin       String?
+  usci      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Relations
+  billsOfLading BillOfLading[]
+}
+
+model Notify {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  country   String
+  city      String
+  phone     String
+  email     String
+  vat       String?
+  eori      String?
+  bin       String?
+  usci      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Relations
+  billsOfLading BillOfLading[]
+}
+
+// Model for "Also Notify"
+model AlsoNotify {
+  id          String   @id @default(uuid())
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Relations
+  billsOfLading BillOfLading[]
+}
+
+model Forwarder {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  country   String
+  city      String
+  phone     String
+  email     String
+  vat       String?
+  eori      String?
+  bin       String?
+  usci      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Relations
+  billsOfLading BillOfLading[]
+}
+
+model FreightBuyer {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  country   String
+  city      String
+  phone     String
+  email     String
+  vat       String?
+  eori      String?
+  bin       String?
+  usci      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Relations
+  billsOfLading BillOfLading[]
+}
+
+model Goods {
+  id          String   @id @default(uuid())
+  description String
+  hsCode      String
+  declNo      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Relations
+  billsOfLading BillOfLading[]
+}
+
+model Port {
+  id        String   @id @default(uuid())
+  name      String
+  code      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model City {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model TypeReleased {
+  id        String   @id @default(uuid())
+  name      String   // e.g. "Original Bill of Loading (OBL)", "Sea Waybill", "Telex Release"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Relations
+  billsOfLading BillOfLading[]
+}
+
+// Bill of Lading (Main Header)
+model BillOfLading {
+  id             String   @id @default(uuid())
+  bookingNumber  String
+  contractNumber String
+  saveStatus     String   @default("DRAFT") // DRAFT, VALIDATED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Plain text fields for Port of Discharge (country) and Place of Delivery (port)
+  portCountryText String? // e.g. "France"
+  portCityText    String? // e.g. "Marseille-Fos"
+
+  // Foreign Keys
+  typeReleasedId String?
+  shipperId      String?
+  consigneeId    String?
+  notifyId       String?
+  alsoNotifyId   String?
+  forwarderId    String?
+  freightBuyerId String?
+  goodsId        String?
+
+  // Relations
+  typeReleased TypeReleased? @relation(fields: [typeReleasedId], references: [id])
+  shipper      Shipper?      @relation(fields: [shipperId], references: [id])
+  consignee    Consignee?    @relation(fields: [consigneeId], references: [id])
+  notify       Notify?       @relation(fields: [notifyId], references: [id])
+  alsoNotify   AlsoNotify?   @relation(fields: [alsoNotifyId], references: [id])
+  forwarder    Forwarder?    @relation(fields: [forwarderId], references: [id])
+  freightBuyer FreightBuyer? @relation(fields: [freightBuyerId], references: [id])
+  goods        Goods?        @relation(fields: [goodsId], references: [id])
+  containers   Container[]
+}
+
+model Container {
+  id             String   @id @default(uuid())
+  containerNum   String
+  typeTc         String
+  sealNum        String
+  count          Int
+  packageType    String
+  grossWeight    Float
+  netWeight      Float
+  volume         Float
+  
+  billOfLadingId String
+  billOfLading   BillOfLading @relation(fields: [billOfLadingId], references: [id], onDelete: Cascade)
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
