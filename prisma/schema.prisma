@@ -6,8 +6,9 @@ datasource db {
   // IMPORTANT: Pour Vercel/Production, remplacez "sqlite" par "postgresql"
   // et assurez-vous que DATABASE_URL dans vos variables d'environnement
   // pointe vers une base de données PostgreSQL (ex: Supabase, Neon, Vercel Postgres).
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
