@@ -85,19 +85,19 @@ export function GoodsForm({ isOpen, onClose, onSuccess, onDelete, initialData }:
                 <div>
                     <label>Description Goods *</label>
                     <textarea {...register("description")} rows={4} />
-                    {errors.description && <span className="error-msg">{errors.description.message}</span>}
+                    {errors.description && <span className="error-msg">{errors.description.message as string}</span>}
                 </div>
 
                 <div className="grid-2">
                     <div>
                         <label>HS CODE *</label>
                         <input {...register("hsCode")} />
-                        {errors.hsCode && <span className="error-msg">{errors.hsCode.message}</span>}
+                        {errors.hsCode && <span className="error-msg">{errors.hsCode.message as string}</span>}
                     </div>
                     <div>
                         <label>DECL N° *</label>
                         <input {...register("declNo")} />
-                        {errors.declNo && <span className="error-msg">{errors.declNo.message}</span>}
+                        {errors.declNo && <span className="error-msg">{errors.declNo.message as string}</span>}
                     </div>
                 </div>
             </div>
