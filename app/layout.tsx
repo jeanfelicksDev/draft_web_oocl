@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 
+const inter = Inter({
+    subsets: ["latin"],
+    variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
-    title: "Bill of Lading Generator",
-    description: "Generate and save Bills of Lading with a modern interface",
+    title: "Bill of Lading Generator — OOCL",
+    description: "Plateforme cloud de gestion documentaire maritime de très haute qualité.",
 };
 
 export default function RootLayout({
@@ -14,8 +19,8 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="fr" suppressHydrationWarning>
-            <body suppressHydrationWarning>
+        <html lang="fr" suppressHydrationWarning className={inter.variable}>
+            <body suppressHydrationWarning className="font-sans antialiased text-slate-800 bg-[#f4f7f9] selection:bg-blue-100 selection:text-blue-900">
                 <Providers>
                     {children}
                 </Providers>
