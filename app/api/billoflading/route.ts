@@ -10,13 +10,22 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const bookingNumber = searchParams.get("bookingNumber");
+    const filterUserId = searchParams.get("userId");
 
     if (!bookingNumber) {
         try {
+            let whereClause: any = userIsAdmin ? {} : { userId };
+            
+            // If admin wants to filter by a specific user
+            if (userIsAdmin && filterUserId) {
+                whereClause = { userId: filterUserId };
+            }
+
             const allBLs = await prisma.billOfLading.findMany({
-                where: userIsAdmin ? {} : { userId },
+                where: whereClause,
                 orderBy: { createdAt: 'desc' },
-                take: 50 // Limit to recent 50
+                include: { user: true }, // Include user info for admin view
+                take: 100 // Increased limit
             });
             return NextResponse.json(allBLs);
         } catch (error) {
@@ -71,7 +80,7 @@ export async function POST(request: Request) {
             Object.entries(blRawData).map(([key, value]) => [key, value === "" ? null : value])
         );
 
-        const newBL = await prisma.billOfLading.create({
+        let newBL = await prisma.billOfLading.create({
             data: {
                 ...(blData as any),
                 userId,
@@ -92,6 +101,17 @@ export async function POST(request: Request) {
                 containers: true
             }
         });
+
+        // If validated on creation, snapshot immediately as draft 0
+        if (newBL.saveStatus === "VALIDATED") {
+            const { createBLSnapshot } = await import("@/lib/snapshotUtils");
+            const snapshot = await createBLSnapshot(newBL.id);
+            newBL = await prisma.billOfLading.update({
+                where: { id: newBL.id },
+                data: { originalData: snapshot as any },
+                include: { containers: true }
+            });
+        }
 
         return NextResponse.json(newBL, { status: 201 });
     } catch (error) {

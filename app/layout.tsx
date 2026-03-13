@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="fr" suppressHydrationWarning className={inter.variable}>
-            <body suppressHydrationWarning className="font-sans antialiased text-slate-800 bg-[#f4f7f9] selection:bg-blue-100 selection:text-blue-900">
+            <body suppressHydrationWarning className="font-sans antialiased" style={{ background: "#f1f5f9" }}>
                 <Providers>
                     {children}
                 </Providers>

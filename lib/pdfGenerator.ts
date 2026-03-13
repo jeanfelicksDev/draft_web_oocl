@@ -4,136 +4,236 @@ import autoTable from "jspdf-autotable";
 export function generateBLPDF(data: any, preview: boolean = true) {
     const doc = new jsPDF();
 
-    // Helpers
-    const drawSectionBox = (title: string, x: number, y: number, w: number, h: number, details: any) => {
-        const { name, address, country, city, phone, email } = details || {};
+    // Helper to draw section
+    const drawSectionBox = (title: string, x: number, y: number, w: number, details: any, minH: number = 25) => {
+        const { name, address, country, city, phone, email, vat, eori, bin, usci } = details || {};
 
-        doc.setFillColor(135, 206, 250);
-        doc.rect(x, y, w, 6, "F");
         doc.setFont("helvetica", "bold");
         doc.setFontSize(8);
-        doc.setTextColor(0);
+        doc.setTextColor(230, 0, 18); // Red
         doc.text(title, x + 2, y + 4.5);
+        
+        // Underline
+        const textWidth = doc.getTextWidth(title);
+        doc.setDrawColor(230, 0, 18);
+        doc.line(x + 2, y + 5, x + 2 + textWidth, y + 5);
 
         doc.setFontSize(7.5);
         let currentY = y + 10;
 
         if (name) {
             doc.setFont("helvetica", "bold");
-            doc.text(name, x + 2, currentY);
-            currentY += 4;
+            doc.setTextColor(0);
+            const nameLines = doc.splitTextToSize(name, w - 4);
+            doc.text(nameLines, x + 2, currentY);
+            currentY += nameLines.length * 4;
         }
 
         doc.setFont("helvetica", "normal");
         if (address) {
+            doc.setTextColor(0);
             const textLines = doc.splitTextToSize(address, w - 4);
             doc.text(textLines, x + 2, currentY);
             currentY += textLines.length * 3.5;
         }
 
         if (city || country) {
-            doc.text(`${city || ""}${city && country ? ", " : ""}${country || ""}`, x + 2, currentY);
+            const currentLoc = `${city || ""}${city && country ? ", " : ""}${country || ""}`;
+            doc.setTextColor(0);
+            doc.text(currentLoc, x + 2, currentY);
             currentY += 4;
         }
 
         if (phone) {
+            doc.setTextColor(0);
             doc.text(`TEL: ${phone}`, x + 2, currentY);
             currentY += 4;
         }
 
         if (email) {
+            doc.setTextColor(0);
             doc.text(`EMAIL: ${email}`, x + 2, currentY);
             currentY += 4;
         }
 
         // Conditional Fields
         const conditionals = [];
-        if (details?.vat) conditionals.push(`VAT: ${details.vat}`);
-        if (details?.eori) conditionals.push(`EORI: ${details.eori}`);
-        if (details?.bin) conditionals.push(`BIN: ${details.bin}`);
-        if (details?.usci) conditionals.push(`USCI: ${details.usci}`);
+        if (vat) conditionals.push({ label: "VAT", val: vat });
+        if (eori) conditionals.push({ label: "EORI", val: eori });
+        if (bin) conditionals.push({ label: "BIN", val: bin });
+        if (usci) conditionals.push({ label: "USCI", val: usci });
 
         if (conditionals.length > 0) {
-            doc.text(conditionals.join(" | "), x + 2, currentY);
+            let startX = x + 2;
+            doc.setTextColor(0);
+            conditionals.forEach((c, idx) => {
+                const text = `${c.label}: ${c.val}${idx < conditionals.length - 1 ? " | " : ""}`;
+                doc.text(text, startX, currentY);
+                startX += doc.getTextWidth(text);
+            });
+            currentY += 4;
         }
 
-        // Border
+        const finalH = Math.max(minH, currentY - y + 2);
+        // Reset color and draw Border
+        doc.setTextColor(0);
         doc.setDrawColor(200);
-        doc.rect(x, y, w, h);
+        doc.roundedRect(x, y, w, finalH, 2, 2);
+        return finalH;
     };
 
     // --- Header Section ---
-    doc.setFillColor(135, 206, 250); // Light blue for titles
-    doc.rect(50, 10, 110, 8, "F");
+    // Logos
+    try {
+        // OOCL Logo (Left) - Square 1:1
+        doc.addImage("/logo-oocl.png", "PNG", 10, 5, 20, 20);
+    } catch (e) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.setTextColor(230, 0, 18);
+        doc.text("OOCL", 10, 12);
+    }
+
+    try {
+        // AGL Logo (Right) - Ratio 129:80 ~ 1.61
+        const aglW = 25;
+        const aglH = (aglW * 80) / 129;
+        doc.addImage("/logo-agl.png", "PNG", 175, 5, aglW, aglH);
+    } catch (e) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.setTextColor(0, 68, 170); // #0044aa
+        doc.text("AGL", 195, 12, { align: "right" });
+    }
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.text("- - - SPECIMEN DRAFT OOCL - - -", 105, 15.5, { align: "center" });
+    doc.setTextColor(0);
+    
+    let headerTitle = "- - - SPECIMEN DRAFT OOCL - - -";
+    doc.text(headerTitle, 105, 15.5, { align: "center" });
 
     doc.setFontSize(8);
-    doc.setTextColor(100);
-    doc.text("Booking Number", 50, 25);
-    doc.text("Contract Number", 85, 25);
-    doc.text("Type released", 120, 25);
+    doc.setTextColor(0);
+    doc.text("Booking Number", 50, 25, { align: "center" });
+    doc.text("Contract Number", 105, 25, { align: "center" });
+    doc.text("Type released", 160, 25, { align: "center" });
 
     doc.setFontSize(11);
     doc.setTextColor(0);
-    doc.text(data.bookingNumber || "", 50, 30);
-    doc.text(data.contractNumber || "", 85, 30);
+    doc.text(data.bookingNumber || "", 50, 30, { align: "center" });
 
-    // TypeReleased can be an object or a string depending on how it's grabbed from the form
+    doc.setTextColor(0);
+    doc.text(data.contractNumber || "", 105, 30, { align: "center" });
+
     const typeReleasedName = typeof data.typeReleased === 'object' ? data.typeReleased?.name : data.typeReleased;
-    doc.text(typeReleasedName || "Original Bill of Loading (OBL)", 120, 30);
+    doc.setTextColor(0);
+    doc.text(typeReleasedName || "", 160, 30, { align: "center" });
 
     // --- Grid Boxes ---
     const boxWidth = 90;
-    const boxHeight = 45; // Slightly taller to fit more info
     const startY = 35;
+    const gap = 5;
+    let leftY = startY;
+    let rightY = startY;
 
-    // Row 1: Shipper & Forwarder
-    drawSectionBox("SHIPPER", 10, startY, boxWidth, boxHeight, data.shipper || {});
-    drawSectionBox("FORWARDER", 110, startY, boxWidth, boxHeight, data.forwarder || {});
+    // Left Column: Shipper -> Consignee -> Notify -> Freight Buyer -> Ports
+    // Right Column: Forwarder -> Also Notify -> Description Goods
 
-    // Row 2: Consignee & Also Notify
-    drawSectionBox("CONSIGNEE", 10, startY + boxHeight + 5, boxWidth, boxHeight, data.consignee || {});
+    // Shipper (Left) & Forwarder (Right)
+    const hShipper = drawSectionBox("SHIPPER", 10, leftY, boxWidth, data.shipper);
+    const hForwarder = drawSectionBox("FORWARDER", 110, rightY, boxWidth, data.forwarder);
+    leftY += hShipper + gap;
+    rightY += hForwarder + gap;
 
-    drawSectionBox("ALSO NOTIFY", 110, startY + boxHeight + 5, boxWidth, boxHeight, {
-        address: typeof data.alsoNotify === 'object' ? data.alsoNotify?.description : data.alsoNotify || ""
-    });
+    // Consignee (Left) & Also Notify (Right)
+    const hConsignee = drawSectionBox("CONSIGNEE", 10, leftY, boxWidth, data.consignee);
+    const currentAlso = typeof data.alsoNotify === 'object' ? data.alsoNotify?.description : data.alsoNotify || "";
+    const hAlso = drawSectionBox("ALSO NOTIFY", 110, rightY, boxWidth, { address: currentAlso || "" });
+    leftY += hConsignee + gap;
+    rightY += hAlso + gap;
 
-    // Notify & Goods area
-    drawSectionBox("NOTIFY", 10, startY + boxHeight * 2 + 10, boxWidth, boxHeight, data.notify || {});
-
-    // Description Goods Box (Larger)
-    doc.setFillColor(135, 206, 250);
-    doc.rect(110, startY + boxHeight * 2 + 10, boxWidth, 6, "F");
-    doc.setFont("helvetica", "bold");
-    doc.text("Description Goods", 112, startY + boxHeight * 2 + 14);
-    doc.rect(110, startY + boxHeight * 2 + 10, boxWidth, 90); // Border
-    doc.setFont("helvetica", "normal");
+    // Notify (Left) & Description Goods (Right)
+    const hNotify = drawSectionBox("NOTIFY", 10, leftY, boxWidth, data.notify);
+    
+    // Description Goods Box (Dynamic Right)
+    const descX = 110;
+    const descY = rightY;
     const descriptionGoods = data.goods?.description || data.descriptionGoods || "";
-    doc.text(descriptionGoods, 112, startY + boxHeight * 2 + 20, { maxWidth: 85 });
-
-    // Freight Buyer
-    drawSectionBox("FREIGHT BUYER", 10, startY + boxHeight * 3 + 15, boxWidth, boxHeight, data.freightBuyer || {});
-
-    // Port & Place
-    doc.setFillColor(230, 230, 230);
-    doc.rect(10, 220, boxWidth, 8, "F");
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    const gLines = doc.splitTextToSize(descriptionGoods, boxWidth - 4);
+    const textH = gLines.length * 4;
+    const hs = data.goods?.hsCode || data.hsCode || "";
+    const decl = data.goods?.declNo || data.declNo || "";
+    const codeH = (hs || decl) ? 10 : 0;
+    const hGoods = Math.max(45, textH + codeH + 12);
+    
     doc.setFont("helvetica", "bold");
-    doc.text("Port of Discharge", 12, 223);
-    doc.setFont("helvetica", "bold");
-    doc.text(data.portCountryText || "", 12, 227);
+    doc.setFontSize(8);
+    doc.setTextColor(230, 0, 18); // RED
+    doc.text("DESCRIPTION OF GOODS", descX + 2, descY + 4.5);
+    const descTitleWidth = doc.getTextWidth("DESCRIPTION OF GOODS");
+    doc.setDrawColor(230, 0, 18);
+    doc.line(descX + 2, descY + 5, descX + 2 + descTitleWidth, descY + 5);
+    
+    doc.setDrawColor(200);
+    doc.roundedRect(descX, descY, boxWidth, hGoods, 2, 2); 
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(0);
+    doc.text(gLines, descX + 2, descY + 10);
+    
+    if (hs || decl) {
+        doc.setFont("helvetica", "normal");
+        const codeY = descY + hGoods - (decl ? 8 : 4);
+        doc.setTextColor(0);
+        if (hs) doc.text(`HS CODE : ${hs}`, descX + 2, codeY);
+        if (decl) doc.text(`DECL N° : ${decl}`, descX + 2, codeY + 4);
+    }
+    
+    leftY += hNotify + gap;
+    rightY += hGoods + gap;
 
-    doc.rect(10, 230, boxWidth, 8, "F");
-    doc.setFont("helvetica", "bold");
-    doc.text("Place of delivery", 12, 233);
-    doc.setFont("helvetica", "bold");
-    doc.text(data.portCityText || "", 12, 237);
+    // Freight Buyer (Left)
+    const hFreight = drawSectionBox("FREIGHT BUYER", 10, leftY, boxWidth, data.freightBuyer);
+    leftY += hFreight + gap;
 
-    // Codes at bottom right
-    doc.setFontSize(9);
-    doc.text(`HS CODE : ${data.goods?.hsCode || data.hsCode || ""}`, 112, 215);
-    doc.text(`DECL N° : ${data.goods?.declNo || data.declNo || ""}`, 112, 220);
+    // Port & Place (Same line)
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(230, 0, 18);
+    
+    // PORT OF DISCHARGE
+    const podLabel = "PORT OF DISCHARGE";
+    doc.text(podLabel, 12, leftY + 3);
+    const podW = doc.getTextWidth(podLabel);
+    doc.setDrawColor(230, 0, 18);
+    doc.line(12, leftY + 3.5, 12 + podW, leftY + 3.5);
+    doc.setTextColor(0);
+    doc.setFont("helvetica", "normal");
+    doc.text(data.portCountryText || "", 12, leftY + 7);
+
+    // PLACE OF DELIVERY (Right Column)
+    const secondColX = 70;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(230, 0, 18);
+    const polLabel = "PLACE OF DELIVERY";
+    doc.text(polLabel, secondColX, leftY + 3);
+    const polW = doc.getTextWidth(polLabel);
+    doc.line(secondColX, leftY + 3.5, secondColX + polW, leftY + 3.5);
+    doc.setTextColor(0);
+    doc.setFont("helvetica", "normal");
+    doc.text(data.portCityText || "", secondColX, leftY + 7);
+
+    leftY += 12; 
+    
+
+    leftY += 5; // Reduced padding before table
+
+    const tableStartY = Math.max(leftY, rightY);
 
     // --- Containers Table ---
     const tableData = (data.containers || []).map((c: any) => [
@@ -148,17 +248,16 @@ export function generateBLPDF(data: any, preview: boolean = true) {
     ]);
 
     autoTable(doc, {
-        startY: 245,
-        head: [["CONTENEUR", "TYPE TC", "N° PLOMB", "NBRE", "PACKAGE", "GROSS WEIGHT", "NET WEIGHT", "VOLUME"]],
+        startY: tableStartY,
+        head: [["CONTENEUR", "TYPE TC", "NBRE PLOMB", "NBRE", "PACKAGE", "GROSS WEIGHT", "NET WEIGHT", "VOLUME"]],
         body: tableData,
         theme: "grid",
-        headStyles: { fillColor: [0, 102, 153], fontSize: 7 },
-        styles: { fontSize: 7, cellPadding: 1 },
-        margin: { left: 10, right: 10 }
+        headStyles: { fillColor: [176, 196, 222], textColor: [0, 0, 0], fontSize: 7, fontStyle: 'bold', lineColor: [0, 0, 0], lineWidth: 0.3 },
+        styles: { fontSize: 7, cellPadding: 1, textColor: [0, 0, 0], lineColor: [0, 0, 0], lineWidth: 0.3 },
+        margin: { left: 10, right: 10 },
     });
 
     if (preview) {
-        // Open in new tab
         const blob = doc.output("blob");
         const url = URL.createObjectURL(blob);
         window.open(url, "_blank");

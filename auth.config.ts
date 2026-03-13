@@ -22,6 +22,7 @@ export const authConfig = {
             if (user) {
                 token.role = (user as any).role;
                 token.companyName = (user as any).companyName;
+                token.mustChangePassword = (user as any).mustChangePassword;
             }
             if (trigger === "update" && session) {
                 return { ...token, ...session.user };
@@ -33,6 +34,7 @@ export const authConfig = {
                 session.user.id = token.sub;
                 (session.user as any).role = token.role;
                 (session.user as any).companyName = token.companyName;
+                (session.user as any).mustChangePassword = token.mustChangePassword;
             }
             return session;
         },

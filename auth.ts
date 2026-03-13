@@ -27,15 +27,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     user.password
                 );
 
-                if (!isValid) return null;
-
-                return {
-                    id: user.id,
-                    email: user.email,
-                    name: user.name,
-                    companyName: user.companyName,
-                    role: user.role,
-                };
+                if (isValid) {
+                    if ((user as any).isAuthorized === false) {
+                        throw new Error("Compte non autorisé. Veuillez contacter l'administrateur.");
+                    }
+                    return {
+                        id: user.id,
+                        email: user.email,
+                        name: user.name,
+                        companyName: user.companyName,
+                        role: user.role,
+                        mustChangePassword: (user as any).mustChangePassword,
+                    };
+                }
+                return null;
             },
         }),
     ],

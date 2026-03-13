@@ -21,6 +21,12 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  isAuthorized     Boolean  @default(true)
+  tempPassword     String?
+  mustChangePassword Boolean @default(false)
+
   // Relations
   shippers       Shipper[]
   consignees     Consignee[]
@@ -216,6 +222,9 @@ model BillOfLading {
   saveStatus     String   @default("DRAFT") // DRAFT, VALIDATED
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  correctionCount Int @default(0)
+  originalData   Json?
+
 
   userId    String
   user      User     @relation(fields: [userId], references: [id])

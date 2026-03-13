@@ -16,6 +16,7 @@ interface ComboboxProps {
     placeholder?: string;
     error?: string;
     disabled?: boolean;
+    multiline?: boolean;
 }
 
 export function Combobox({
@@ -30,6 +31,7 @@ export function Combobox({
     placeholder = "",
     error,
     disabled = false,
+    multiline = false,
 }: ComboboxProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -81,19 +83,21 @@ export function Combobox({
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     width: '100%',
-                    padding: '0.8rem 1.2rem',
+                    padding: '0.6rem 1rem',
                     backgroundColor: displayValue
-                        ? 'rgba(255, 102, 153, 0.08)'
+                        ? 'rgba(16, 185, 129, 0.05)'
                         : 'var(--input-bg)',
-                    border: `2px solid ${error ? 'var(--danger)' : isOpen ? 'var(--accent-teal)' : displayValue ? 'var(--primary)' : 'var(--border-color)'}`,
-                    borderRadius: '16px',
+                    border: `2px solid ${error ? 'var(--danger)' : isOpen ? 'var(--border-focus)' : displayValue ? '#10b981' : 'var(--border)'}`,
+                    borderRadius: '12px',
                     color: '#0a1f5c',
-                    fontSize: '1.65rem',
-                    fontWeight: 600,
-                    fontFamily: "'Nunito', sans-serif",
+                    fontSize: '1.1rem',
+                    fontWeight: 700,
                     transition: 'all 0.2s ease-in-out',
                     textTransform: 'uppercase' as const,
-                    boxShadow: isOpen ? '0 0 0 4px rgba(230, 0, 18, 0.2)' : 'none'
+                    boxShadow: isOpen ? '0 0 0 4px rgba(230, 0, 18, 0.2)' : 'none',
+                    minHeight: multiline ? '100px' : 'auto',
+                    resize: multiline ? 'vertical' : 'none',
+                    overflow: multiline ? 'auto' : 'visible'
                 }}
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 onKeyDown={(e) => {
@@ -109,10 +113,12 @@ export function Combobox({
             >
                 <span style={{
                     opacity: displayValue ? 1 : 0.5,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
+                    whiteSpace: multiline ? 'pre-wrap' : 'nowrap',
+                    overflow: multiline ? 'visible' : 'hidden',
                     textOverflow: 'ellipsis',
-                    width: '85%'
+                    width: '85%',
+                    wordBreak: 'break-word',
+                    lineHeight: '1.4'
                 }}>
                     {displayValue || placeholder}
                 </span>

@@ -12,16 +12,20 @@ interface LinkedPortSelectorProps {
     // Port (Place of Delivery)
     portCityValue: string;      // Now holds the actual port name
     onPortCityChange: (name: string) => void;
+
+    portCountryError?: string;
+    portCityError?: string;
 }
 
 // Generic dropdown with search
 function SearchableDropdown({
     label,
     options,
-    value,         // display name currently selected
+    value,
     onSelect,
     placeholder = "",
     disabled = false,
+    error = "",
 }: {
     label: string;
     options: string[];
@@ -29,6 +33,7 @@ function SearchableDropdown({
     onSelect: (val: string) => void;
     placeholder?: string;
     disabled?: boolean;
+    error?: string;
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState("");
@@ -75,25 +80,24 @@ function SearchableDropdown({
                     alignItems: "center",
                     justifyContent: "space-between",
                     width: "100%",
-                    padding: "0.8rem 1.2rem",
+                    padding: "0.6rem 1rem",
                     backgroundColor: disabled
                         ? "var(--secondary)"
                         : value
-                            ? "rgba(255, 102, 153, 0.08)"
+                            ? "rgba(16, 185, 129, 0.05)"
                             : "var(--input-bg)",
                     border: `2px solid ${disabled
                         ? "var(--secondary)"
                         : isOpen
-                            ? "var(--accent-teal)"
+                            ? "var(--border-focus)"
                             : value
-                                ? "var(--primary)"
-                                : "var(--border-color)"
+                                ? "#10b981"
+                                : "var(--border)"
                         }`,
-                    borderRadius: "16px",
+                    borderRadius: "12px",
                     color: disabled ? "var(--text-muted)" : value ? "#0a1f5c" : "#4b4b4b",
-                    fontSize: "1.65rem",
-                    fontWeight: disabled ? 500 : 700,
-                    fontFamily: "'Nunito', sans-serif",
+                    fontSize: "1.1rem",
+                    fontWeight: 700,
                     cursor: disabled ? "not-allowed" : "pointer",
                     opacity: disabled ? 0.45 : 1,
                     transition: "all 0.2s ease-in-out",
@@ -202,6 +206,7 @@ function SearchableDropdown({
                     </div>
                 </div>
             )}
+            {error && <span className="error-msg" style={{ marginTop: '0.25rem', display: 'block' }}>{error}</span>}
         </div>
     );
 }
@@ -212,6 +217,8 @@ export function LinkedPortSelector({
     onPortCountryChange,
     portCityValue,
     onPortCityChange,
+    portCountryError,
+    portCityError,
 }: LinkedPortSelectorProps) {
 
     // Available ports for the selected country
@@ -239,6 +246,7 @@ export function LinkedPortSelector({
                     value={portCountryValue}
                     onSelect={handleCountrySelect}
                     placeholder="Sélectionner un pays..."
+                    error={portCountryError}
                 />
             </div>
 
@@ -250,6 +258,7 @@ export function LinkedPortSelector({
                     onSelect={handlePortSelect}
                     placeholder={portCountryValue ? "Sélectionner un port..." : "⬅ Choisir d'abord un pays"}
                     disabled={!portCountryValue}
+                    error={portCityError}
                 />
             </div>
         </>

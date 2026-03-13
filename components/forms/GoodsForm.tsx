@@ -26,11 +26,25 @@ export function GoodsForm({ isOpen, onClose, onSuccess, onDelete, initialData }:
         defaultValues: initialData || defaultValues,
     });
 
+    const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
+
+    const autoResize = () => {
+        const el = textareaRef.current;
+        if (el) {
+            el.style.height = "auto";
+            el.style.height = el.scrollHeight + "px";
+        }
+    };
+
     React.useEffect(() => {
         if (isOpen) {
             reset(initialData || defaultValues);
+            // Wait for reset to apply then resize
+            setTimeout(autoResize, 0);
         }
     }, [isOpen, initialData, reset]);
+
+    const { ref: registerRef, ...restRegister } = register("description");
 
     const handleFormSubmit = async (data: any) => {
         setIsSubmitting(true);
@@ -84,7 +98,19 @@ export function GoodsForm({ isOpen, onClose, onSuccess, onDelete, initialData }:
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div>
                     <label>Description Goods *</label>
-                    <textarea {...register("description")} rows={4} />
+                    <textarea 
+                        {...restRegister}
+                        ref={(e: HTMLTextAreaElement | null) => {
+                            registerRef(e);
+                            textareaRef.current = e;
+                        }}
+                        rows={4} 
+                        onChange={(e) => {
+                            restRegister.onChange(e);
+                            autoResize();
+                        }}
+                        style={{ overflow: 'hidden', resize: 'none' }}
+                    />
                     {errors.description && <span className="error-msg">{errors.description.message as string}</span>}
                 </div>
 

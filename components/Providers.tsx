@@ -7,7 +7,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return (
         <SessionProvider>
             {children}
-            <Toaster position="top-right" />
+            <Toaster position="top-center" />
         </SessionProvider>
     );
 }

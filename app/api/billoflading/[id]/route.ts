@@ -23,34 +23,72 @@ export async function PUT(
         const { containers, ...blRawData } = data;
         const safeContainers = Array.isArray(containers) ? containers : [];
 
-        // Convert empty strings to null
-        const blData = Object.fromEntries(
-            Object.entries(blRawData).map(([key, value]) => [key, value === "" ? null : value])
-        );
-
-        // We update the BL and replace all containers
-        const updatedBL = await prisma.billOfLading.update({
+        // Fetch existing BL to check status
+        const existingBL = await prisma.billOfLading.findUnique({
             where: { id },
-            data: {
-                ...(blData as any),
-                containers: {
-                    deleteMany: {}, // Remove old containers
-                    create: safeContainers.map((c: any) => ({
-                        containerNum: c.containerNum,
-                        typeTc: c.typeTc,
-                        sealNum: c.sealNum,
-                        count: Number(c.count),
-                        packageType: c.packageType,
-                        grossWeight: Number(c.grossWeight),
-                        netWeight: Number(c.netWeight),
-                        volume: Number(c.volume),
-                    })),
-                }
-            },
+            include: { 
+                containers: true,
+                shipper: true,
+                consignee: true,
+                notify: true,
+                alsoNotify: true,
+                forwarder: true,
+                freightBuyer: true,
+                goods: true,
+                typeReleased: true,
+            }
+        });
+
+        if (!existingBL) {
+            return NextResponse.json({ error: "Bill of Lading not found" }, { status: 404 });
+        }
+
+        let updateData: any = {
+            ...Object.fromEntries(
+                Object.entries(blRawData).map(([key, value]) => [key, value === "" ? null : value])
+            ),
+            containers: {
+                deleteMany: {},
+                create: safeContainers.map((c: any) => ({
+                    containerNum: c.containerNum,
+                    typeTc: c.typeTc,
+                    sealNum: c.sealNum,
+                    count: Number(c.count),
+                    packageType: c.packageType,
+                    grossWeight: Number(c.grossWeight),
+                    netWeight: Number(c.netWeight),
+                    volume: Number(c.volume),
+                })),
+            }
+        };
+
+        // CORRECTION LOGIC
+        const isTransitioningToValidated = existingBL.saveStatus !== "VALIDATED" && blRawData.saveStatus === "VALIDATED";
+        const isCorrection = existingBL.saveStatus === "VALIDATED" && blRawData.saveStatus === "VALIDATED";
+
+        // Increment count if it's a correction
+        if (isCorrection) {
+            updateData.correctionCount = (existingBL as any).correctionCount + 1;
+        }
+
+        let updatedBL = await prisma.billOfLading.update({
+            where: { id },
+            data: updateData,
             include: {
                 containers: true
             }
         });
+
+        // If it was the FIRST validation, take the baseline snapshot NOW
+        if (isTransitioningToValidated || (blRawData.saveStatus === "VALIDATED" && !(existingBL as any).originalData)) {
+            const { createBLSnapshot } = await import("@/lib/snapshotUtils");
+            const snapshot = await createBLSnapshot(updatedBL.id);
+            updatedBL = await prisma.billOfLading.update({
+                where: { id: updatedBL.id },
+                data: { originalData: snapshot as any },
+                include: { containers: true }
+            });
+        }
 
         return NextResponse.json(updatedBL);
     } catch (error) {
