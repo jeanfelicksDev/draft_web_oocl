@@ -27,7 +27,9 @@ export default function DashboardPage() {
     const [startDate, setStartDate]             = useState("");
     const [endDate, setEndDate]                 = useState("");
     const [selectedCompanyId, setSelectedCompanyId] = useState("");
-    const [selectedYear, setSelectedYear]       = useState(new Date().getFullYear().toString());
+    const [selectedHsCode, setSelectedHsCode]       = useState("");
+    const [hsCodes, setHsCodes]                     = useState<any[]>([]);
+    const [selectedYear, setSelectedYear]           = useState(new Date().getFullYear().toString());
 
     const fetchStats = async () => {
         setIsLoading(true);
@@ -37,12 +39,14 @@ export default function DashboardPage() {
             if (startDate)         url += `&startDate=${startDate}`;
             if (endDate)           url += `&endDate=${endDate}`;
             if (selectedCompanyId) url += `&companyId=${selectedCompanyId}`;
+            if (selectedHsCode)    url += `&hsCode=${selectedHsCode}`;
 
             const res = await fetch(url);
             if (res.ok) {
                 const data = await res.json();
                 setStats(data.stats);
                 setCompanies(data.companies || []);
+                setHsCodes(data.stats.hsCodeList || []);
                 setIsAdmin(data.isAdmin || sessionIsAdmin);
             } else {
                 const err = await res.json().catch(() => ({}));
@@ -57,7 +61,7 @@ export default function DashboardPage() {
 
     useEffect(() => {
         if (status === "authenticated") fetchStats();
-    }, [status, startDate, endDate, selectedCompanyId, selectedYear]);
+    }, [status, startDate, endDate, selectedCompanyId, selectedHsCode, selectedYear]);
 
     const monthNames = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"];
     const chartData  = stats?.monthlyStats?.map((s: any) => ({
@@ -75,6 +79,7 @@ export default function DashboardPage() {
         setStartDate("");
         setEndDate("");
         setSelectedCompanyId("");
+        setSelectedHsCode("");
         setSelectedYear(new Date().getFullYear().toString());
     };
 
@@ -211,7 +216,7 @@ export default function DashboardPage() {
                         <h1>Tableau de Bord</h1>
                     </div>
 
-                    {(startDate || endDate || selectedCompanyId) && (
+                    {(startDate || endDate || selectedCompanyId || selectedHsCode) && (
                         <button onClick={resetFilters} className="btn-outline"
                             style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>
                             <X size={14} /> Effacer les filtres
@@ -262,7 +267,7 @@ export default function DashboardPage() {
 
                     {/* Admin company filter */}
                     {(isAdmin || sessionIsAdmin) && (
-                        <div style={{ flexGrow: 1, minWidth: 280 }}>
+                        <div style={{ flexGrow: 1, minWidth: 260 }}>
                             <Combobox
                                 label="Filtrer par entreprise / client"
                                 items={[
@@ -277,6 +282,22 @@ export default function DashboardPage() {
                             />
                         </div>
                     )}
+
+                    {/* HS Code filter */}
+                    <div style={{ flexGrow: 1, minWidth: 260 }}>
+                        <Combobox
+                            label="Filtrer par HS Code / Marchandise"
+                            items={[
+                                { id: "", name: "Toutes les marchandises" },
+                                ...hsCodes
+                            ]}
+                            displayKey="name"
+                            valueKey="id"
+                            value={selectedHsCode}
+                            onChange={(val) => setSelectedHsCode(val)}
+                            placeholder={hsCodes.length > 0 ? "Sélectionner un HS Code…" : "Aucun code"}
+                        />
+                    </div>
                 </div>
 
                 {/* ─── Content ─── */}

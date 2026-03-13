@@ -14,6 +14,7 @@ export async function GET(request: Request) {
         const endDate = searchParams.get("endDate");
         const targetUserId = searchParams.get("companyId"); // Only for admins
         const yearParam = searchParams.get("year");
+        const selectedHsCode = searchParams.get("hsCode");
         const selectedYear = yearParam ? parseInt(yearParam) : new Date().getFullYear();
 
         // Build filters
@@ -33,6 +34,11 @@ export async function GET(request: Request) {
             filters.createdAt = {};
             if (startDate) filters.createdAt.gte = new Date(startDate);
             if (endDate) filters.createdAt.lte = new Date(endDate);
+        }
+
+        // HS Code filter
+        if (selectedHsCode) {
+            filters.goods = { hsCode: selectedHsCode };
         }
 
         // Fetch Bill of Ladings with Containers and Goods info
@@ -86,7 +92,8 @@ export async function GET(request: Request) {
             });
 
             // Goods (Percentage)
-            const goodsName = bl.goods?.description || "Non spécifié";
+            const hsPart = bl.goods?.hsCode ? `${bl.goods.hsCode} - ` : "";
+            const goodsName = hsPart + (bl.goods?.description || "Non spécifié");
             goodsMap[goodsName] = (goodsMap[goodsName] || 0) + 1;
 
             // Destinations
@@ -106,6 +113,18 @@ export async function GET(request: Request) {
             count
         })).sort((a, b) => b.count - a.count);
 
+        // Fetch available HS codes/goods for filter
+        // Only if not already filtering by a specific one (or always to populate the dropdown)
+        const goodsForFilter = await prisma.goods.findMany({
+            where: isAdmin && targetUserId ? { userId: targetUserId } : (isAdmin ? {} : { userId }),
+            select: { hsCode: true, description: true },
+            distinct: ['hsCode']
+        });
+        const hsCodeList = goodsForFilter.map(g => ({
+            id: g.hsCode,
+            name: `${g.hsCode} - ${g.description}`
+        })).sort((a, b) => a.id.localeCompare(b.id));
+
         // If Admin, also provide list of users/companies for the filter
         let companies: any[] = [];
         if (isAdmin) {
@@ -123,7 +142,8 @@ export async function GET(request: Request) {
                 totalTonnage,
                 goodsList,
                 destList,
-                monthlyStats
+                monthlyStats,
+                hsCodeList
             },
             companies,
             isAdmin

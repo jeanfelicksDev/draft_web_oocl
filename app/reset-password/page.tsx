@@ -74,9 +74,8 @@ function ResetPasswordContent() {
             backgroundColor: "var(--bg-primary)",
             padding: "1rem"
         }}>
-            <div style={{ marginBottom: "2rem", display: "flex", alignItems: "center", gap: "1rem" }}>
-                <span style={{ fontSize: "3rem" }}>🚢</span>
-                <span style={{ fontFamily: "Nunito", fontSize: "2.5rem", fontWeight: 900, color: "var(--primary)" }}>duo<span style={{ color: "var(--accent-teal)" }}>ship</span></span>
+            <div style={{ marginBottom: "2rem" }}>
+                <img src="/logo-oocl.png" alt="OOCL Logo" style={{ height: "80px", width: "auto" }} />
             </div>
 
             <div className="form-container" style={{ width: "100%", maxWidth: "400px" }}>
