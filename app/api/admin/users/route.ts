@@ -12,39 +12,26 @@ export async function GET() {
             return NextResponse.json({ error: "Non autorisé", details }, { status: 403 });
         }
 
-        // FORCE Raw Query because Prisma Client might be out of sync and stripping fields
-        try {
-            console.log("Fetching users with raw SQL...");
-            const users = await prisma.$queryRaw<any[]>`
-                SELECT 
-                    id, 
-                    email, 
-                    name, 
-                    "companyName", 
-                    role, 
-                    "isAuthorized", 
-                    "tempPassword", 
-                    "mustChangePassword", 
-                    "createdAt"
-                FROM "User" 
-                ORDER BY "createdAt" DESC
-            `;
-            
-            // Ensure fields are correctly interpreted as boolean/string etc
-            const sanitizedUsers = users.map(u => ({
-                ...u,
-                // Postgres might return boolean as true/false, but let's be sure
-                isAuthorized: u.isAuthorized === true,
-                mustChangePassword: u.mustChangePassword === true,
-                createdAt: u.createdAt ? new Date(u.createdAt).toISOString() : null
-            }));
+        // Fetch users using Prisma Client
+        const users = await prisma.user.findMany({
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                companyName: true,
+                role: true,
+                isAuthorized: true,
+                tempPassword: true,
+                mustChangePassword: true,
+                createdAt: true,
+            },
+            orderBy: {
+                createdAt: "desc",
+            },
+        });
 
-            console.log("Fetched", sanitizedUsers.length, "users. First one authorized:", sanitizedUsers[0]?.isAuthorized);
-            return NextResponse.json(sanitizedUsers);
-        } catch (dbError: any) {
-            console.error("Prisma queryRaw failed:", dbError.message);
-            return NextResponse.json({ error: "Erreur base de données", details: dbError.message }, { status: 500 });
-        }
+        console.log("Fetched", users.length, "users. First one authorized:", users[0]?.isAuthorized);
+        return NextResponse.json(users);
     } catch (error: any) {
         console.error("Admin user list general error:", error);
         return NextResponse.json({ 

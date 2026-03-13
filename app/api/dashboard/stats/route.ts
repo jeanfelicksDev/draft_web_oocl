@@ -92,8 +92,9 @@ export async function GET(request: Request) {
             });
 
             // Goods (Percentage)
-            const hsPart = bl.goods?.hsCode ? `${bl.goods.hsCode} - ` : "";
-            const goodsName = hsPart + (bl.goods?.description || "Non spécifié");
+            const hs = bl.goods?.hsCode;
+            const desc = bl.goods?.description;
+            const goodsName = hs ? (desc ? `${hs} - ${desc}` : hs) : "Non spécifié";
             goodsMap[goodsName] = (goodsMap[goodsName] || 0) + 1;
 
             // Destinations
@@ -122,7 +123,7 @@ export async function GET(request: Request) {
         });
         const hsCodeList = goodsForFilter.map(g => ({
             id: g.hsCode,
-            name: `${g.hsCode} - ${g.description}`
+            name: g.description ? `${g.hsCode} - ${g.description}` : g.hsCode
         })).sort((a, b) => a.id.localeCompare(b.id));
 
         // If Admin, also provide list of users/companies for the filter

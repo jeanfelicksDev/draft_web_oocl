@@ -172,76 +172,107 @@ export function ContainerTable({
                     </thead>
                     <tbody>
                         {containers.map((c) => (
-                            <tr key={c.id} style={editingId === c.id ? { backgroundColor: 'var(--bg-blue-light)' } : {}}>
-                                <td>{c.containerNum}</td>
-                                <td>{c.typeTc}</td>
-                                <td>{c.sealNum}</td>
-                                <td>{c.count}</td>
-                                <td>{c.packageType}</td>
-                                <td>{c.grossWeight}</td>
-                                <td>{c.netWeight}</td>
-                                <td>{c.volume}</td>
-                                <td style={{ textAlign: 'center' }}>
-                                    <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
-                                        <button 
-                                            type="button" 
-                                            className="btn-remove" 
-                                            title="Modifier"
-                                            onClick={() => editContainer(c)}
-                                            style={{ color: 'var(--primary)' }}
-                                        >
-                                            ✎
-                                        </button>
-                                        <button 
-                                            type="button" 
-                                            className="btn-remove" 
-                                            title="Supprimer"
-                                            onClick={() => removeContainer(c.id)}
-                                        >
-                                            &times;
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                            <React.Fragment key={c.id}>
+                                <tr style={editingId === c.id ? { backgroundColor: 'rgba(230, 0, 18, 0.02)', opacity: 0.8 } : {}}>
+                                    <td>{c.containerNum}</td>
+                                    <td>{c.typeTc}</td>
+                                    <td>{c.sealNum}</td>
+                                    <td>{c.count}</td>
+                                    <td>{c.packageType}</td>
+                                    <td>{c.grossWeight}</td>
+                                    <td>{c.netWeight}</td>
+                                    <td>{c.volume}</td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
+                                            <button 
+                                                type="button" 
+                                                className="btn-remove" 
+                                                title="Modifier"
+                                                onClick={() => editContainer(c)}
+                                                style={{ color: 'var(--primary)', opacity: editingId ? 0.3 : 1 }}
+                                                disabled={!!editingId}
+                                            >
+                                                ✎
+                                            </button>
+                                            <button 
+                                                type="button" 
+                                                className="btn-remove" 
+                                                title="Supprimer"
+                                                onClick={() => removeContainer(c.id)}
+                                                style={{ opacity: editingId ? 0.3 : 1 }}
+                                                disabled={!!editingId}
+                                            >
+                                                &times;
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                {editingId === c.id && (
+                                    <tr style={{ backgroundColor: 'transparent' }}>
+                                        <td colSpan={9} style={{ padding: '0.5rem 0.875rem', border: 'none' }}>
+                                            <div style={{ 
+                                                display: 'flex', 
+                                                gap: '0.6rem', 
+                                                padding: '0.8rem 1.25rem', 
+                                                backgroundColor: '#fff5f5', 
+                                                borderRadius: '20px', 
+                                                border: '1.5px solid #e2e8f0',
+                                                alignItems: 'center',
+                                                animation: 'fadeIn 0.2s ease-out'
+                                            }}>
+                                                <input {...register("containerNum")} style={{ borderRadius: '15px', border: '2px solid #10b981', flex: 2.2, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="N° Conteneur" />
+                                                <input {...register("typeTc")} style={{ borderRadius: '15px', border: '2px solid #10b981', flex: 1, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Type" />
+                                                <input {...register("sealNum")} style={{ borderRadius: '15px', border: '2px solid #10b981', flex: 2, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Plomb" />
+                                                <input {...register("count")} type="number" style={{ borderRadius: '15px', border: '2px solid #10b981', flex: 0.8, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Qté" />
+                                                <input {...register("packageType")} style={{ borderRadius: '15px', border: '2px solid #10b981', flex: 1.2, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Pckg" />
+                                                <input {...register("grossWeight")} type="number" step="0.01" style={{ borderRadius: '15px', border: '2px solid #10b981', flex: 1, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Gross" />
+                                                <input {...register("netWeight")} type="number" step="0.01" style={{ borderRadius: '15px', border: '2px solid #10b981', flex: 1, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Net" />
+                                                <input {...register("volume")} type="number" step="0.01" style={{ borderRadius: '15px', border: '2px solid #10b981', flex: 1, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Vol" />
+                                                
+                                                <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+                                                    <button type="button" onClick={handleSubmit(onSubmit)} className="btn-success" style={{ borderRadius: '50%', width: '38px', height: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>✓</button>
+                                                    <button type="button" onClick={cancelEdit} className="btn-remove" style={{ borderRadius: '50%', width: '38px', height: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#cbd5e1', borderColor: '#94a3b8', color: '#1e293b', fontSize: '1rem' }}>✕</button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </React.Fragment>
                         ))}
 
-                        {/* Input Row / Edit Row */}
-                        <tr style={{ backgroundColor: editingId ? 'rgba(230, 0, 18, 0.05)' : 'white' }}>
-                            <td>
-                                <input {...register("containerNum")} className={fc(values.containerNum)} placeholder="N° Conteneur" />
-                            </td>
-                            <td>
-                                <input {...register("typeTc")} className={fc(values.typeTc)} placeholder="Type" />
-                            </td>
-                            <td>
-                                <input {...register("sealNum")} className={fc(values.sealNum)} placeholder="Plomb" />
-                            </td>
-                            <td>
-                                <input {...register("count")} type="number" className={fc(values.count)} placeholder="Qté" />
-                            </td>
-                            <td>
-                                <input {...register("packageType")} className={fc(values.packageType)} placeholder="Pckg" />
-                            </td>
-                            <td>
-                                <input {...register("grossWeight")} type="number" step="0.01" className={fc(values.grossWeight)} placeholder="Gross" />
-                            </td>
-                            <td>
-                                <input {...register("netWeight")} type="number" step="0.01" className={fc(values.netWeight)} placeholder="Net" />
-                            </td>
-                            <td>
-                                <input {...register("volume")} type="number" step="0.01" className={fc(values.volume)} placeholder="Vol" />
-                            </td>
-                            <td style={{ textAlign: 'center' }}>
-                                {editingId ? (
-                                    <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                                        <button type="button" onClick={handleSubmit(onSubmit)} className="btn-success" title="Appliquer" style={{ padding: '0.4rem 0.6rem' }}>✓</button>
-                                        <button type="button" onClick={cancelEdit} className="btn-remove" title="Annuler" style={{ padding: '0.4rem 0.6rem', background: '#ccc', color: '#000' }}>✕</button>
-                                    </div>
-                                ) : (
+                        {/* Input Row for NEW containers - only visible when NOT editing */}
+                        {!editingId && (
+                            <tr className="add-container-row">
+                                <td>
+                                    <input {...register("containerNum")} className={fc(values.containerNum)} placeholder="N° Conteneur" />
+                                </td>
+                                <td>
+                                    <input {...register("typeTc")} className={fc(values.typeTc)} placeholder="Type" />
+                                </td>
+                                <td>
+                                    <input {...register("sealNum")} className={fc(values.sealNum)} placeholder="Plomb" />
+                                </td>
+                                <td>
+                                    <input {...register("count")} type="number" className={fc(values.count)} placeholder="Qté" />
+                                </td>
+                                <td>
+                                    <input {...register("packageType")} className={fc(values.packageType)} placeholder="Pckg" />
+                                </td>
+                                <td>
+                                    <input {...register("grossWeight")} type="number" step="0.01" className={fc(values.grossWeight)} placeholder="Gross" />
+                                </td>
+                                <td>
+                                    <input {...register("netWeight")} type="number" step="0.01" className={fc(values.netWeight)} placeholder="Net" />
+                                </td>
+                                <td>
+                                    <input {...register("volume")} type="number" step="0.01" className={fc(values.volume)} placeholder="Vol" />
+                                </td>
+                                <td style={{ textAlign: 'center' }}>
                                     <button type="button" onClick={handleSubmit(onSubmit)} className="btn-success" style={{ padding: '0.4rem 0.8rem' }}>+</button>
-                                )}
-                            </td>
-                        </tr>
+                                </td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </div>

@@ -24,28 +24,22 @@ export async function DELETE(
 
         console.log(`DELETING USER ${userId} with recursive dependencies cleaning (Raw SQL fallback if needed)`);
 
-        try {
-            // First attempt with prisma delete (safest if constraints allow)
-            // But we'll do raw SQL first to clean relations anyway if we suspect they cause problems
-            
-            // Clean specific relations that might exist
-            await prisma.$executeRawUnsafe(`DELETE FROM "Shipper" WHERE "userId" = '${userId}'`);
-            await prisma.$executeRawUnsafe(`DELETE FROM "BillOfLading" WHERE "userId" = '${userId}'`);
-            
-            // Delete user
-            const result = await prisma.$executeRawUnsafe(`DELETE FROM "User" WHERE id = '${userId}'`);
-            
-            if (result === 0) {
-                console.log("No user found with ID", userId);
-                return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 });
-            }
+        // Delete user using Prisma Client (will handle relations defined with onDelete: Cascade)
+        // For relations not defined as Cascade, we manually delete them first.
+        // In our schema, Shipper, BillOfLading etc. don't have onDelete: Cascade explicitly set for everyone.
+        
+        await prisma.shipper.deleteMany({ where: { userId } });
+        await prisma.billOfLading.deleteMany({ where: { userId } });
+        await prisma.consignee.deleteMany({ where: { userId } });
+        await prisma.notify.deleteMany({ where: { userId } });
+        await prisma.goods.deleteMany({ where: { userId } });
+        
+        await prisma.user.delete({
+            where: { id: userId }
+        });
 
-            console.log("User successfully deleted via raw SQL");
-            return NextResponse.json({ message: "Utilisateur supprimé avec succès" });
-        } catch (dbError: any) {
-            console.error("Prisma raw delete failed:", dbError.message);
-            return NextResponse.json({ error: "Erreur base de données", details: dbError.message }, { status: 500 });
-        }
+        console.log("User successfully deleted via Prisma Client");
+        return NextResponse.json({ message: "Utilisateur supprimé avec succès" });
     } catch (error: any) {
         console.error("Delete user error:", error);
         return NextResponse.json({ error: "Erreur lors de la suppression", details: error.message }, { status: 500 });

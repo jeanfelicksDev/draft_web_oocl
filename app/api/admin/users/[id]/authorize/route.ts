@@ -21,19 +21,12 @@ export async function PUT(
 
         console.log(`TOGGLING AUTH FOR USER ${userId} TO ${isAuthorized}`);
 
-        try {
-            const updatedUser = await prisma.user.update({
-                where: { id: userId },
-                data: { isAuthorized: !!isAuthorized } as any,
-            });
-            return NextResponse.json(updatedUser);
-        } catch (dbError: any) {
-            console.error("Prisma update failed, trying raw query...", dbError.message);
-            // On utilise un booléen simple pour SQL
-            const sqlStatus = isAuthorized ? true : false;
-            await prisma.$executeRawUnsafe(`UPDATE "User" SET "isAuthorized" = ${sqlStatus} WHERE id = '${userId}'`);
-            return NextResponse.json({ id: userId, isAuthorized: sqlStatus });
-        }
+        // Update authorization status using Prisma Client
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: { isAuthorized: !!isAuthorized } as any,
+        });
+        return NextResponse.json(updatedUser);
     } catch (error: any) {
         console.error("Admin toggle authorization error:", error);
         return NextResponse.json({ error: "Erreur serveur", details: error.message }, { status: 500 });

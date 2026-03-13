@@ -24,30 +24,16 @@ export async function POST(req: Request) {
 
         console.log(`FORGOT PASS: Generated ${tempPass} for ${email}`);
 
-        try {
-            // First attempt with prisma update
-            await prisma.user.update({
-                where: { email },
-                data: {
-                    password: hashedPassword,
-                    tempPassword: tempPass,
-                    mustChangePassword: true,
-                } as any,
-            });
-            console.log("Successfully updated password via Prisma");
-        } catch (dbError: any) {
-            console.error("Prisma forgot-password update failed, trying raw query...", dbError.message);
-            // fallback raw query if model is out of sync
-            await prisma.$executeRawUnsafe(`
-                UPDATE "User" 
-                SET 
-                    password = '${hashedPassword}', 
-                    "tempPassword" = '${tempPass}', 
-                    "mustChangePassword" = true 
-                WHERE email = '${email}'
-            `);
-            console.log("Successfully updated password via Raw SQL");
-        }
+        // Update password and set mustChangePassword flag
+        await prisma.user.update({
+            where: { email },
+            data: {
+                password: hashedPassword,
+                tempPassword: tempPass,
+                mustChangePassword: true,
+            } as any, // Cast to any to handle potential stale types in IDE, though functionally correct
+        });
+        console.log("Successfully updated password via Prisma");
 
         return NextResponse.json({ 
             message: "Demande envoyée. Votre administrateur vous transmettra votre mot de passe temporaire.",
