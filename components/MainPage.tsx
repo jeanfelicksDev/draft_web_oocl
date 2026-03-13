@@ -615,16 +615,27 @@ export default function MainPage() {
                 isOpen={activeModal === "GOODS"} onClose={() => setActiveModal(null)}
                 initialData={editingEntity}
                 hscodes={hscodes}
-                onAddNewHSCode={() => setIsHSCodeModalOpen(true)}
+                onAddNewHSCode={() => { setEditingEntity(null); setIsHSCodeModalOpen(true); }}
+                onEditHSCode={(id) => {
+                    const item = hscodes.find(x => x.id === id);
+                    if (item) { setEditingEntity(item); setIsHSCodeModalOpen(true); }
+                }}
                 onSuccess={handleSaveList(setGoods, goods, "goodsId")}
                 onDelete={handleDeleteList(setGoods, goods, "goodsId")} />
 
             <HSCodeForm
-                isOpen={isHSCodeModalOpen} onClose={() => setIsHSCodeModalOpen(false)}
+                isOpen={isHSCodeModalOpen} onClose={() => { setIsHSCodeModalOpen(false); setEditingEntity(null); }}
+                initialData={editingEntity}
                 onSuccess={(item) => {
                     const exists = hscodes.find(x => x.id === item.id);
                     setHscodes(exists ? hscodes.map(x => x.id === item.id ? item : x) : [...hscodes, item]);
                     setIsHSCodeModalOpen(false);
+                    setEditingEntity(null);
+                }}
+                onDelete={(id) => {
+                    setHscodes(hscodes.filter(x => x.id !== id));
+                    setIsHSCodeModalOpen(false);
+                    setEditingEntity(null);
                 }} />
 
             <SmallGenericForm

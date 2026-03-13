@@ -26,7 +26,8 @@ export function GoodsForm({
     onDelete, 
     initialData,
     hscodes = [],
-    onAddNewHSCode
+    onAddNewHSCode,
+    onEditHSCode
 }: { 
     isOpen: boolean, 
     onClose: () => void, 
@@ -34,14 +35,18 @@ export function GoodsForm({
     onDelete?: (id: string) => void, 
     initialData?: any,
     hscodes?: any[],
-    onAddNewHSCode?: () => void
+    onAddNewHSCode?: () => void,
+    onEditHSCode?: (id: string) => void
 }) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    const { register, handleSubmit, reset, control, setValue, formState: { errors } } = useForm({
+    const { register, handleSubmit, reset, control, watch, formState: { errors } } = useForm({
         resolver: yupResolver(schema),
         defaultValues: initialData || defaultValues,
     });
+
+    const selectedHSCode = watch("hsCode");
+    const hscInfo = hscodes.find(h => h.code === selectedHSCode);
 
     const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
@@ -56,7 +61,6 @@ export function GoodsForm({
     React.useEffect(() => {
         if (isOpen) {
             reset(initialData || defaultValues);
-            // Wait for reset to apply then resize
             setTimeout(autoResize, 0);
         }
     }, [isOpen, initialData, reset]);
@@ -67,9 +71,7 @@ export function GoodsForm({
         setIsSubmitting(true);
         try {
             const isEditing = !!initialData?.id;
-            const submitEndpoint = isEditing ? `/api/goods/${initialData.id}` : "/api/goods";
-
-            const res = await fetch(submitEndpoint, {
+            const res = await fetch(isEditing ? `/api/goods/${initialData.id}` : "/api/goods", {
                 method: isEditing ? "PUT" : "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data),
@@ -80,7 +82,7 @@ export function GoodsForm({
                 onSuccess(savedItem);
                 onClose();
             } else {
-                alert("Erreur lors de l'enregistrement.")
+                alert("Erreur lors de l'enregistrement.");
             }
         } finally {
             setIsSubmitting(false);
@@ -143,18 +145,14 @@ export function GoodsForm({
                                     displayKey="code"
                                     valueKey="code"
                                     value={field.value}
-                                    onChange={(val) => {
-                                        field.onChange(val);
-                                        // Auto-fill nature if found
-                                        const hsc = hscodes.find(h => h.code === val);
-                                        if (hsc && hsc.description) {
-                                            // Optional: we can auto-fill the description if it's empty
-                                            // The user said "ajouter HS CODE and nature".
-                                        }
-                                    }}
+                                    onChange={field.onChange}
                                     onAddNew={onAddNewHSCode}
+                                    onEdit={onEditHSCode ? () => {
+                                        const h = hscodes.find(x => x.code === field.value);
+                                        if (h) onEditHSCode(h.id);
+                                    } : undefined}
                                     error={errors.hsCode?.message as string}
-                                    placeholder="Sélectionner ou ajouter..."
+                                    placeholder="Sélectionner..."
                                 />
                             )}
                         />
@@ -165,6 +163,20 @@ export function GoodsForm({
                         {errors.declNo && <span className="error-msg">{errors.declNo.message as string}</span>}
                     </div>
                 </div>
+
+                {hscInfo && (
+                    <div style={{ 
+                        marginTop: '-0.5rem',
+                        padding: '0.8rem 1rem',
+                        backgroundColor: 'rgba(10, 31, 92, 0.05)',
+                        borderRadius: '10px',
+                        borderLeft: '4px solid var(--primary)',
+                        fontSize: '0.9rem'
+                    }}>
+                        <p style={{ fontWeight: 700, color: 'var(--primary)', marginBottom: '0.2rem', textTransform: 'uppercase', fontSize: '0.7rem' }}>Commodity / Nature</p>
+                        <p style={{ color: '#0a1f5c', fontWeight: 500 }}>{hscInfo.description}</p>
+                    </div>
+                )}
             </div>
         </ModalForm>
     );
