@@ -35,10 +35,24 @@ model User {
   forwarders     Forwarder[]
   freightBuyers  FreightBuyer[]
   goods          Goods[]
+  hscodes        HSCode[]
   ports          Port[]
   cities         City[]
   typesReleased  TypeReleased[]
   billsOfLading  BillOfLading[]
+}
+
+model HSCode {
+  id          String   @id @default(uuid())
+  code        String
+  description String   // Nature de la marchandise
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([code, userId])
 }
 
 model Shipper {

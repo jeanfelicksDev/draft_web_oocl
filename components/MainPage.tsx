@@ -27,75 +27,12 @@ import { ModalForm } from "./ModalForm";
 import { ShipperForm } from "./forms/ShipperForm";
 import { ConsigneeForm } from "./forms/ConsigneeForm";
 import { GoodsForm } from "./forms/GoodsForm";
+import { HSCodeForm } from "./forms/HSCodeForm";
+import { SmallGenericForm } from "./forms/SmallGenericForm";
 import { Combobox } from "./Combobox";
 import { ContainerTable } from "./ContainerTable";
 import { generateBLPDF } from "@/lib/pdfGenerator";
 import { LinkedPortSelector } from "./LinkedPortSelector";
-
-/* ─── SmallGenericForm (Port, TypeReleased, AlsoNotify…) ─── */
-function SmallGenericForm({
-    isOpen, onClose, title, endpoint, idField, entities, setEntities, initialData, entityName, isTextArea = false, fieldName = "name"
-}: any) {
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const schema = yup.object().shape({ [fieldName]: yup.string().required("Requis") });
-    const { register, handleSubmit, reset, formState: { errors } } = useForm({
-        resolver: yupResolver(schema),
-        defaultValues: initialData || { [fieldName]: "" }
-    });
-
-    React.useEffect(() => {
-        if (isOpen) reset(initialData || { [fieldName]: "" });
-    }, [isOpen, initialData, reset, fieldName]);
-
-    const onSubmit = async (data: any) => {
-        setIsSubmitting(true);
-        try {
-            const isEditing = !!initialData?.id;
-            const res = await fetch(isEditing ? `${endpoint}/${initialData.id}` : endpoint, {
-                method: isEditing ? "PUT" : "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-            });
-            if (res.ok) {
-                const saved = await res.json();
-                if (isEditing) {
-                    setEntities(entities.map((e: any) => e[idField] === saved[idField] ? saved : e));
-                } else {
-                    setEntities([...entities, saved]);
-                }
-                onClose();
-            }
-        } finally { setIsSubmitting(false); }
-    };
-
-    const onDelete = async () => {
-        if (!initialData?.id) return;
-        setIsSubmitting(true);
-        try {
-            const res = await fetch(`${endpoint}/${initialData.id}`, { method: "DELETE" });
-            if (res.ok) {
-                setEntities(entities.filter((e: any) => e[idField] !== initialData.id));
-                onClose();
-            }
-        } finally { setIsSubmitting(false); }
-    };
-
-    return (
-        <ModalForm isOpen={isOpen} onClose={onClose} title={title}
-            onSubmit={handleSubmit(onSubmit)}
-            onDelete={initialData ? onDelete : undefined}
-            isSubmitting={isSubmitting}
-        >
-            <div>
-                <label>{entityName} *</label>
-                {isTextArea
-                    ? <textarea rows={3} {...register(fieldName)} />
-                    : <input {...register(fieldName)} />}
-                {errors[fieldName] && <span className="error-msg">{(errors[fieldName] as any).message}</span>}
-            </div>
-        </ModalForm>
-    );
-}
 
 /* ════════════════════════════════════════════
    MAIN PAGE
@@ -128,6 +65,8 @@ export default function MainPage() {
     const [freightBuyers, setFreightBuyers] = useState<any[]>([]);
     const [forwarders, setForwarders]     = useState<any[]>([]);
     const [goods, setGoods]               = useState<any[]>([]);
+    const [hscodes, setHscodes]           = useState<any[]>([]);
+    const [isHSCodeModalOpen, setIsHSCodeModalOpen] = useState(false);
     const [typesReleased, setTypesReleased] = useState<any[]>([]);
     const [billOfLadings, setBillOfLadings] = useState<any[]>([]);
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
@@ -245,7 +184,7 @@ export default function MainPage() {
     /* ─── Initial fetch ─── */
     React.useEffect(() => {
         const fetchAll = async () => {
-            const [s, c, n, a, f, fw, g, t] = await Promise.all([
+            const [s, c, n, a, f, fw, g, t, hs] = await Promise.all([
                 fetch('/api/shippers').then(r => r.ok ? r.json() : []),
                 fetch('/api/consignees').then(r => r.ok ? r.json() : []),
                 fetch('/api/notify').then(r => r.ok ? r.json() : []),
@@ -254,6 +193,7 @@ export default function MainPage() {
                 fetch('/api/forwarders').then(r => r.ok ? r.json() : []),
                 fetch('/api/goods').then(r => r.ok ? r.json() : []),
                 fetch('/api/typereleased').then(r => r.ok ? r.json() : []),
+                fetch('/api/hscodes').then(r => r.ok ? r.json() : []),
             ]);
             if (Array.isArray(s))  setShippers(s);
             if (Array.isArray(c))  setConsignees(c);
@@ -263,6 +203,7 @@ export default function MainPage() {
             if (Array.isArray(fw)) setForwarders(fw);
             if (Array.isArray(g))  setGoods(g);
             if (Array.isArray(t))  setTypesReleased(t);
+            if (Array.isArray(hs)) setHscodes(hs);
             const bls = await fetch('/api/billoflading').then(r => r.ok ? r.json() : []);
             if (Array.isArray(bls)) setBillOfLadings(bls);
         };
@@ -673,8 +614,18 @@ export default function MainPage() {
             <GoodsForm
                 isOpen={activeModal === "GOODS"} onClose={() => setActiveModal(null)}
                 initialData={editingEntity}
+                hscodes={hscodes}
+                onAddNewHSCode={() => setIsHSCodeModalOpen(true)}
                 onSuccess={handleSaveList(setGoods, goods, "goodsId")}
                 onDelete={handleDeleteList(setGoods, goods, "goodsId")} />
+
+            <HSCodeForm
+                isOpen={isHSCodeModalOpen} onClose={() => setIsHSCodeModalOpen(false)}
+                onSuccess={(item) => {
+                    const exists = hscodes.find(x => x.id === item.id);
+                    setHscodes(exists ? hscodes.map(x => x.id === item.id ? item : x) : [...hscodes, item]);
+                    setIsHSCodeModalOpen(false);
+                }} />
 
             <SmallGenericForm
                 title={editingEntity ? "Modifier Type Released" : "Ajouter Type Released (MBL/HBL…)"}

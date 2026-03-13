@@ -3,8 +3,9 @@
 import React from "react";
 import { ModalForm } from "../ModalForm";
 import * as yup from "yup";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
+import { Combobox } from "../Combobox";
 
 const schema = yup.object().shape({
     description: yup.string().required("La description est requise"),
@@ -18,10 +19,26 @@ const defaultValues = {
     declNo: "",
 };
 
-export function GoodsForm({ isOpen, onClose, onSuccess, onDelete, initialData }: { isOpen: boolean, onClose: () => void, onSuccess: (goods: any) => void, onDelete?: (id: string) => void, initialData?: any }) {
+export function GoodsForm({ 
+    isOpen, 
+    onClose, 
+    onSuccess, 
+    onDelete, 
+    initialData,
+    hscodes = [],
+    onAddNewHSCode
+}: { 
+    isOpen: boolean, 
+    onClose: () => void, 
+    onSuccess: (goods: any) => void, 
+    onDelete?: (id: string) => void, 
+    initialData?: any,
+    hscodes?: any[],
+    onAddNewHSCode?: () => void
+}) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    const { register, handleSubmit, reset, control, setValue, formState: { errors } } = useForm({
         resolver: yupResolver(schema),
         defaultValues: initialData || defaultValues,
     });
@@ -116,9 +133,31 @@ export function GoodsForm({ isOpen, onClose, onSuccess, onDelete, initialData }:
 
                 <div className="grid-2">
                     <div>
-                        <label>HS CODE *</label>
-                        <input {...register("hsCode")} />
-                        {errors.hsCode && <span className="error-msg">{errors.hsCode.message as string}</span>}
+                        <Controller
+                            name="hsCode"
+                            control={control}
+                            render={({ field }) => (
+                                <Combobox
+                                    label="HS CODE *"
+                                    items={hscodes}
+                                    displayKey="code"
+                                    valueKey="code"
+                                    value={field.value}
+                                    onChange={(val) => {
+                                        field.onChange(val);
+                                        // Auto-fill nature if found
+                                        const hsc = hscodes.find(h => h.code === val);
+                                        if (hsc && hsc.description) {
+                                            // Optional: we can auto-fill the description if it's empty
+                                            // The user said "ajouter HS CODE and nature".
+                                        }
+                                    }}
+                                    onAddNew={onAddNewHSCode}
+                                    error={errors.hsCode?.message as string}
+                                    placeholder="Sélectionner ou ajouter..."
+                                />
+                            )}
+                        />
                     </div>
                     <div>
                         <label>DECL N° *</label>
