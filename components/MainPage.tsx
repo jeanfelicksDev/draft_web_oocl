@@ -345,7 +345,7 @@ export default function MainPage() {
                     goods: goods.find(g => g.id === data.goodsId) || {},
                     containers,
                 };
-                generateBLPDF(hydratedData);
+                generateBLPDF(hydratedData, false);
                 const bls = await fetch('/api/billoflading').then(r => r.ok ? r.json() : []);
                 setBillOfLadings(bls);
             } else {

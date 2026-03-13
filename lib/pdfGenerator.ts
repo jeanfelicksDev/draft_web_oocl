@@ -257,11 +257,21 @@ export function generateBLPDF(data: any, preview: boolean = true) {
         margin: { left: 10, right: 10 },
     });
 
+    doc.setProperties({
+        title: data.bookingNumber ? `SI_${data.bookingNumber}` : "Shipping_Instructions",
+    });
+
     if (preview) {
+        // Option 1: Open in new tab (often preferred for SI)
+        // Setting the title above helps the browser suggest the correct name when saving
         const blob = doc.output("blob");
         const url = URL.createObjectURL(blob);
-        window.open(url, "_blank");
+        const win = window.open(url, "_blank");
+        if (win) {
+            win.document.title = data.bookingNumber ? `SI_${data.bookingNumber}` : "Shipping Instructions";
+        }
     } else {
-        return doc;
+        // Option 2: Direct download
+        doc.save(data.bookingNumber ? `SI_${data.bookingNumber}.pdf` : "Shipping_Instructions.pdf");
     }
 }
