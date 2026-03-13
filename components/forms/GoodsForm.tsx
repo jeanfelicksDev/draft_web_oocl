@@ -107,7 +107,7 @@ export function GoodsForm({
 
     return (
         <ModalForm
-            title={initialData ? "Modifier Marchandise" : "Nouvelle Marchandise"}
+            title={initialData ? "Modifier Marchandise [V2]" : "Nouvelle Marchandise [V2]"}
             isOpen={isOpen}
             onClose={onClose}
             onSubmit={handleSubmit(handleFormSubmit)}
