@@ -87,7 +87,7 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
             <div className="grid-2">
                 <div>
                     <SearchableDropdown
-                        label="Pays *"
+                        label="PAYS TEST *"
                         options={MARITIME_COUNTRIES}
                         value={country}
                         onSelect={(val) => {
