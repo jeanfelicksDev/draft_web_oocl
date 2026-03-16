@@ -87,7 +87,7 @@ function ConsigneeFormBody({ register, errors, watch, setValue }: any) {
             <div className="grid-2">
                 <div>
                     <SearchableDropdown
-                        label="Pays *"
+                        label="CONSIGNEE TEST *"
                         options={MARITIME_COUNTRIES}
                         value={country}
                         onSelect={(val) => {
