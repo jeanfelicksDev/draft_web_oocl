@@ -6,15 +6,46 @@ import * as XLSX from 'xlsx';
 import toast from "react-hot-toast";
 import { FileUp } from "lucide-react";
 
+const TYPE_TC_OPTIONS = ["20DC", "40HC", "40HR", "20OT", "40OT"];
+const PACKAGE_OPTIONS = ["Sac", "Package", "Carton", "Palette"];
+
 const containerSchema = yup.object().shape({
-    containerNum: yup.string().required("N° Conteneur requis"),
+    containerNum: yup.string()
+        .required("N° Conteneur requis")
+        .length(11, "Doit faire 11 caractères")
+        .matches(/^[A-Z]{4}[0-9]{7}$/, "Format: AAAA9999999"),
     typeTc: yup.string().required("Type TC requis"),
-    sealNum: yup.string().required("Plomb requis"),
-    count: yup.number().typeError("Doit être un nombre").required("Nombre requis"),
+    sealNum: yup.string()
+        .required("N° Plomb requis")
+        .max(11, "Max 11 caractères"),
+    count: yup.number()
+        .typeError("Nombre requis")
+        .required("Nombre requis")
+        .max(9999, "Max 4 chiffres"),
     packageType: yup.string().required("Package requis"),
-    grossWeight: yup.number().typeError("Doit être un nombre").required("Poids brut requis"),
-    netWeight: yup.number().typeError("Doit être un nombre").required("Poids net requis"),
-    volume: yup.number().typeError("Doit être un nombre").required("Volume requis"),
+    grossWeight: yup.number()
+        .typeError("Poids requis")
+        .required("Poids brut requis")
+        .test("max-weight", "Poids max dépassé", function (val) {
+            const { typeTc } = this.parent;
+            if (!val || !typeTc) return true;
+            if (typeTc.startsWith("20") && val > 28000) return false;
+            if (typeTc.startsWith("40") && val > 37000) return false;
+            return true;
+        })
+        .test("gross-gt-net", "Brut < Net", function (val) {
+            const { netWeight } = this.parent;
+            if (!val || netWeight === undefined || netWeight === null) return true;
+            return val > netWeight;
+        }),
+    netWeight: yup.number()
+        .typeError("Doit être un nombre")
+        .nullable()
+        .transform((value, originalValue) => (originalValue === "" ? null : value)),
+    volume: yup.number()
+        .typeError("Doit être un nombre")
+        .nullable()
+        .transform((value, originalValue) => (originalValue === "" ? null : value)),
 });
 
 export function ContainerTable({
@@ -25,21 +56,40 @@ export function ContainerTable({
     setContainers: React.Dispatch<React.SetStateAction<any[]>>
 }) {
     const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
-        resolver: yupResolver(containerSchema)
+        resolver: yupResolver(containerSchema),
+        defaultValues: {
+            containerNum: "",
+            typeTc: "",
+            sealNum: "",
+            count: undefined,
+            packageType: "",
+            grossWeight: undefined,
+            netWeight: undefined,
+            volume: undefined
+        }
     });
 
     const [editingId, setEditingId] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const values = watch();
-    const fc = (val: any) => (val && val !== "" ? "input-filled" : "");
+    const fc = (name: string) => {
+        const val = (values as any)[name];
+        return val && val !== "" ? "input-filled" : "";
+    };
 
     const onSubmit = (data: any) => {
+        const payload = {
+            ...data,
+            netWeight: data.netWeight === null ? undefined : data.netWeight,
+            volume: data.volume === null ? undefined : data.volume,
+        };
+
         if (editingId) {
-            setContainers(containers.map(c => c.id === editingId ? { ...data, id: editingId } : c));
+            setContainers(containers.map(c => c.id === editingId ? { ...payload, id: editingId } : c));
             setEditingId(null);
         } else {
-            setContainers([...containers, { ...data, id: crypto.randomUUID() }]);
+            setContainers([...containers, { ...payload, id: crypto.randomUUID() }]);
         }
         reset();
     };
@@ -62,11 +112,10 @@ export function ContainerTable({
                     return;
                 }
 
-                // Skip header row if first cell is string "CONTENEUR" or similar
                 const startRow = (String(data[0][0]).toLowerCase().includes('conteneur')) ? 1 : 0;
                 
                 const newContainers = data.slice(startRow)
-                    .filter(row => row.length >= 8 && row[0]) // Basic validation: at least 8 columns and a container number
+                    .filter(row => row.length >= 8 && row[0])
                     .map(row => ({
                         id: crypto.randomUUID(),
                         containerNum: String(row[0] || ""),
@@ -75,8 +124,8 @@ export function ContainerTable({
                         count: parseFloat(String(row[3] || "0")) || 0,
                         packageType: String(row[4] || ""),
                         grossWeight: parseFloat(String(row[5] || "0")) || 0,
-                        netWeight: parseFloat(String(row[6] || "0")) || 0,
-                        volume: parseFloat(String(row[7] || "0")) || 0
+                        netWeight: row[6] ? parseFloat(String(row[6])) : undefined,
+                        volume: row[7] ? parseFloat(String(row[7])) : undefined
                     }));
 
                 if (newContainers.length === 0) {
@@ -102,8 +151,8 @@ export function ContainerTable({
         setValue("count", container.count);
         setValue("packageType", container.packageType);
         setValue("grossWeight", container.grossWeight);
-        setValue("netWeight", container.netWeight);
-        setValue("volume", container.volume);
+        setValue("netWeight", container.netWeight ?? "");
+        setValue("volume", container.volume ?? "");
     };
 
     const cancelEdit = () => {
@@ -180,8 +229,8 @@ export function ContainerTable({
                                     <td>{c.count}</td>
                                     <td>{c.packageType}</td>
                                     <td>{c.grossWeight}</td>
-                                    <td>{c.netWeight}</td>
-                                    <td>{c.volume}</td>
+                                    <td>{c.netWeight ?? '-'}</td>
+                                    <td>{c.volume ?? '-'}</td>
                                     <td style={{ textAlign: 'center' }}>
                                         <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
                                             <button 
@@ -221,14 +270,24 @@ export function ContainerTable({
                                                 alignItems: 'center',
                                                 animation: 'fadeIn 0.2s ease-out'
                                             }}>
-                                                <input {...register("containerNum")} style={{ borderRadius: '15px', border: '2px solid #10b981', flex: 2.2, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="N° Conteneur" />
-                                                <input {...register("typeTc")} style={{ borderRadius: '15px', border: '2px solid #10b981', flex: 1, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Type" />
-                                                <input {...register("sealNum")} style={{ borderRadius: '15px', border: '2px solid #10b981', flex: 2, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Plomb" />
-                                                <input {...register("count")} type="number" style={{ borderRadius: '15px', border: '2px solid #10b981', flex: 0.8, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Qté" />
-                                                <input {...register("packageType")} style={{ borderRadius: '15px', border: '2px solid #10b981', flex: 1.2, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Pckg" />
-                                                <input {...register("grossWeight")} type="number" step="0.01" style={{ borderRadius: '15px', border: '2px solid #10b981', flex: 1, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Gross" />
-                                                <input {...register("netWeight")} type="number" step="0.01" style={{ borderRadius: '15px', border: '2px solid #10b981', flex: 1, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Net" />
-                                                <input {...register("volume")} type="number" step="0.01" style={{ borderRadius: '15px', border: '2px solid #10b981', flex: 1, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Vol" />
+                                                <input {...register("containerNum")} style={{ borderRadius: '15px', border: errors.containerNum ? '2px solid var(--danger)' : '2px solid #10b981', flex: 2.2, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="N° Conteneur" maxLength={11} />
+                                                
+                                                <input {...register("typeTc")} list="typeTcListEdit" style={{ borderRadius: '15px', border: errors.typeTc ? '2px solid var(--danger)' : '2px solid #10b981', flex: 1, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Type" />
+                                                <datalist id="typeTcListEdit">
+                                                    {TYPE_TC_OPTIONS.map(opt => <option key={opt} value={opt} />)}
+                                                </datalist>
+
+                                                <input {...register("sealNum")} style={{ borderRadius: '15px', border: errors.sealNum ? '2px solid var(--danger)' : '2px solid #10b981', flex: 2, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Plomb" maxLength={11} />
+                                                <input {...register("count")} type="number" style={{ borderRadius: '15px', border: errors.count ? '2px solid var(--danger)' : '2px solid #10b981', flex: 0.8, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Qté" onInput={(e) => { if(e.currentTarget.value.length > 4) e.currentTarget.value = e.currentTarget.value.slice(0,4); }} />
+                                                
+                                                <input {...register("packageType")} list="pckgListEdit" style={{ borderRadius: '15px', border: errors.packageType ? '2px solid var(--danger)' : '2px solid #10b981', flex: 1.2, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Pckg" />
+                                                <datalist id="pckgListEdit">
+                                                    {PACKAGE_OPTIONS.map(opt => <option key={opt} value={opt} />)}
+                                                </datalist>
+
+                                                <input {...register("grossWeight")} type="number" step="0.01" style={{ borderRadius: '15px', border: errors.grossWeight ? '2px solid var(--danger)' : '2px solid #10b981', flex: 1, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Gross" />
+                                                <input {...register("netWeight")} type="number" step="0.01" style={{ borderRadius: '15px', border: '2px solid #94a3b8', flex: 1, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Net" />
+                                                <input {...register("volume")} type="number" step="0.01" style={{ borderRadius: '15px', border: '2px solid #94a3b8', flex: 1, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Vol" />
                                                 
                                                 <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
                                                     <button type="button" onClick={handleSubmit(onSubmit)} className="btn-success" style={{ borderRadius: '50%', width: '38px', height: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>✓</button>
@@ -241,32 +300,43 @@ export function ContainerTable({
                             </React.Fragment>
                         ))}
 
-                        {/* Input Row for NEW containers - only visible when NOT editing */}
                         {!editingId && (
                             <tr className="add-container-row">
                                 <td>
-                                    <input {...register("containerNum")} className={fc(values.containerNum)} placeholder="N° Conteneur" />
+                                    <input {...register("containerNum")} className={fc("containerNum")} placeholder="N° Conteneur" maxLength={11} />
+                                    {errors.containerNum && <span style={{fontSize:'0.6rem', color:'var(--danger)', display:'block'}}>{errors.containerNum.message}</span>}
                                 </td>
                                 <td>
-                                    <input {...register("typeTc")} className={fc(values.typeTc)} placeholder="Type" />
+                                    <input {...register("typeTc")} list="typeTcList" className={fc("typeTc")} placeholder="Type" />
+                                    <datalist id="typeTcList">
+                                        {TYPE_TC_OPTIONS.map(opt => <option key={opt} value={opt} />)}
+                                    </datalist>
+                                    {errors.typeTc && <span style={{fontSize:'0.6rem', color:'var(--danger)', display:'block'}}>{errors.typeTc.message}</span>}
                                 </td>
                                 <td>
-                                    <input {...register("sealNum")} className={fc(values.sealNum)} placeholder="Plomb" />
+                                    <input {...register("sealNum")} className={fc("sealNum")} placeholder="Plomb" maxLength={11} />
+                                    {errors.sealNum && <span style={{fontSize:'0.6rem', color:'var(--danger)', display:'block'}}>{errors.sealNum.message}</span>}
                                 </td>
                                 <td>
-                                    <input {...register("count")} type="number" className={fc(values.count)} placeholder="Qté" />
+                                    <input {...register("count")} type="number" className={fc("count")} placeholder="Qté" onInput={(e) => { if(e.currentTarget.value.length > 4) e.currentTarget.value = e.currentTarget.value.slice(0,4); }} />
+                                    {errors.count && <span style={{fontSize:'0.6rem', color:'var(--danger)', display:'block'}}>{errors.count.message}</span>}
                                 </td>
                                 <td>
-                                    <input {...register("packageType")} className={fc(values.packageType)} placeholder="Pckg" />
+                                    <input {...register("packageType")} list="pckgList" className={fc("packageType")} placeholder="Pckg" />
+                                    <datalist id="pckgList">
+                                        {PACKAGE_OPTIONS.map(opt => <option key={opt} value={opt} />)}
+                                    </datalist>
+                                    {errors.packageType && <span style={{fontSize:'0.6rem', color:'var(--danger)', display:'block'}}>{errors.packageType.message}</span>}
                                 </td>
                                 <td>
-                                    <input {...register("grossWeight")} type="number" step="0.01" className={fc(values.grossWeight)} placeholder="Gross" />
+                                    <input {...register("grossWeight")} type="number" step="0.01" className={fc("grossWeight")} placeholder="Gross" />
+                                    {errors.grossWeight && <span style={{fontSize:'0.6rem', color:'var(--danger)', display:'block'}}>{errors.grossWeight.message}</span>}
                                 </td>
                                 <td>
-                                    <input {...register("netWeight")} type="number" step="0.01" className={fc(values.netWeight)} placeholder="Net" />
+                                    <input {...register("netWeight")} type="number" step="0.01" className={fc("netWeight")} placeholder="Net" />
                                 </td>
                                 <td>
-                                    <input {...register("volume")} type="number" step="0.01" className={fc(values.volume)} placeholder="Vol" />
+                                    <input {...register("volume")} type="number" step="0.01" className={fc("volume")} placeholder="Vol" />
                                 </td>
                                 <td style={{ textAlign: 'center' }}>
                                     <button type="button" onClick={handleSubmit(onSubmit)} className="btn-success" style={{ padding: '0.4rem 0.8rem' }}>+</button>
@@ -276,9 +346,9 @@ export function ContainerTable({
                     </tbody>
                 </table>
             </div>
-            {(Object.keys(errors).length > 0) && (
+            {(Object.keys(errors).length > 0 && !editingId) && (
                 <div className="error-msg" style={{ marginTop: '10px' }}>
-                    Veuillez remplir correctement tous les champs de la ligne.
+                    Veuillez corriger les erreurs dans la ligne d'ajout.
                 </div>
             )}
         </div>
