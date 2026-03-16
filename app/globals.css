@@ -159,8 +159,12 @@ body {
   max-width: 200px;
   height: auto;
   object-fit: contain;
-  filter: none;
+  mix-blend-mode: multiply;
   transition: transform 0.3s ease;
+}
+
+img[src="/logo-oocl.png"] {
+  mix-blend-mode: multiply;
 }
 
 .sidebar-logo img:hover {
