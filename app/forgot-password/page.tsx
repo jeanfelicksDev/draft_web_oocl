@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             <div className="form-container" style={{ width: "100%", maxWidth: "400px" }}>
-                <h2 style={{ textAlign: "center", marginBottom: "1.5rem", fontWeight: 800 }}>Mot de passe oublié</h2>
+                <h2 style={{ textAlign: "center", marginBottom: "1.5rem", fontWeight: 800 }}>mot de passe oublié</h2>
                 <p style={{ textAlign: "center", marginBottom: "2rem", color: "var(--text-muted)", fontSize: "0.9rem" }}>
                     Entrez votre email pour recevoir un lien de réinitialisation.
                 </p>
@@ -61,17 +61,17 @@ export default function ForgotPasswordPage() {
                             {message}
                         </div>
                         <Link href="/login" className="btn-primary" style={{ display: "inline-block", textDecoration: "none", width: "100%" }}>
-                            Retour à la connexion
+                            retour à la connexion
                         </Link>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                         <div>
-                            <label>Email</label>
+                            <label>email</label>
                             <input
                                 type="email"
                                 value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                onChange={(e) => setEmail(e.target.value.toLowerCase())}
                                 required
                                 placeholder="votre@email.com"
                             />
@@ -86,12 +86,12 @@ export default function ForgotPasswordPage() {
                             className="btn-primary"
                             disabled={loading}
                         >
-                            {loading ? "Envoi..." : "Envoyer le lien"}
+                            {loading ? "envoi..." : "envoyer le lien"}
                         </button>
 
                         <div style={{ textAlign: "center" }}>
                             <Link href="/login" style={{ color: "var(--text-muted)", textDecoration: "none", fontSize: "0.9rem", fontWeight: 700 }}>
-                                Retour à la connexion
+                                retour à la connexion
                             </Link>
                         </div>
                     </form>

@@ -72,7 +72,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="form-container" style={{ width: "100%", maxWidth: "400px" }}>
-                <h2 style={{ textAlign: "center", marginBottom: "2rem", fontWeight: 800 }}>Créer un compte</h2>
+                <h2 style={{ textAlign: "center", marginBottom: "2rem", fontWeight: 800 }}>créer un compte</h2>
 
                 <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                     <div>
@@ -86,7 +86,7 @@ export default function RegisterPage() {
                     </div>
                     {!adminExists && (
                         <div>
-                            <label>Type de compte</label>
+                             <label>type de compte</label>
                             <select
                                 value={role}
                                 onChange={(e) => setRole(e.target.value)}
@@ -106,16 +106,16 @@ export default function RegisterPage() {
                         </div>
                     )}
                     <div>
-                        <label>Email</label>
+                         <label>email</label>
                         <input
                             type="email"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => setEmail(e.target.value.toLowerCase())}
                             required
                         />
                     </div>
                     <div>
-                        <label>Mot de passe</label>
+                         <label>mot de passe</label>
                         <input
                             type="password"
                             value={password}
@@ -134,7 +134,7 @@ export default function RegisterPage() {
                         disabled={loading}
                         style={{ marginTop: "1rem" }}
                     >
-                        {loading ? "Chargement..." : "S'inscrire"}
+                         {loading ? "chargement..." : "s'inscrire"}
                     </button>
                 </form>
 

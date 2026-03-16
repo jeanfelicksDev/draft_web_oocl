@@ -336,7 +336,7 @@ label {
   font-weight: 700;
   color: var(--oocl-blue);
   letter-spacing: 0.05em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 input,
@@ -350,7 +350,7 @@ textarea {
   color: var(--oocl-blue);
   font-size: 1.1rem;
   font-weight: 700;
-  text-transform: uppercase;
+  text-transform: none;
   font-family: inherit;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: none;

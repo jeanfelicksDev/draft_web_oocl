@@ -52,20 +52,20 @@ export default function LoginPage() {
             </div>
 
             <div className="form-container" style={{ width: "100%", maxWidth: "400px" }}>
-                <h2 style={{ textAlign: "center", marginBottom: "2rem", fontWeight: 800 }}>Connexion</h2>
+                <h2 style={{ textAlign: "center", marginBottom: "2rem", fontWeight: 800 }}>connexion</h2>
 
                 <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                     <div>
-                        <label>Email</label>
+                        <label>email</label>
                         <input
                             type="email"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => setEmail(e.target.value.toLowerCase())}
                             required
                         />
                     </div>
                     <div>
-                        <label>Mot de passe</label>
+                        <label>mot de passe</label>
                         <input
                             type="password"
                             value={password}
@@ -89,7 +89,7 @@ export default function LoginPage() {
                         disabled={loading}
                         style={{ marginTop: "1rem" }}
                     >
-                        {loading ? "Connexion..." : "Se connecter"}
+                        {loading ? "connexion..." : "se connecter"}
                     </button>
                 </form>
 

@@ -79,7 +79,7 @@ function ResetPasswordContent() {
             </div>
 
             <div className="form-container" style={{ width: "100%", maxWidth: "400px" }}>
-                <h2 style={{ textAlign: "center", marginBottom: "1.5rem", fontWeight: 800 }}>Réinitialisation</h2>
+                <h2 style={{ textAlign: "center", marginBottom: "1.5rem", fontWeight: 800 }}>réinitialisation</h2>
                 <p style={{ textAlign: "center", marginBottom: "2rem", color: "var(--text-muted)", fontSize: "0.9rem" }}>
                     Choisissez votre nouveau mot de passe.
                 </p>
@@ -94,7 +94,7 @@ function ResetPasswordContent() {
                 ) : (
                     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                         <div>
-                            <label>Nouveau mot de passe</label>
+                            <label>nouveau mot de passe</label>
                             <input
                                 type="password"
                                 value={password}
@@ -105,7 +105,7 @@ function ResetPasswordContent() {
                         </div>
 
                         <div>
-                            <label>Confirmer le mot de passe</label>
+                            <label>confirmer le mot de passe</label>
                             <input
                                 type="password"
                                 value={confirmPassword}
@@ -123,7 +123,7 @@ function ResetPasswordContent() {
                             className="btn-primary"
                             disabled={loading}
                         >
-                            {loading ? "Réinitialisation..." : "Changer le mot de passe"}
+                            {loading ? "réinitialisation..." : "changer le mot de passe"}
                         </button>
                     </form>
                 )}
