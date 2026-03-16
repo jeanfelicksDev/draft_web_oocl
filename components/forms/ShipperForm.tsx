@@ -7,6 +7,9 @@ import { countryRequirements, cityRequirements } from "../../lib/constants";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 
+import { SearchableDropdown } from "../SearchableDropdown";
+import { MARITIME_COUNTRIES, WORLD_PORTS_BY_COUNTRY } from "../../lib/world-ports-data";
+
 const schema = yup.object().shape({
     name: yup.string().required("Le nom est requis"),
     address: yup.string().required("L'adresse est requise"),
@@ -16,12 +19,12 @@ const schema = yup.object().shape({
     email: yup.string().email("Email invalide").required("L'email est requis"),
     vat: yup.string().nullable().when(["country", "city"], {
         is: (country: string, city: string) => countryRequirements[country]?.includes("VAT") || cityRequirements[city]?.includes("VAT"),
-        then: (s: any) => s.required("Le VAT est requis pour cette destination."),
+        then: (s: any) => s.required("Le N°VAT est requis pour cette destination."),
         otherwise: (s: any) => s.nullable(),
     }),
     eori: yup.string().nullable().when(["country", "city"], {
         is: (country: string, city: string) => countryRequirements[country]?.includes("EORI") || cityRequirements[city]?.includes("EORI"),
-        then: (s: any) => s.required("L'EORI est requis pour cette destination."),
+        then: (s: any) => s.required("Le N°EORI est requis pour cette destination."),
         otherwise: (s: any) => s.nullable(),
     }),
     bin: yup.string().nullable().when(["country", "city"], {
@@ -54,6 +57,8 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
     const country = watch("country");
     const city = watch("city");
 
+    const availablePorts = country ? (WORLD_PORTS_BY_COUNTRY[country] || []) : [];
+
     const isNeeded = (field: string) => {
         return countryRequirements[country]?.includes(field) || cityRequirements[city]?.includes(field);
     };
@@ -81,14 +86,28 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
 
             <div className="grid-2">
                 <div>
-                    <label>Pays *</label>
-                    <input {...register("country")} />
-                    {errors.country && <span className="error-msg">{errors.country.message}</span>}
+                    <SearchableDropdown
+                        label="Pays *"
+                        options={MARITIME_COUNTRIES}
+                        value={country}
+                        onSelect={(val) => {
+                            setValue("country", val);
+                            setValue("city", "");
+                        }}
+                        placeholder="Sélectionner un pays..."
+                        error={errors.country?.message}
+                    />
                 </div>
                 <div>
-                    <label>Ville *</label>
-                    <input {...register("city")} />
-                    {errors.city && <span className="error-msg">{errors.city.message}</span>}
+                    <SearchableDropdown
+                        label="Ville *"
+                        options={availablePorts}
+                        value={city}
+                        onSelect={(val) => setValue("city", val)}
+                        placeholder={country ? "Sélectionner une ville..." : "⬅ Choisir d'abord un pays"}
+                        disabled={!country}
+                        error={errors.city?.message}
+                    />
                 </div>
             </div>
 
@@ -112,14 +131,14 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
                     <div className="grid-2">
                         {isNeeded("VAT") && (
                             <div>
-                                <label>VAT *</label>
+                                <label>N°VAT *</label>
                                 <input {...register("vat")} />
                                 {errors.vat && <span className="error-msg">{errors.vat.message}</span>}
                             </div>
                         )}
                         {isNeeded("EORI") && (
                             <div>
-                                <label>EORI *</label>
+                                <label>N°EORI *</label>
                                 <input {...register("eori")} />
                                 {errors.eori && <span className="error-msg">{errors.eori.message}</span>}
                             </div>
