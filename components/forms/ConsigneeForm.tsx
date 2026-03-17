@@ -71,7 +71,7 @@ function ConsigneeFormBody({ register, errors, watch, setValue }: any) {
     }, [country, city, setValue]);
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxHeight: '70vh', paddingRight: '10px', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div>
                 <label>Nom *</label>
                 <input {...register("name")} />
@@ -87,7 +87,7 @@ function ConsigneeFormBody({ register, errors, watch, setValue }: any) {
             <div className="grid-2">
                 <div>
                     <SearchableDropdown
-                        label="CONSIGNEE TEST *"
+                        label="Pays *"
                         options={MARITIME_COUNTRIES}
                         value={country}
                         onSelect={(val) => {
@@ -231,6 +231,7 @@ export function ConsigneeForm({ isOpen, onClose, onSuccess, onDelete, title = "N
             onSubmit={handleSubmit(handleFormSubmit)}
             onDelete={initialData && onDelete ? handleDelete : undefined}
             isSubmitting={isSubmitting}
+            maxWidth="800px"
         >
             <ConsigneeFormBody register={register} errors={errors} watch={watch} setValue={setValue} />
         </ModalForm>

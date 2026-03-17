@@ -71,7 +71,7 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
     }, [country, city, setValue]);
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxHeight: '70vh', overflowY: 'auto', paddingRight: '0.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div>
                 <label>Nom du Shipper *</label>
                 <input {...register("name")} />
@@ -87,7 +87,7 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
             <div className="grid-2">
                 <div>
                     <SearchableDropdown
-                        label="PAYS TEST *"
+                        label="Pays *"
                         options={MARITIME_COUNTRIES}
                         value={country}
                         onSelect={(val) => {
@@ -226,6 +226,7 @@ export function ShipperForm({ isOpen, onClose, onSuccess, onDelete, initialData 
             onSubmit={handleSubmit(handleFormSubmit)}
             onDelete={initialData && onDelete ? handleDelete : undefined}
             isSubmitting={isSubmitting}
+            maxWidth="800px"
         >
             <ShipperFormBody register={register} errors={errors} watch={watch} setValue={setValue} />
         </ModalForm>

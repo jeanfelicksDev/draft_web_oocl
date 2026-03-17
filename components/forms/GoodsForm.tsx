@@ -113,6 +113,7 @@ export function GoodsForm({
             onSubmit={handleSubmit(handleFormSubmit)}
             onDelete={initialData && onDelete ? handleDelete : undefined}
             isSubmitting={isSubmitting}
+            maxWidth="800px"
         >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div>

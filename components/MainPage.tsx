@@ -650,7 +650,8 @@ export default function MainPage() {
                 isOpen={activeModal === "ALSO_NOTIFY"} onClose={() => setActiveModal(null)}
                 endpoint="/api/alsonotify" entityName="Description (Also Notify)"
                 idField="alsoNotifyId" entities={alsoNotifys} setEntities={setAlsoNotifys}
-                initialData={editingEntity} isTextArea={true} fieldName="description" />
+                initialData={editingEntity} isTextArea={true} fieldName="description"
+                maxWidth="800px" />
 
             {/* Modal de changement de mot de passe obligatoire */}
             {showChangePasswordModal && (

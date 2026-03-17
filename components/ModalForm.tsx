@@ -10,6 +10,7 @@ interface ModalFormProps {
     onDelete?: () => Promise<void>;
     isSubmitting?: boolean;
     children: React.ReactNode;
+    maxWidth?: string;
 }
 
 export function ModalForm({
@@ -20,6 +21,7 @@ export function ModalForm({
     onDelete,
     isSubmitting = false,
     children,
+    maxWidth,
 }: ModalFormProps) {
     if (!isOpen) return null;
 
@@ -40,7 +42,7 @@ export function ModalForm({
                 alignItems: 'center'
             }}
         >
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={maxWidth ? { maxWidth } : {}}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <h2>{title}</h2>
                     <button

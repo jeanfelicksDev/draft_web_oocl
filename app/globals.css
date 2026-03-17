@@ -569,7 +569,7 @@ textarea::placeholder {
   border-radius: var(--radius-xl);
   width: 100%;
   max-width: 560px;
-  max-height: 90vh;
+  max-height: 95vh;
   overflow-y: auto;
   animation: scaleIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
   box-shadow: none;

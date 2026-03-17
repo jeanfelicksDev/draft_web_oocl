@@ -18,6 +18,7 @@ interface SmallGenericFormProps {
     initialData?: any;
     isTextArea?: boolean;
     fieldName?: string;
+    maxWidth?: string;
 }
 
 export function SmallGenericForm({
@@ -31,7 +32,8 @@ export function SmallGenericForm({
     setEntities,
     initialData,
     isTextArea = false,
-    fieldName = "name"
+    fieldName = "name",
+    maxWidth
 }: SmallGenericFormProps) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -84,6 +86,7 @@ export function SmallGenericForm({
             onClose={onClose}
             onSubmit={handleSubmit(handleFormSubmit)}
             isSubmitting={isSubmitting}
+            maxWidth={maxWidth}
         >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <label style={{ textTransform: 'capitalize' }}>{entityName} *</label>
