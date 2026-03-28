@@ -257,21 +257,37 @@ export function generateBLPDF(data: any, preview: boolean = true) {
         margin: { left: 10, right: 10 },
     });
 
+    const cleanBookingNum = String(data.bookingNumber || "").trim();
+    const filename = cleanBookingNum ? `SI_${cleanBookingNum}.pdf` : "Shipping_Instructions.pdf";
+    
     doc.setProperties({
-        title: data.bookingNumber ? `SI_${data.bookingNumber}` : "Shipping_Instructions",
+        title: filename.replace('.pdf', ''),
     });
 
+    const blob = doc.output("blob");
+    const url = URL.createObjectURL(blob);
+    
     if (preview) {
-        // Option 1: Open in new tab (often preferred for SI)
-        // Setting the title above helps the browser suggest the correct name when saving
-        const blob = doc.output("blob");
-        const url = URL.createObjectURL(blob);
         const win = window.open(url, "_blank");
         if (win) {
-            win.document.title = data.bookingNumber ? `SI_${data.bookingNumber}` : "Shipping Instructions";
+            win.document.title = filename.replace('.pdf', '');
         }
     } else {
-        // Option 2: Direct download
-        doc.save(data.bookingNumber ? `SI_${data.bookingNumber}.pdf` : "Shipping_Instructions.pdf");
+        // Envoi vers l'API de sauvegarde bureau (si en local)
+        const base64 = doc.output("datauristring").split(',')[1];
+        fetch("/api/save-to-desktop", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filename, base64 })
+        }).catch(() => {});
+
+        // Téléchargement standard
+        doc.save(filename);
+
+        // Ouverture automatique dans un nouvel onglet
+        const win = window.open(url, "_blank");
+        if (win) {
+            win.document.title = filename.replace('.pdf', '');
+        }
     }
 }

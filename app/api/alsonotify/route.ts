@@ -25,7 +25,11 @@ export async function POST(request: Request) {
 
         const data = await request.json();
         const newAlsoNotify = await prisma.alsoNotify.create({
-            data: { description: data.description, userId },
+            data: { 
+                name: data.name,
+                description: data.description, 
+                userId 
+            },
         });
         return NextResponse.json(newAlsoNotify, { status: 201 });
     } catch (error) {

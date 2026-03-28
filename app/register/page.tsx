@@ -74,7 +74,7 @@ export default function RegisterPage() {
             <div className="form-container" style={{ width: "100%", maxWidth: "400px" }}>
                 <h2 style={{ textAlign: "center", marginBottom: "2rem", fontWeight: 800 }}>créer un compte</h2>
 
-                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
                     <div>
                         <label>Nom de l'entreprise</label>
                         <input

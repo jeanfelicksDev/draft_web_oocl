@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserId, isAdmin } from "@/lib/auth-utils";
+import { getUserId, isAdmin, hasPermission } from "@/lib/auth-utils";
 
 export async function GET(request: Request) {
     const userId = await getUserId();
@@ -60,6 +60,10 @@ export async function POST(request: Request) {
         const userId = await getUserId();
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+        if (!await hasPermission("BL_WRITE")) {
+            return NextResponse.json({ error: "Permission refusée : BL_WRITE requis" }, { status: 403 });
+        }
+
         const data = await request.json();
 
         // Validate bookingNumber: exactly 10 digits, no letters
@@ -71,14 +75,24 @@ export async function POST(request: Request) {
             );
         }
 
-        // We expect the array of containers separately
         const { containers, ...blRawData } = data;
         const safeContainers = Array.isArray(containers) ? containers : [];
 
-        // Convert empty strings to null to avoid Prisma foreign key constraint errors
-        const blData = Object.fromEntries(
-            Object.entries(blRawData).map(([key, value]) => [key, value === "" ? null : value])
-        );
+        // VALID FIELDS for BillOfLading model
+        const validFields = [
+            'bookingNumber', 'contractNumber', 'saveStatus', 
+            'portCountryText', 'portCityText', 'typeReleasedId', 
+            'shipperId', 'consigneeId', 'notifyId', 'alsoNotifyId', 
+            'forwarderId', 'freightBuyerId', 'goodsId'
+        ];
+
+        // Convert empty strings to null AND filter out unknown fields
+        const blData: any = {};
+        for (const key of validFields) {
+            if (blRawData[key] !== undefined) {
+                blData[key] = blRawData[key] === "" ? null : blRawData[key];
+            }
+        }
 
         let newBL = await prisma.billOfLading.create({
             data: {
@@ -89,11 +103,11 @@ export async function POST(request: Request) {
                         containerNum: c.containerNum,
                         typeTc: c.typeTc,
                         sealNum: c.sealNum,
-                        count: Number(c.count),
+                        count: Number(c.count) || 0,
                         packageType: c.packageType,
-                        grossWeight: Number(c.grossWeight),
-                        netWeight: Number(c.netWeight),
-                        volume: Number(c.volume),
+                        grossWeight: Number(c.grossWeight) || 0,
+                        netWeight: Number(c.netWeight) || 0,
+                        volume: Number(c.volume) || 0,
                     })),
                 }
             },
@@ -114,8 +128,12 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json(newBL, { status: 201 });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error creating Bill of Lading:", error);
-        return NextResponse.json({ error: "Failed to create Bill of Lading" }, { status: 500 });
+        return NextResponse.json({ 
+            error: "Failed to create Bill of Lading", 
+            details: error.message,
+            stack: error.stack 
+        }, { status: 500 });
     }
 }

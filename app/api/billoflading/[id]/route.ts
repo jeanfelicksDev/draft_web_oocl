@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserId, isAdmin as checkAdmin } from "@/lib/auth-utils";
+import { getUserId, isAdmin as checkAdmin, hasPermission } from "@/lib/auth-utils";
 
 
 export async function PUT(
@@ -8,6 +8,13 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const userId = await getUserId();
+        if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+        if (!await hasPermission("BL_WRITE")) {
+            return NextResponse.json({ error: "Permission refusée : BL_WRITE requis" }, { status: 403 });
+        }
+
         const { id } = await params;
         const data = await request.json();
 
@@ -43,24 +50,42 @@ export async function PUT(
             return NextResponse.json({ error: "Bill of Lading not found" }, { status: 404 });
         }
 
+        // Only owner or admin can update
+        const userIsAdmin = await checkAdmin();
+        if (!userIsAdmin && existingBL.userId !== userId) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        // VALID FIELDS for BillOfLading model
+        const validFields = [
+            'bookingNumber', 'contractNumber', 'saveStatus', 
+            'portCountryText', 'portCityText', 'typeReleasedId', 
+            'shipperId', 'consigneeId', 'notifyId', 'alsoNotifyId', 
+            'forwarderId', 'freightBuyerId', 'goodsId'
+        ];
+
         let updateData: any = {
-            ...Object.fromEntries(
-                Object.entries(blRawData).map(([key, value]) => [key, value === "" ? null : value])
-            ),
             containers: {
                 deleteMany: {},
                 create: safeContainers.map((c: any) => ({
                     containerNum: c.containerNum,
                     typeTc: c.typeTc,
                     sealNum: c.sealNum,
-                    count: Number(c.count),
+                    count: Number(c.count) || 0,
                     packageType: c.packageType,
-                    grossWeight: Number(c.grossWeight),
-                    netWeight: Number(c.netWeight),
-                    volume: Number(c.volume),
+                    grossWeight: Number(c.grossWeight) || 0,
+                    netWeight: Number(c.netWeight) || 0,
+                    volume: Number(c.volume) || 0,
                 })),
             }
         };
+
+        // Filter and add only valid fields
+        for (const key of validFields) {
+            if (blRawData[key] !== undefined) {
+                updateData[key] = blRawData[key] === "" ? null : blRawData[key];
+            }
+        }
 
         // CORRECTION LOGIC
         const isTransitioningToValidated = existingBL.saveStatus !== "VALIDATED" && blRawData.saveStatus === "VALIDATED";
@@ -68,7 +93,7 @@ export async function PUT(
 
         // Increment count if it's a correction
         if (isCorrection) {
-            updateData.correctionCount = (existingBL as any).correctionCount + 1;
+            updateData.correctionCount = (Number(existingBL?.correctionCount) || 0) + 1;
         }
 
         let updatedBL = await prisma.billOfLading.update({
@@ -91,9 +116,13 @@ export async function PUT(
         }
 
         return NextResponse.json(updatedBL);
-    } catch (error) {
-        console.error("Error updating Bill of Lading:", error);
-        return NextResponse.json({ error: "Failed to update Bill of Lading" }, { status: 500 });
+    } catch (error: any) {
+        console.error("DEBUG BL UPDATE ERROR:", error);
+        return NextResponse.json({ 
+            error: "Failed to update Bill of Lading", 
+            details: error.message,
+            stack: error.stack
+        }, { status: 500 });
     }
 }
 
@@ -105,6 +134,10 @@ export async function DELETE(
         const { id } = await params;
         const userId = await getUserId();
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+        if (!await hasPermission("BL_DELETE")) {
+            return NextResponse.json({ error: "Permission refusée : BL_DELETE requis" }, { status: 403 });
+        }
 
         const userIsAdmin = await checkAdmin();
 

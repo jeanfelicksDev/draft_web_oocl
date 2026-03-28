@@ -16,7 +16,7 @@ const defaultValues = {
     description: "",
 };
 
-export function HSCodeForm({ isOpen, onClose, onSuccess, onDelete, initialData }: { isOpen: boolean, onClose: () => void, onSuccess: (hscode: any) => void, onDelete?: (id: string) => void, initialData?: any }) {
+export function HSCodeForm({ title = "", isOpen, onClose, onSuccess, onDelete, initialData }: { title?: string, isOpen: boolean, onClose: () => void, onSuccess: (hscode: any) => void, onDelete?: (id: string) => void, initialData?: any }) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm({
@@ -71,7 +71,7 @@ export function HSCodeForm({ isOpen, onClose, onSuccess, onDelete, initialData }
 
     return (
         <ModalForm
-            title={initialData ? "Modifier Code HS" : "Nouveau Code HS"}
+            title={title}
             isOpen={isOpen}
             onClose={onClose}
             onSubmit={handleSubmit(handleFormSubmit)}

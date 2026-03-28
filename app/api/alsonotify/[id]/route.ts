@@ -11,7 +11,10 @@ export async function PUT(
 
         const updated = await prisma.alsoNotify.update({
             where: { id },
-            data: { description: data.description },
+            data: { 
+                name: data.name,
+                description: data.description 
+            },
         });
 
         return NextResponse.json(updated, { status: 200 });

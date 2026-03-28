@@ -65,6 +65,14 @@ export async function GET(request: Request) {
             teu: 0
         }));
 
+        // Fetch natures (HS Code descriptions) for cleaner display
+        const hsCodesData = await prisma.hSCode.findMany({
+            where: isAdmin && targetUserId ? { userId: targetUserId } : (isAdmin ? {} : { userId }),
+            select: { code: true, description: true }
+        });
+        const natureMap: Record<string, string> = {};
+        hsCodesData.forEach(h => { natureMap[h.code] = h.description; });
+
         bls.forEach(bl => {
             const blDate = new Date(bl.createdAt);
             const blMonth = blDate.getMonth(); // 0-11
@@ -93,8 +101,8 @@ export async function GET(request: Request) {
 
             // Goods (Percentage)
             const hs = bl.goods?.hsCode;
-            const desc = bl.goods?.description;
-            const goodsName = hs ? (desc ? `${hs} - ${desc}` : hs) : "Non spécifié";
+            const nature = hs ? natureMap[hs] : null;
+            const goodsName = hs ? (nature ? `${hs} - ${nature}` : hs) : "Non spécifié";
             goodsMap[goodsName] = (goodsMap[goodsName] || 0) + 1;
 
             // Destinations

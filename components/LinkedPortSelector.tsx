@@ -15,6 +15,7 @@ interface LinkedPortSelectorProps {
 
     portCountryError?: string;
     portCityError?: string;
+    disabled?: boolean;
 }
 
 import { SearchableDropdown } from "./SearchableDropdown";
@@ -27,12 +28,63 @@ export function LinkedPortSelector({
     onPortCityChange,
     portCountryError,
     portCityError,
+    disabled = false,
 }: LinkedPortSelectorProps) {
 
-    // Available ports for the selected country
-    const availablePorts = portCountryValue
-        ? (WORLD_PORTS_BY_COUNTRY[portCountryValue] || [])
-        : [];
+    // Countries from DB (fallback to static)
+    const [countries, setCountries] = useState<string[]>(MARITIME_COUNTRIES);
+    // Ports from DB (fallback to static)
+    const [ports, setPorts] = useState<string[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Initial load for countries
+    useEffect(() => {
+        const loadCountries = async () => {
+            try {
+                const res = await fetch("/api/globals/countries");
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        setCountries(data.map(c => c.name));
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load global countries", e);
+            }
+        };
+        loadCountries();
+    }, []);
+
+    // Load ports when country changes
+    useEffect(() => {
+        if (portCountryValue) {
+            const loadPorts = async () => {
+                setIsLoading(true);
+                try {
+                    // Try to get from API
+                    const res = await fetch(`/api/globals/ports?country=${encodeURIComponent(portCountryValue)}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (Array.isArray(data) && data.length > 0) {
+                            setPorts(data);
+                        } else {
+                            // Fallback to static if API returns nothing
+                            setPorts(WORLD_PORTS_BY_COUNTRY[portCountryValue] || []);
+                        }
+                    } else {
+                        setPorts(WORLD_PORTS_BY_COUNTRY[portCountryValue] || []);
+                    }
+                } catch (e) {
+                    setPorts(WORLD_PORTS_BY_COUNTRY[portCountryValue] || []);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            loadPorts();
+        } else {
+            setPorts([]);
+        }
+    }, [portCountryValue]);
 
     // When country is selected
     const handleCountrySelect = (countryName: string) => {
@@ -50,22 +102,23 @@ export function LinkedPortSelector({
             <div style={{ position: "relative" }}>
                 <SearchableDropdown
                     label="Port of Discharge *"
-                    options={MARITIME_COUNTRIES}
+                    options={countries}
                     value={portCountryValue}
                     onSelect={handleCountrySelect}
                     placeholder="Sélectionner un pays..."
                     error={portCountryError}
+                    disabled={disabled}
                 />
             </div>
 
             <div style={{ position: "relative" }}>
                 <SearchableDropdown
                     label="Place of Delivery *"
-                    options={availablePorts}
+                    options={ports}
                     value={portCityValue}
                     onSelect={handlePortSelect}
-                    placeholder={portCountryValue ? "Sélectionner un port..." : "⬅ Choisir d'abord un pays"}
-                    disabled={!portCountryValue}
+                    placeholder={isLoading ? "Chargement..." : (portCountryValue ? "Sélectionner un port..." : "⬅ Choisir d'abord un pays")}
+                    disabled={disabled || !portCountryValue || isLoading}
                     error={portCityError}
                 />
             </div>

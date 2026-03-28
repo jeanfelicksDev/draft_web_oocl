@@ -6,14 +6,14 @@ import * as XLSX from 'xlsx';
 import toast from "react-hot-toast";
 import { FileUp } from "lucide-react";
 
-const TYPE_TC_OPTIONS = ["20DC", "40HC", "40HR", "20OT", "40OT"];
-const PACKAGE_OPTIONS = ["Sac", "Package", "Carton", "Palette"];
+const TYPE_TC_OPTIONS: string[] = [];
+const PACKAGE_OPTIONS: string[] = [];
 
 const containerSchema = yup.object().shape({
     containerNum: yup.string()
         .required("N° Conteneur requis")
         .length(11, "Doit faire 11 caractères")
-        .matches(/^[A-Z]{4}[0-9]{7}$/, "Format: AAAA9999999"),
+        .matches(/^[A-Z]{4}[0-9]{7}$/, "Format: 4 lettres + 7 chiffres (ex: MEDU1234567)"),
     typeTc: yup.string().required("Type TC requis"),
     sealNum: yup.string()
         .required("N° Plomb requis")
@@ -50,11 +50,27 @@ const containerSchema = yup.object().shape({
 
 export function ContainerTable({
     containers,
-    setContainers
+    setContainers,
+    typesTc,
+    packageTypes,
+    disabled = false
 }: {
     containers: any[],
-    setContainers: React.Dispatch<React.SetStateAction<any[]>>
+    setContainers: React.Dispatch<React.SetStateAction<any[]>>,
+    typesTc?: any[],
+    packageTypes?: any[],
+    disabled?: boolean
 }) {
+    const combinedTypeTcOptions = Array.from(new Set([
+        ...TYPE_TC_OPTIONS, 
+        ...(typesTc || []).map(t => t.name)
+    ]));
+
+    const combinedPackageOptions = Array.from(new Set([
+        ...PACKAGE_OPTIONS,
+        ...(packageTypes || []).map(p => p.name)
+    ]));
+
     const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
         resolver: yupResolver(containerSchema),
         defaultValues: {
@@ -76,6 +92,15 @@ export function ContainerTable({
     const fc = (name: string) => {
         const val = (values as any)[name];
         return val && val !== "" ? "input-filled" : "";
+    };
+
+    const handleContainerInput = (e: React.FormEvent<HTMLInputElement>) => {
+        let val = e.currentTarget.value.toUpperCase();
+        let letters = val.slice(0, 4).replace(/[^A-Z]/g, '');
+        let numbers = val.slice(4, 11).replace(/[^0-9]/g, '');
+        const final = letters + numbers;
+        e.currentTarget.value = final;
+        setValue("containerNum", final, { shouldValidate: true });
     };
 
     const onSubmit = (data: any) => {
@@ -181,15 +206,17 @@ export function ContainerTable({
                         accept=".xlsx, .xls" 
                         style={{ display: 'none' }} 
                     />
-                    <button 
-                        type="button" 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="btn-outline"
-                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: '#22c55e', color: '#16a34a' }}
-                    >
-                        <FileUp size={14} />
-                        Importer Excel
-                    </button>
+                    {!disabled && (
+                        <button 
+                            type="button" 
+                            onClick={() => fileInputRef.current?.click()}
+                            className="btn-outline"
+                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: '#22c55e', color: '#16a34a' }}
+                        >
+                            <FileUp size={14} />
+                            Importer Excel
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -231,30 +258,32 @@ export function ContainerTable({
                                     <td>{c.grossWeight}</td>
                                     <td>{c.netWeight ?? '-'}</td>
                                     <td>{c.volume ?? '-'}</td>
-                                    <td style={{ textAlign: 'center' }}>
-                                        <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
-                                            <button 
-                                                type="button" 
-                                                className="btn-remove" 
-                                                title="Modifier"
-                                                onClick={() => editContainer(c)}
-                                                style={{ color: 'var(--primary)', opacity: editingId ? 0.3 : 1 }}
-                                                disabled={!!editingId}
-                                            >
-                                                ✎
-                                            </button>
-                                            <button 
-                                                type="button" 
-                                                className="btn-remove" 
-                                                title="Supprimer"
-                                                onClick={() => removeContainer(c.id)}
-                                                style={{ opacity: editingId ? 0.3 : 1 }}
-                                                disabled={!!editingId}
-                                            >
-                                                &times;
-                                            </button>
-                                        </div>
-                                    </td>
+                                    {!disabled && (
+                                        <td style={{ textAlign: 'center' }}>
+                                            <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
+                                                <button 
+                                                    type="button" 
+                                                    className="btn-remove" 
+                                                    title="Modifier"
+                                                    onClick={() => editContainer(c)}
+                                                    style={{ color: 'var(--primary)', opacity: editingId ? 0.3 : 1 }}
+                                                    disabled={!!editingId}
+                                                >
+                                                    ✎
+                                                </button>
+                                                <button 
+                                                    type="button" 
+                                                    className="btn-remove" 
+                                                    title="Supprimer"
+                                                    onClick={() => removeContainer(c.id)}
+                                                    style={{ opacity: editingId ? 0.3 : 1 }}
+                                                    disabled={!!editingId}
+                                                >
+                                                    &times;
+                                                </button>
+                                            </div>
+                                        </td>
+                                    )}
                                 </tr>
                                 
                                 {editingId === c.id && (
@@ -262,32 +291,30 @@ export function ContainerTable({
                                         <td colSpan={9} style={{ padding: '0.5rem 0.875rem', border: 'none' }}>
                                             <div style={{ 
                                                 display: 'flex', 
-                                                gap: '0.6rem', 
-                                                padding: '0.8rem 1.25rem', 
+                                                gap: '4px', /* 4px = ~1mm */
+                                                padding: '0.6rem 0.5rem', 
                                                 backgroundColor: '#fff5f5', 
-                                                borderRadius: '20px', 
+                                                borderRadius: '12px', 
                                                 border: '1.5px solid #e2e8f0',
                                                 alignItems: 'center',
                                                 animation: 'fadeIn 0.2s ease-out'
                                             }}>
-                                                <input {...register("containerNum")} style={{ borderRadius: '15px', border: errors.containerNum ? '2px solid var(--danger)' : '2px solid #10b981', flex: 2.2, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="N° Conteneur" maxLength={11} />
+                                                <input {...register("containerNum")} onInput={handleContainerInput} style={{ height: '36px', borderRadius: '8px', border: errors.containerNum ? '2px solid var(--danger)' : '2px solid #10b981', flex: 2.2, minWidth: 0, padding: '0.4rem 0.6rem' }} placeholder="AAAA9999999" maxLength={11} />
                                                 
-                                                <input {...register("typeTc")} list="typeTcListEdit" style={{ borderRadius: '15px', border: errors.typeTc ? '2px solid var(--danger)' : '2px solid #10b981', flex: 1, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Type" />
-                                                <datalist id="typeTcListEdit">
-                                                    {TYPE_TC_OPTIONS.map(opt => <option key={opt} value={opt} />)}
-                                                </datalist>
+                                                <select {...register("typeTc")} style={{ height: '36px', borderRadius: '8px', border: errors.typeTc ? '2px solid var(--danger)' : '2px solid #10b981', flex: 1, minWidth: 0, padding: '0.4rem 0.6rem', appearance: 'none' }}>
+                                                    {combinedTypeTcOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                                </select>
 
-                                                <input {...register("sealNum")} style={{ borderRadius: '15px', border: errors.sealNum ? '2px solid var(--danger)' : '2px solid #10b981', flex: 2, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Plomb" maxLength={11} />
-                                                <input {...register("count")} type="number" style={{ borderRadius: '15px', border: errors.count ? '2px solid var(--danger)' : '2px solid #10b981', flex: 0.8, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Qté" onInput={(e) => { if(e.currentTarget.value.length > 4) e.currentTarget.value = e.currentTarget.value.slice(0,4); }} />
+                                                <input {...register("sealNum")} style={{ height: '36px', borderRadius: '8px', border: errors.sealNum ? '2px solid var(--danger)' : '2px solid #10b981', flex: 2, minWidth: 0, padding: '0.4rem 0.6rem' }} placeholder="Plomb" maxLength={11} />
+                                                <input {...register("count")} type="number" style={{ height: '36px', borderRadius: '8px', border: errors.count ? '2px solid var(--danger)' : '2px solid #10b981', flex: 0.8, minWidth: 0, padding: '0.4rem 0.6rem' }} placeholder="Qté" onInput={(e) => { if(e.currentTarget.value.length > 4) e.currentTarget.value = e.currentTarget.value.slice(0,4); }} />
                                                 
-                                                <input {...register("packageType")} list="pckgListEdit" style={{ borderRadius: '15px', border: errors.packageType ? '2px solid var(--danger)' : '2px solid #10b981', flex: 1.2, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Pckg" />
-                                                <datalist id="pckgListEdit">
-                                                    {PACKAGE_OPTIONS.map(opt => <option key={opt} value={opt} />)}
-                                                </datalist>
+                                                <select {...register("packageType")} style={{ height: '36px', borderRadius: '8px', border: errors.packageType ? '2px solid var(--danger)' : '2px solid #10b981', flex: 1.2, minWidth: 0, padding: '0.4rem 0.6rem', appearance: 'none' }}>
+                                                    {combinedPackageOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                                </select>
 
-                                                <input {...register("grossWeight")} type="number" step="0.01" style={{ borderRadius: '15px', border: errors.grossWeight ? '2px solid var(--danger)' : '2px solid #10b981', flex: 1, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Gross" />
-                                                <input {...register("netWeight")} type="number" step="0.01" style={{ borderRadius: '15px', border: '2px solid #94a3b8', flex: 1, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Net" />
-                                                <input {...register("volume")} type="number" step="0.01" style={{ borderRadius: '15px', border: '2px solid #94a3b8', flex: 1, minWidth: 0, padding: '0.5rem 1rem' }} placeholder="Vol" />
+                                                <input {...register("grossWeight")} type="number" step="0.01" style={{ height: '36px', borderRadius: '8px', border: errors.grossWeight ? '2px solid var(--danger)' : '2px solid #10b981', flex: 1, minWidth: 0, padding: '0.4rem 0.6rem' }} placeholder="Gross" />
+                                                <input {...register("netWeight")} type="number" step="0.01" style={{ height: '36px', borderRadius: '8px', border: '2px solid #94a3b8', flex: 1, minWidth: 0, padding: '0.4rem 0.6rem' }} placeholder="Net" />
+                                                <input {...register("volume")} type="number" step="0.01" style={{ height: '36px', borderRadius: '8px', border: '2px solid #94a3b8', flex: 1, minWidth: 0, padding: '0.4rem 0.6rem' }} placeholder="Vol" />
                                                 
                                                 <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
                                                     <button type="button" onClick={handleSubmit(onSubmit)} className="btn-success" style={{ borderRadius: '50%', width: '38px', height: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>✓</button>
@@ -300,17 +327,16 @@ export function ContainerTable({
                             </React.Fragment>
                         ))}
 
-                        {!editingId && (
+                        {!editingId && !disabled && (
                             <tr className="add-container-row">
                                 <td>
-                                    <input {...register("containerNum")} className={fc("containerNum")} placeholder="N° Conteneur" maxLength={11} />
+                                    <input {...register("containerNum")} onInput={handleContainerInput} className={fc("containerNum")} placeholder="AAAA9999999" maxLength={11} />
                                     {errors.containerNum && <span style={{fontSize:'0.6rem', color:'var(--danger)', display:'block'}}>{errors.containerNum.message}</span>}
                                 </td>
                                 <td>
-                                    <input {...register("typeTc")} list="typeTcList" className={fc("typeTc")} placeholder="Type" />
-                                    <datalist id="typeTcList">
-                                        {TYPE_TC_OPTIONS.map(opt => <option key={opt} value={opt} />)}
-                                    </datalist>
+                                    <select {...register("typeTc")} className={fc("typeTc")}>
+                                        {combinedTypeTcOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                    </select>
                                     {errors.typeTc && <span style={{fontSize:'0.6rem', color:'var(--danger)', display:'block'}}>{errors.typeTc.message}</span>}
                                 </td>
                                 <td>
@@ -322,10 +348,9 @@ export function ContainerTable({
                                     {errors.count && <span style={{fontSize:'0.6rem', color:'var(--danger)', display:'block'}}>{errors.count.message}</span>}
                                 </td>
                                 <td>
-                                    <input {...register("packageType")} list="pckgList" className={fc("packageType")} placeholder="Pckg" />
-                                    <datalist id="pckgList">
-                                        {PACKAGE_OPTIONS.map(opt => <option key={opt} value={opt} />)}
-                                    </datalist>
+                                    <select {...register("packageType")} className={fc("packageType")}>
+                                        {combinedPackageOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                    </select>
                                     {errors.packageType && <span style={{fontSize:'0.6rem', color:'var(--danger)', display:'block'}}>{errors.packageType.message}</span>}
                                 </td>
                                 <td>

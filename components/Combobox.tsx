@@ -1,14 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { Plus, Search, ChevronDown, Check, Edit3 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import React from "react";
+import { Plus, Edit3 } from "lucide-react";
 
 interface ComboboxProps {
     label: string;
     items: any[];
-    displayKey: string; // The property name to display from the item object (e.g. 'name')
-    valueKey: string;   // The property name to use as value (e.g. 'id')
+    displayKey: string;
+    valueKey: string;
     value: string;
     onChange: (value: string) => void;
     onAddNew?: () => void;
@@ -19,6 +18,10 @@ interface ComboboxProps {
     multiline?: boolean;
 }
 
+/**
+ * Composant Combobox simplifié (Select standard avec actions)
+ * Remplace l'ancien type Combobox complexe par un Select HTML harmonisé.
+ */
 export function Combobox({
     label,
     items,
@@ -28,219 +31,122 @@ export function Combobox({
     onChange,
     onAddNew,
     onEdit,
-    placeholder = "",
+    placeholder = "Sélectionner...",
     error,
     disabled = false,
     multiline = false,
 }: ComboboxProps) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
-    const wrapperRef = useRef<HTMLDivElement>(null);
-    const searchInputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        if (isOpen && searchInputRef.current) {
-            searchInputRef.current.focus();
-        }
-    }, [isOpen]);
-
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    // Filter items based on search term
     const safeItems = Array.isArray(items) ? items : [];
-    const filteredItems = safeItems.filter((item) =>
-        item?.[displayKey]?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    // Find the currently selected display value
-    const selectedItem = safeItems.find((item) => item[valueKey] === value);
-    const displayValue = selectedItem ? selectedItem[displayKey] : "";
 
     return (
-        <div className="input-group combobox-wrapper" ref={wrapperRef}>
-            <label>{label}</label>
-
-            <div
-                className={cn(
-                    "cursor-pointer",
-                    disabled && "opacity-50 cursor-not-allowed"
-                )}
-                tabIndex={disabled ? -1 : 0}
-                role="combobox"
-                aria-expanded={isOpen}
-                aria-haspopup="listbox"
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    width: '100%',
-                    padding: '0.6rem 1rem',
-                    backgroundColor: displayValue
-                        ? 'rgba(16, 185, 129, 0.05)'
-                        : 'var(--input-bg)',
-                    border: `2px solid ${error ? 'var(--danger)' : isOpen ? 'var(--border-focus)' : displayValue ? '#10b981' : 'var(--border)'}`,
-                    borderRadius: '12px',
-                    color: '#0a1f5c',
-                    fontSize: '1.1rem',
-                    fontWeight: 700,
-                    transition: 'all 0.2s ease-in-out',
-                    textTransform: 'uppercase' as const,
-                    boxShadow: isOpen ? '0 0 0 4px rgba(230, 0, 18, 0.2)' : 'none',
-                    minHeight: multiline ? '100px' : 'auto',
-                    resize: multiline ? 'vertical' : 'none',
-                    overflow: multiline ? 'auto' : 'visible'
-                }}
-                onClick={() => !disabled && setIsOpen(!isOpen)}
-                onKeyDown={(e) => {
-                    if (disabled) return;
-                    if (e.key === "Enter" || e.key === " ") {
-                        setIsOpen(!isOpen);
-                        e.preventDefault();
-                    }
-                    if (e.key === "Escape") {
-                        setIsOpen(false);
-                    }
-                }}
-            >
-                <span style={{
-                    opacity: displayValue ? 1 : 0.5,
-                    whiteSpace: multiline ? 'pre-wrap' : 'nowrap',
-                    overflow: multiline ? 'visible' : 'hidden',
-                    textOverflow: 'ellipsis',
-                    width: '85%',
-                    wordBreak: 'break-word',
-                    lineHeight: '1.4'
-                }}>
-                    {displayValue || placeholder}
-                </span>
-
-                <div style={{ display: "flex", alignItems: "center", gap: "0.2rem" }}>
-                    {value && onEdit && (
-                        <div
-                            onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                            title="Modifier"
-                            style={{ cursor: "pointer", color: "var(--accent-teal)", padding: "0.2rem", display: "flex" }}
-                        >
-                            <Edit3 size={14} />
-                        </div>
-                    )}
-                    {onAddNew && (
-                        <div
-                            onClick={(e) => { e.stopPropagation(); onAddNew(); }}
-                            title="Ajouter nouveau"
-                            style={{ cursor: "pointer", color: "var(--accent-teal)", padding: "0.2rem", display: "flex" }}
-                        >
-                            <Plus size={16} />
-                        </div>
-                    )}
-                    <ChevronDown
-                        size={18}
-                        style={{
-                            color: "var(--border-color)",
-                            transition: "transform 0.2s",
-                            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
-                        }}
-                    />
-                </div>
-            </div>
-
-            {isOpen && (
-                <div className="combobox-dropdown" style={{ position: 'absolute', width: '100%' }}>
-                    {/* Search Input */}
-                    <div style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Search size={16} style={{ color: "var(--text-muted)" }} />
-                        <input
-                            type="text"
-                            ref={searchInputRef}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Rechercher..."
+        <div style={{ width: '100%', marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.45rem', fontSize: '0.85rem', fontWeight: 700, color: 'var(--oocl-blue)' }}>
+                {label}
+            </label>
+            
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ position: 'relative', flex: 1 }}>
+                    {multiline ? (
+                        <textarea
+                            value={safeItems.find(i => i[valueKey] === value)?.[displayKey] || ""}
+                            readOnly
+                            onClick={onEdit}
+                            placeholder={placeholder}
+                            disabled={disabled}
                             style={{
-                                border: 'none',
-                                padding: '0.4rem',
-                                backgroundColor: 'transparent',
                                 width: '100%',
-                                boxShadow: 'none'
+                                padding: '0.6rem 1rem',
+                                borderRadius: '12px',
+                                border: `1.5px solid ${error ? 'var(--danger)' : 'var(--border)'}`,
+                                backgroundColor: value ? 'rgba(16, 185, 129, 0.05)' : 'var(--input-bg)',
+                                color: '#0a1f5c',
+                                fontSize: '1.1rem',
+                                fontWeight: 700,
+                                minHeight: '100px',
+                                cursor: onEdit ? 'pointer' : 'default'
                             }}
-                            onClick={(e) => e.stopPropagation()} // Prevent closing dropdown on input click
                         />
-                    </div>
+                    ) : (
+                        <select
+                            value={value}
+                            onChange={(e) => onChange(e.target.value)}
+                            disabled={disabled}
+                            style={{
+                                width: '100%',
+                                height: '46px',
+                                padding: '0.6rem 2.5rem 0.6rem 1rem',
+                                borderRadius: '12px',
+                                border: `1.5px solid ${error ? 'var(--danger)' : 'var(--border)'}`,
+                                backgroundColor: value ? 'rgba(16, 185, 129, 0.05)' : 'var(--input-bg)',
+                                color: '#0a1f5c',
+                                fontSize: '1.1rem',
+                                fontWeight: 700,
+                                appearance: 'none',
+                                cursor: 'pointer',
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E")`,
+                                backgroundRepeat: 'no-repeat',
+                                backgroundPosition: 'right 1rem center'
+                            }}
+                        >
+                            <option value="">{placeholder}</option>
+                            {safeItems.map((item) => (
+                                <option key={item[valueKey]} value={item[valueKey]}>
+                                    {String(item[displayKey]).toUpperCase()}
+                                </option>
+                            ))}
+                        </select>
+                    )}
+                </div>
 
-                    {/* List of items */}
-                    <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                        {filteredItems.length === 0 ? (
-                            <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                Aucun résultat trouvé
-                            </div>
-                        ) : (
-                            filteredItems.map((item) => (
-                                <div
-                                    key={item[valueKey]}
-                                    className="combobox-item"
-                                    style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        backgroundColor: value === item[valueKey] ? 'rgba(230, 0, 18, 0.1)' : 'transparent',
-                                        color: value === item[valueKey] ? 'var(--primary)' : 'inherit'
-                                    }}
-                                    onClick={() => {
-                                        onChange(item[valueKey]);
-                                        setIsOpen(false);
-                                        setSearchTerm("");
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter" || e.key === " ") {
-                                            onChange(item[valueKey]);
-                                            setIsOpen(false);
-                                            setSearchTerm("");
-                                            e.preventDefault();
-                                        }
-                                    }}
-                                    tabIndex={0}
-                                    role="option"
-                                >
-                                    <span>{item[displayKey]}</span>
-                                    {value === item[valueKey] && <Check size={16} />}
-                                </div>
-                            ))
+                {!disabled && (onAddNew || onEdit) && (
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                        {value && onEdit && (
+                            <button
+                                type="button"
+                                onClick={onEdit}
+                                title="Modifier"
+                                style={{
+                                    width: '38px',
+                                    height: '38px',
+                                    borderRadius: '10px',
+                                    border: '1.5px solid var(--border)',
+                                    backgroundColor: 'white',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    color: 'var(--primary)'
+                                }}
+                            >
+                                <Edit3 size={16} />
+                            </button>
+                        )}
+                        {onAddNew && (
+                            <button
+                                type="button"
+                                onClick={onAddNew}
+                                title="Ajouter"
+                                style={{
+                                    width: '38px',
+                                    height: '38px',
+                                    borderRadius: '10px',
+                                    border: '1.5px solid var(--border)',
+                                    backgroundColor: 'white',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    color: 'var(--success)'
+                                }}
+                            >
+                                <Plus size={20} />
+                            </button>
                         )}
                     </div>
-
-                    {/* Add New Button */}
-                    {onAddNew && (
-                        <div
-                            className="combobox-add-new"
-                            tabIndex={0}
-                            onClick={() => {
-                                setIsOpen(false);
-                                onAddNew();
-                            }}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                    setIsOpen(false);
-                                    onAddNew();
-                                    e.preventDefault();
-                                }
-                            }}
-                        >
-                            <Plus size={18} />
-                            <span>Nouveau {label.replace(/Nom du |Nom /g, '')}</span>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {error && <div className="error-msg">{error}</div>}
+                )}
+            </div>
+            
+            {error && <div style={{ color: 'var(--danger)', fontSize: '0.8rem', marginTop: '4px', fontWeight: 600 }}>{error}</div>}
         </div>
     );
 }

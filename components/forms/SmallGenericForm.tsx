@@ -79,12 +79,29 @@ export function SmallGenericForm({
         }
     };
 
+    const handleDelete = async () => {
+        if (!initialData?.id) return;
+        setIsSubmitting(true);
+        try {
+            const res = await fetch(`${endpoint}/${initialData.id}`, { method: "DELETE" });
+            if (res.ok) {
+                setEntities(entities.filter(e => e.id !== initialData.id));
+                onClose();
+            } else {
+                alert("Erreur lors de la suppression.");
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
         <ModalForm
             title={title}
             isOpen={isOpen}
             onClose={onClose}
             onSubmit={handleSubmit(handleFormSubmit)}
+            onDelete={initialData?.id ? handleDelete : undefined}
             isSubmitting={isSubmitting}
             maxWidth={maxWidth}
         >

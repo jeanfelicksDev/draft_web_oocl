@@ -166,7 +166,7 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
     );
 }
 
-export function ShipperForm({ isOpen, onClose, onSuccess, onDelete, initialData }: { isOpen: boolean, onClose: () => void, onSuccess: (shipper: any) => void, onDelete?: (id: string) => void, initialData?: any }) {
+export function ShipperForm({ title = "", isOpen, onClose, onSuccess, onDelete, initialData }: { title?: string, isOpen: boolean, onClose: () => void, onSuccess: (shipper: any) => void, onDelete?: (id: string) => void, initialData?: any }) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
     const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
@@ -220,7 +220,7 @@ export function ShipperForm({ isOpen, onClose, onSuccess, onDelete, initialData 
 
     return (
         <ModalForm
-            title={initialData ? "Modifier Shipper" : "Nouveau Shipper"}
+            title={title}
             isOpen={isOpen}
             onClose={onClose}
             onSubmit={handleSubmit(handleFormSubmit)}

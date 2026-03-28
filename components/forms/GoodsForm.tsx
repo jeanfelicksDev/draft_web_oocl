@@ -20,6 +20,7 @@ const defaultValues = {
 };
 
 export function GoodsForm({ 
+    title = "",
     isOpen, 
     onClose, 
     onSuccess, 
@@ -29,14 +30,15 @@ export function GoodsForm({
     onAddNewHSCode,
     onEditHSCode
 }: { 
-    isOpen: boolean, 
-    onClose: () => void, 
-    onSuccess: (goods: any) => void, 
-    onDelete?: (id: string) => void, 
-    initialData?: any,
-    hscodes?: any[],
-    onAddNewHSCode?: () => void,
-    onEditHSCode?: (id: string) => void
+    title?: string;
+    isOpen: boolean; 
+    onClose: () => void; 
+    onSuccess: (goods: any) => void; 
+    onDelete?: (id: string) => void; 
+    initialData?: any; 
+    hscodes?: any[]; 
+    onAddNewHSCode?: () => void; 
+    onEditHSCode?: (id: string) => void; 
 }) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -107,7 +109,7 @@ export function GoodsForm({
 
     return (
         <ModalForm
-            title={initialData ? "Modifier Marchandise [V2]" : "Nouvelle Marchandise [V2]"}
+            title={title}
             isOpen={isOpen}
             onClose={onClose}
             onSubmit={handleSubmit(handleFormSubmit)}

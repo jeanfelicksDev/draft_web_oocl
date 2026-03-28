@@ -23,12 +23,15 @@ import toast from "react-hot-toast";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
+import { useAuth } from "./AuthProvider";
 import { ModalForm } from "./ModalForm";
+import { Sidebar } from "./Sidebar";
 import { ShipperForm } from "./forms/ShipperForm";
 import { ConsigneeForm } from "./forms/ConsigneeForm";
 import { GoodsForm } from "./forms/GoodsForm";
 import { HSCodeForm } from "./forms/HSCodeForm";
 import { SmallGenericForm } from "./forms/SmallGenericForm";
+import { AlsoNotifyForm } from "./forms/AlsoNotifyForm";
 import { Combobox } from "./Combobox";
 import { ContainerTable } from "./ContainerTable";
 import { generateBLPDF } from "@/lib/pdfGenerator";
@@ -53,7 +56,11 @@ const blSchema = yup.object().shape({
 });
 
 export default function MainPage() {
-    const { data: session } = useSession();
+    const { user, hasPermission } = useAuth();
+    const canWrite = hasPermission("BL_WRITE");
+    const canDelete = hasPermission("BL_DELETE");
+    const canManageUsers = hasPermission("ADMIN_ACCESS");
+    const canEditRefTables = hasPermission("ADMIN_ACCESS");
 
     const [containers, setContainers] = useState<any[]>([]);
     const [currentBlId, setCurrentBlId] = useState<string | null>(null);
@@ -68,6 +75,8 @@ export default function MainPage() {
     const [hscodes, setHscodes]           = useState<any[]>([]);
     const [isHSCodeModalOpen, setIsHSCodeModalOpen] = useState(false);
     const [typesReleased, setTypesReleased] = useState<any[]>([]);
+    const [typesTc, setTypesTc]             = useState<any[]>([]);
+    const [packageTypes, setPackageTypes]   = useState<any[]>([]);
     const [billOfLadings, setBillOfLadings] = useState<any[]>([]);
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -89,10 +98,10 @@ export default function MainPage() {
     const values = watch();
 
     useEffect(() => {
-        if ((session?.user as any)?.mustChangePassword) {
+        if ((user as any)?.mustChangePassword) {
             setShowChangePasswordModal(true);
         }
-    }, [session]);
+    }, [user]);
 
     const handlePasswordChange = async () => {
         if (newPass.length < 6) return toast.error("6 caractères min.");
@@ -184,7 +193,7 @@ export default function MainPage() {
     /* ─── Initial fetch ─── */
     React.useEffect(() => {
         const fetchAll = async () => {
-            const [s, c, n, a, f, fw, g, t, hs] = await Promise.all([
+            const [s, c, n, a, f, fw, g, t, hs, ttc, pt, bls] = await Promise.all([
                 fetch('/api/shippers').then(r => r.ok ? r.json() : []),
                 fetch('/api/consignees').then(r => r.ok ? r.json() : []),
                 fetch('/api/notify').then(r => r.ok ? r.json() : []),
@@ -194,17 +203,21 @@ export default function MainPage() {
                 fetch('/api/goods').then(r => r.ok ? r.json() : []),
                 fetch('/api/typereleased').then(r => r.ok ? r.json() : []),
                 fetch('/api/hscodes').then(r => r.ok ? r.json() : []),
+                fetch('/api/typetc').then(r => r.ok ? r.json() : []),
+                fetch('/api/packagetypes').then(r => r.ok ? r.json() : []),
+                fetch('/api/billoflading').then(r => r.ok ? r.json() : []),
             ]);
-            if (Array.isArray(s))  setShippers(s);
-            if (Array.isArray(c))  setConsignees(c);
-            if (Array.isArray(n))  setNotifys(n);
-            if (Array.isArray(a))  setAlsoNotifys(a);
-            if (Array.isArray(f))  setFreightBuyers(f);
-            if (Array.isArray(fw)) setForwarders(fw);
-            if (Array.isArray(g))  setGoods(g);
-            if (Array.isArray(t))  setTypesReleased(t);
-            if (Array.isArray(hs)) setHscodes(hs);
-            const bls = await fetch('/api/billoflading').then(r => r.ok ? r.json() : []);
+            if (Array.isArray(s))   setShippers(s);
+            if (Array.isArray(c))   setConsignees(c);
+            if (Array.isArray(n))   setNotifys(n);
+            if (Array.isArray(a))   setAlsoNotifys(a);
+            if (Array.isArray(f))   setFreightBuyers(f);
+            if (Array.isArray(fw))  setForwarders(fw);
+            if (Array.isArray(g))   setGoods(g);
+            if (Array.isArray(t))   setTypesReleased(t);
+            if (Array.isArray(hs))  setHscodes(hs);
+            if (Array.isArray(ttc)) setTypesTc(ttc);
+            if (Array.isArray(pt))  setPackageTypes(pt);
             if (Array.isArray(bls)) setBillOfLadings(bls);
         };
         fetchAll();
@@ -232,7 +245,7 @@ export default function MainPage() {
                 toast.success("Brouillon sauvegardé !");
             } else {
                 const err = await res.json().catch(() => ({}));
-                toast.error(err.error || "Erreur lors de la sauvegarde.");
+                toast.error(`${err.error || "Erreur"} ${err.details ? ": " + err.details : ""}`);
             }
         } catch { toast.error("Erreur de connexion."); }
     };
@@ -290,7 +303,8 @@ export default function MainPage() {
                 const bls = await fetch('/api/billoflading').then(r => r.ok ? r.json() : []);
                 setBillOfLadings(bls);
             } else {
-                toast.error("Erreur lors de l'enregistrement.");
+                const err = await res.json().catch(() => ({}));
+                toast.error(`${err.error || "Erreur"} ${err.details ? ": " + err.details : ""}`);
             }
         } catch { 
             toast.error("Erreur de connexion."); 
@@ -305,69 +319,15 @@ export default function MainPage() {
     return (
         <div className="app-container">
 
-            {/* ──────────── SIDEBAR GAUCHE ──────────── */}
-            <aside className="sidebar">
-                {/* Logo */}
-                <div className="sidebar-logo">
-                    <img src="/logo-oocl.png" alt="OOCL Logo" />
-                </div>
-
-                {/* Navigation */}
-                <nav className="sidebar-nav">
-                    <div className="nav-item active" onClick={handleNewForm} style={{ cursor: "pointer" }}>
-                        <Ship size={19} />
-                        <span>Créer une S.I.</span>
-                    </div>
-
-                    <Link href="/dashboard" passHref style={{ textDecoration: "none" }}>
-                        <div className="nav-item">
-                            <LayoutDashboard size={19} />
-                            <span>Tableau de Bord</span>
-                        </div>
-                    </Link>
-
-                    {(session?.user as any)?.role === "ADMIN" && (
-                        <Link href="/admin/users" passHref style={{ textDecoration: "none" }}>
-                            <div className="nav-item">
-                                <User size={19} />
-                                <span>Gestion Comptes</span>
-                            </div>
-                        </Link>
-                    )}
-                </nav>
-
-                {/* Session info + logout */}
-                <div className="sidebar-footer">
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1rem" }}>
-                        <div style={{
-                            width: 34, height: 34, borderRadius: "50%",
-                            background: "linear-gradient(135deg, var(--primary) 0%, #ff4d5e 100%)",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            color: "white", flexShrink: 0,
-                        }}>
-                            <User size={16} />
-                        </div>
-                        <div style={{ minWidth: 0 }}>
-                            <p className="sidebar-user-name">Connecté en tant que</p>
-                            <p className="sidebar-user-email">{session?.user?.email}</p>
-                        </div>
-                    </div>
-
-                    <button
-                        onClick={() => signOut({ callbackUrl: "/login" })}
-                        className="btn-outline"
-                        style={{ width: "100%", justifyContent: "center", fontSize: "0.82rem" }}
-                    >
-                        <LogOut size={14} />
-                        Se déconnecter
-                    </button>
-                </div>
-            </aside>
+            <Sidebar 
+                onNewForm={handleNewForm} 
+                onAddTypeTc={() => handleAddNew("TYPE_TC")}
+                onAddPackageType={() => handleAddNew("PACKAGE_TYPE")}
+            />
 
             {/* ──────────── MAIN CONTENT ──────────── */}
             <main className="main-content">
                 <div className="main-content-inner">
-                    {/* Header */}
                     <header className="content-header">
                         <div>
                             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
@@ -381,31 +341,37 @@ export default function MainPage() {
 
                         <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
 
-                            <button
-                                type="button"
-                                onClick={handleSaveDraft}
-                                className="btn-outline"
-                                style={{ borderColor: "#d97706", color: "#d97706" }}
-                            >
-                                <Save size={14} />
-                                Brouillon
-                            </button>
+                            {canWrite && (
+                                <button
+                                    type="button"
+                                    onClick={handleSaveDraft}
+                                    className="btn-outline"
+                                    style={{ borderColor: "#d97706", color: "#d97706" }}
+                                >
+                                    <Save size={14} />
+                                    Brouillon
+                                </button>
+                            )}
 
                             {currentBlId && (
                                 <>
-                                    <button type="button" onClick={handleNewForm} className="btn-outline">
-                                        <PlusCircle size={14} />
-                                        Nouveau
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={(e) => handleDeleteBL(currentBlId, getValues("bookingNumber"), e)}
-                                        className="btn-outline"
-                                        style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
-                                    >
-                                        <Trash2 size={14} />
-                                        Supprimer
-                                    </button>
+                                    {canWrite && (
+                                        <button type="button" onClick={handleNewForm} className="btn-outline">
+                                            <PlusCircle size={14} />
+                                            Nouveau
+                                        </button>
+                                    )}
+                                    {canDelete && (
+                                        <button
+                                            type="button"
+                                            onClick={(e) => handleDeleteBL(currentBlId, getValues("bookingNumber"), e)}
+                                            className="btn-outline"
+                                            style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
+                                        >
+                                            <Trash2 size={14} />
+                                            Supprimer
+                                        </button>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -434,6 +400,7 @@ export default function MainPage() {
                                         maxLength={10}
                                         placeholder="ex: 1234567890"
                                         className={fc(values.bookingNumber)}
+                                        disabled={!canWrite}
                                         onKeyDown={(e) => {
                                             const ok = ['Backspace','Delete','Tab','Escape','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'];
                                             if (ok.includes(e.key)) return;
@@ -461,6 +428,7 @@ export default function MainPage() {
                                         maxLength={10}
                                         placeholder="ex: CNTR1234"
                                         className={fc(values.contractNumber)}
+                                        disabled={!canWrite}
                                     />
                                     {errors.contractNumber && <span className="error-msg">{(errors.contractNumber as any).message}</span>}
                                 </div>
@@ -474,9 +442,8 @@ export default function MainPage() {
                                     valueKey="id"
                                     value={values.typeReleasedId}
                                     onChange={(val) => setValue("typeReleasedId", val)}
-                                    onAddNew={() => handleAddNew("TYPE_RELEASED")}
-                                    onEdit={() => handleEdit("TYPE_RELEASED", typesReleased, values.typeReleasedId)}
                                     error={errors.typeReleasedId?.message as string}
+                                    disabled={!canWrite}
                                 />
                             </div>
 
@@ -488,6 +455,7 @@ export default function MainPage() {
                                     onPortCityChange={(name) => setValue("portCityText", name)}
                                     portCountryError={errors.portCountryText?.message as string}
                                     portCityError={errors.portCityText?.message as string}
+                                    disabled={!canWrite}
                                 />
                             </div>
                         </section>
@@ -504,43 +472,49 @@ export default function MainPage() {
                             <div className="grid-2">
                                 <Combobox label="Shipper *" items={shippers} displayKey="name" valueKey="id"
                                     value={values.shipperId} onChange={(val) => setValue("shipperId", val)}
-                                    onAddNew={() => handleAddNew("SHIPPER")}
-                                    onEdit={() => handleEdit("SHIPPER", shippers, values.shipperId)}
-                                    error={errors.shipperId?.message as string} />
+                                    onAddNew={canEditRefTables ? () => handleAddNew("SHIPPER") : undefined}
+                                    onEdit={canEditRefTables ? () => handleEdit("SHIPPER", shippers, values.shipperId) : undefined}
+                                    error={errors.shipperId?.message as string}
+                                    disabled={!canWrite} />
 
                                 <Combobox label="Consignee *" items={consignees} displayKey="name" valueKey="id"
                                     value={values.consigneeId} onChange={(val) => setValue("consigneeId", val)}
-                                    onAddNew={() => handleAddNew("CONSIGNEE")}
-                                    onEdit={() => handleEdit("CONSIGNEE", consignees, values.consigneeId)}
-                                    error={errors.consigneeId?.message as string} />
+                                    onAddNew={canEditRefTables ? () => handleAddNew("CONSIGNEE") : undefined}
+                                    onEdit={canEditRefTables ? () => handleEdit("CONSIGNEE", consignees, values.consigneeId) : undefined}
+                                    error={errors.consigneeId?.message as string}
+                                    disabled={!canWrite} />
                             </div>
 
                             <div className="grid-2" style={{ marginTop: "1.5rem" }}>
                                 <Combobox label="Notify *" items={notifys} displayKey="name" valueKey="id"
                                     value={values.notifyId} onChange={(val) => setValue("notifyId", val)}
-                                    onAddNew={() => handleAddNew("NOTIFY")}
-                                    onEdit={() => handleEdit("NOTIFY", notifys, values.notifyId)}
-                                    error={errors.notifyId?.message as string} />
+                                    onAddNew={canEditRefTables ? () => handleAddNew("NOTIFY") : undefined}
+                                    onEdit={canEditRefTables ? () => handleEdit("NOTIFY", notifys, values.notifyId) : undefined}
+                                    error={errors.notifyId?.message as string}
+                                    disabled={!canWrite} />
 
                                 <Combobox label="Also Notify" items={alsoNotifys} displayKey="description" valueKey="id"
                                     value={values.alsoNotifyId || ""} onChange={(val) => setValue("alsoNotifyId", val)}
-                                    onAddNew={() => handleAddNew("ALSO_NOTIFY")}
-                                    onEdit={() => handleEdit("ALSO_NOTIFY", alsoNotifys, values.alsoNotifyId || "")}
-                                    error={errors.alsoNotifyId?.message as string} />
+                                    onAddNew={canEditRefTables ? () => handleAddNew("ALSO_NOTIFY") : undefined}
+                                    onEdit={canEditRefTables ? () => handleEdit("ALSO_NOTIFY", alsoNotifys, values.alsoNotifyId || "") : undefined}
+                                    error={errors.alsoNotifyId?.message as string}
+                                    disabled={!canWrite} />
                             </div>
 
                             <div className="grid-2" style={{ marginTop: "1.5rem" }}>
                                 <Combobox label="Freight Buyer *" items={freightBuyers} displayKey="name" valueKey="id"
                                     value={values.freightBuyerId} onChange={(val) => setValue("freightBuyerId", val)}
-                                    onAddNew={() => handleAddNew("FREIGHT_BUYER")}
-                                    onEdit={() => handleEdit("FREIGHT_BUYER", freightBuyers, values.freightBuyerId)}
-                                    error={errors.freightBuyerId?.message as string} />
+                                    onAddNew={canEditRefTables ? () => handleAddNew("FREIGHT_BUYER") : undefined}
+                                    onEdit={canEditRefTables ? () => handleEdit("FREIGHT_BUYER", freightBuyers, values.freightBuyerId) : undefined}
+                                    error={errors.freightBuyerId?.message as string}
+                                    disabled={!canWrite} />
 
                                 <Combobox label="Forwarder *" items={forwarders} displayKey="name" valueKey="id"
                                     value={values.forwarderId} onChange={(val) => setValue("forwarderId", val)}
-                                    onAddNew={() => handleAddNew("FORWARDER")}
-                                    onEdit={() => handleEdit("FORWARDER", forwarders, values.forwarderId)}
-                                    error={errors.forwarderId?.message as string} />
+                                    onAddNew={canEditRefTables ? () => handleAddNew("FORWARDER") : undefined}
+                                    onEdit={canEditRefTables ? () => handleEdit("FORWARDER", forwarders, values.forwarderId) : undefined}
+                                    error={errors.forwarderId?.message as string}
+                                    disabled={!canWrite} />
                             </div>
                         </section>
 
@@ -554,18 +528,25 @@ export default function MainPage() {
                             </p>
                             <Combobox label="Description of Goods *" items={goods} displayKey="description" valueKey="id"
                                 value={values.goodsId} onChange={(val) => setValue("goodsId", val)}
-                                onAddNew={() => handleAddNew("GOODS")}
-                                onEdit={() => handleEdit("GOODS", goods, values.goodsId)}
+                                onAddNew={canEditRefTables ? () => handleAddNew("GOODS") : undefined}
+                                onEdit={canEditRefTables ? () => handleEdit("GOODS", goods, values.goodsId) : undefined}
                                 multiline={true}
-                                error={errors.goodsId?.message as string} />
+                                error={errors.goodsId?.message as string}
+                                disabled={!canWrite} />
                         </section>
 
                         {/* ── Conteneurs ── */}
-                        <ContainerTable containers={containers} setContainers={setContainers} />
+                        <ContainerTable 
+                            containers={containers} 
+                            setContainers={setContainers} 
+                            typesTc={typesTc}
+                            packageTypes={packageTypes}
+                            disabled={!canWrite}
+                        />
 
                         {/* ── Bouton FINALISER ── */}
                         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", paddingTop: "0.5rem" }}>
-                            <button type="submit" className="btn-finalize" disabled={isGeneratingPDF}>
+                            <button type="submit" className="btn-finalize" disabled={isGeneratingPDF || !canWrite}>
                                 {isGeneratingPDF ? (
                                     <>
                                         <div className="spinner" style={{ marginRight: "0.5rem" }}></div>
@@ -582,6 +563,7 @@ export default function MainPage() {
 
             {/* ──────────── MODALS ──────────── */}
             <ShipperForm
+                title="Shipper"
                 isOpen={activeModal === "SHIPPER"} onClose={() => setActiveModal(null)}
                 initialData={editingEntity}
                 onSuccess={handleSaveList(setShippers, shippers, "shipperId")}
@@ -612,6 +594,7 @@ export default function MainPage() {
                 onDelete={handleDeleteList(setForwarders, forwarders, "forwarderId")} />
 
             <GoodsForm
+                title="Description of Goods"
                 isOpen={activeModal === "GOODS"} onClose={() => setActiveModal(null)}
                 initialData={editingEntity}
                 hscodes={hscodes}
@@ -624,6 +607,7 @@ export default function MainPage() {
                 onDelete={handleDeleteList(setGoods, goods, "goodsId")} />
 
             <HSCodeForm
+                title="HS Code"
                 isOpen={isHSCodeModalOpen} onClose={() => { setIsHSCodeModalOpen(false); setEditingEntity(null); }}
                 initialData={editingEntity}
                 onSuccess={(item) => {
@@ -639,21 +623,41 @@ export default function MainPage() {
                 }} />
 
             <SmallGenericForm
-                title={editingEntity ? "Modifier Type Released" : "Ajouter Type Released (MBL/HBL…)"}
+                title="Reference Type"
                 isOpen={activeModal === "TYPE_RELEASED"} onClose={() => setActiveModal(null)}
                 endpoint="/api/typereleased" entityName="Type Released"
                 idField="typeReleasedId" entities={typesReleased} setEntities={setTypesReleased}
                 initialData={editingEntity} />
 
             <SmallGenericForm
-                title={editingEntity ? "Modifier Also Notify" : "Ajouter Also Notify"}
+                title=""
+                isOpen={activeModal === "TYPE_TC"} onClose={() => setActiveModal(null)}
+                endpoint="/api/typetc" entityName="Type de Conteneur"
+                idField="typeTcId" entities={typesTc} setEntities={setTypesTc}
+                initialData={editingEntity} />
+
+            <AlsoNotifyForm
+                title="Also Notify"
                 isOpen={activeModal === "ALSO_NOTIFY"} onClose={() => setActiveModal(null)}
-                endpoint="/api/alsonotify" entityName="Description (Also Notify)"
-                idField="alsoNotifyId" entities={alsoNotifys} setEntities={setAlsoNotifys}
-                initialData={editingEntity} isTextArea={true} fieldName="description"
+                initialData={editingEntity}
+                onSuccess={(saved) => {
+                    const isEditing = !!editingEntity;
+                    if (isEditing) {
+                        setAlsoNotifys(alsoNotifys.map(e => e.id === saved.id ? saved : e));
+                    } else {
+                        setAlsoNotifys([...alsoNotifys, saved]);
+                    }
+                    setActiveModal(null);
+                }}
                 maxWidth="800px" />
 
-            {/* Modal de changement de mot de passe obligatoire */}
+            <SmallGenericForm
+                title=""
+                isOpen={activeModal === "PACKAGE_TYPE"} onClose={() => setActiveModal(null)}
+                endpoint="/api/packagetypes" entityName="Type de Package"
+                idField="packageTypeId" entities={packageTypes} setEntities={setPackageTypes}
+                initialData={editingEntity} />
+
             {showChangePasswordModal && (
                 <div className="modal-overlay" style={{ zIndex: 9999 }}>
                     <div className="modal-content" style={{ maxWidth: "400px", textAlign: "center" }}>
@@ -734,22 +738,24 @@ export default function MainPage() {
                                             ? <span className="badge-draft">⏳ En traitement</span>
                                             : <span className="badge-validated">✓ Terminé</span>}
 
-                                        <button
-                                            type="button"
-                                            title="Supprimer ce BL"
-                                            onClick={(e) => handleDeleteBL(bl.id, bl.bookingNumber, e)}
-                                            style={{
-                                                background: "none", border: "none",
-                                                color: "var(--danger)", cursor: "pointer",
-                                                padding: "0.25rem", borderRadius: "6px",
-                                                display: "flex", alignItems: "center",
-                                                transition: "background 0.15s"
-                                            }}
-                                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(239,68,68,0.1)")}
-                                            onMouseLeave={e => (e.currentTarget.style.background = "none")}
-                                        >
-                                            <Trash2 size={13} />
-                                        </button>
+                                        {canDelete && (
+                                            <button
+                                                type="button"
+                                                title="Supprimer ce BL"
+                                                onClick={(e) => handleDeleteBL(bl.id, bl.bookingNumber, e)}
+                                                style={{
+                                                    background: "none", border: "none",
+                                                    color: "var(--danger)", cursor: "pointer",
+                                                    padding: "0.25rem", borderRadius: "6px",
+                                                    display: "flex", alignItems: "center",
+                                                    transition: "background 0.15s"
+                                                }}
+                                                onMouseEnter={e => (e.currentTarget.style.background = "rgba(239,68,68,0.1)")}
+                                                onMouseLeave={e => (e.currentTarget.style.background = "none")}
+                                            >
+                                                <Trash2 size={13} />
+                                            </button>
+                                         )}
                                     </div>
                                 </div>
                             );

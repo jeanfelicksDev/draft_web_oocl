@@ -21,6 +21,7 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const userId = await getUserId();
+        console.log("POST /api/typereleased, userId from session:", userId);
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
         const data = await request.json();
