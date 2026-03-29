@@ -251,6 +251,26 @@ export default function MainPage() {
             toast.error("Le numéro de booking est requis (10 chiffres).");
             return;
         }
+
+        // Validation stricte des conteneurs même pour les brouillons
+        if (containers.length === 0) {
+            toast.error("Veuillez ajouter au moins un conteneur avant de sauvegarder.");
+            return;
+        }
+
+        const invalidContainers = containers.filter(c => 
+            !c.containerNum || 
+            !c.typeTc || 
+            !c.sealNum || 
+            !c.count || 
+            !c.packageType || 
+            !c.grossWeight
+        );
+
+        if (invalidContainers.length > 0) {
+            toast.error("Certains conteneurs dans la liste sont incomplets. Veuillez vérifier les champs obligatoires.");
+            return;
+        }
         try {
             const url = currentBlId ? `/api/billoflading/${currentBlId}` : "/api/billoflading";
             const res = await fetch(url, {
