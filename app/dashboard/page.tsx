@@ -460,7 +460,7 @@ export default function DashboardPage() {
                                             </div>
                                         </div>
 
-                                        <div style={{ width: "100%", height: 380 }}>
+                                        <div style={{ width: "100%", height: 320 }}>
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <LineChart data={chartData} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                                                     <CartesianGrid strokeDasharray="3 3" vertical={false}
