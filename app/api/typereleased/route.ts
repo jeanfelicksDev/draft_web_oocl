@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserId } from "@/lib/auth-utils";
+import { getUserId, isAdmin } from "@/lib/auth-utils";
 
 export async function GET() {
     try {
         const userId = await getUserId();
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+        const { getAdminUserId } = await import("@/lib/auth-utils");
+        const adminId = await getAdminUserId();
+
+        // Tout le monde voit la liste officielle de l'admin
         const list = await prisma.typeReleased.findMany({
-            where: { userId },
+            where: { userId: adminId },
             orderBy: { name: "asc" },
         });
         return NextResponse.json(list);
@@ -21,8 +25,12 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const userId = await getUserId();
-        console.log("POST /api/typereleased, userId from session:", userId);
-        if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        const userIsAdmin = await isAdmin();
+        
+        // SEUL L'ADMIN PEUT CRÉER DES TYPES DE RELEASE
+        if (!userId || !userIsAdmin) {
+            return NextResponse.json({ error: "Seul l'administrateur peut créer des types de release" }, { status: 403 });
+        }
 
         const data = await request.json();
         const newItem = await prisma.typeReleased.create({

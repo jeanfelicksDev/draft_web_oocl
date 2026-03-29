@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { auth } from '@/auth';
+import { getUserId, isAdmin, getAdminUserId } from '@/lib/auth-utils';
 
 export async function GET(req: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
-        }
+        const userId = await getUserId();
+        if (!userId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
+        const adminId = await getAdminUserId();
+        
+        // Liste globale admin
         const items = await prisma.packageType.findMany({
-            where: { userId: session.user.id },
+            where: { userId: adminId },
             orderBy: { name: 'asc' },
         });
 
@@ -23,9 +24,11 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+        const userId = await getUserId();
+        const userIsAdmin = await isAdmin();
+        
+        if (!userId || !userIsAdmin) {
+            return NextResponse.json({ error: 'Seul l\'administrateur peut créer des types d\'emballage' }, { status: 403 });
         }
 
         const body = await req.json();
@@ -38,7 +41,7 @@ export async function POST(req: Request) {
         const item = await prisma.packageType.create({
             data: {
                 name,
-                userId: session.user.id,
+                userId: userId,
             },
         });
 
