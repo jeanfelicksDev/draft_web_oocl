@@ -14,18 +14,11 @@ export async function GET(request: Request) {
 
     if (!bookingNumber) {
         try {
-            let whereClause: any = userIsAdmin ? {} : { userId };
-            
-            // If admin wants to filter by a specific user
-            if (userIsAdmin && filterUserId) {
-                whereClause = { userId: filterUserId };
-            }
-
             const allBLs = await prisma.billOfLading.findMany({
-                where: whereClause,
+                where: { userId },
                 orderBy: { createdAt: 'desc' },
-                include: { user: true }, // Include user info for admin view
-                take: 100 // Increased limit
+                include: { user: true },
+                take: 100
             });
             return NextResponse.json(allBLs);
         } catch (error) {
