@@ -52,8 +52,8 @@ const blSchema = yup.object().shape({
     alsoNotifyId: yup.string().nullable(),
     forwarderId: yup.string().required("Forwarder requis"),
     freightBuyerId: yup.string().required("Freight Buyer requis"),
-    descriptionGoods: yup.string().required("Nature de la marchandise requise"),
-    goodsId: yup.string().required("Nature de la marchandise requise"),
+    descriptionGoods: yup.string().required("Description des marchandises requise"),
+    goodsId: yup.string().nullable(),
     hsCode: yup.string().nullable(),
     vesselId: yup.string().required("Navire requis"),
     voyageId: yup.string().required("Voyage requis"),
@@ -697,32 +697,77 @@ export default function MainPage() {
 
                         {/* ── Section : Marchandises ── */}
                         <section>
-                            <p className="form-section-title">
-                                <Ship size={12} />
-                                Marchandises
-                            </p>
-                            <div style={{ display: "flex", flexDirection: "column" }}>
-                                <Combobox 
-                                    label="Nature de la marchandise *" 
-                                    items={goods} 
-                                    displayKey="description" 
-                                    valueKey="id"
-                                    value={values.goodsId || ""} 
-                                    onChange={(val) => {
-                                        setValue("goodsId", val);
-                                        const selected = goods.find(g => g.id === val);
-                                        if (selected) {
-                                            setValue("descriptionGoods", selected.description);
-                                            setValue("hsCode", selected.hsCode);
-                                        }
-                                    }}
-                                    onAddNew={canEditRefTables ? () => handleAddNew("GOODS") : undefined}
-                                    onEdit={canEditRefTables ? () => handleEdit("GOODS", goods, values.goodsId || "") : undefined}
-                                    error={errors.goodsId?.message as string}
-                                    isDraft={goods.find(g => g.id === values.goodsId)?.saveStatus === "DRAFT"}
-                                    disabled={!canWrite}
-                                    multiline={true}
-                                />
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
+                                <Ship size={14} style={{ color: "var(--primary)" }} />
+                                <p className="form-section-title" style={{ margin: 0 }}>Description des marchandises</p>
+                            </div>
+                            
+                            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                                {/* Bibliothèque des favoris (Pré-remplissage) */}
+                                <div style={{ background: "rgba(230, 0, 18, 0.03)", padding: "1rem", borderRadius: "12px", border: "1px dashed rgba(230, 0, 18, 0.2)" }}>
+                                    <Combobox 
+                                        label="Bibliothèque / Favoris (Optionnel - pour pré-remplir)" 
+                                        items={goods} 
+                                        displayKey="description" 
+                                        valueKey="id"
+                                        value={values.goodsId || ""} 
+                                        onChange={(val) => {
+                                            setValue("goodsId", val);
+                                            const selected = goods.find(g => g.id === val);
+                                            if (selected) {
+                                                setValue("descriptionGoods", selected.description);
+                                                setValue("hsCode", selected.hsCode);
+                                            }
+                                        }}
+                                        onAddNew={canEditRefTables ? () => handleAddNew("GOODS") : undefined}
+                                        onEdit={canEditRefTables ? () => handleEdit("GOODS", goods, values.goodsId || "") : undefined}
+                                        error={errors.goodsId?.message as string}
+                                        isDraft={goods.find(g => g.id === values.goodsId)?.saveStatus === "DRAFT"}
+                                        disabled={!canWrite}
+                                        multiline={false}
+                                    />
+                                    <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>
+                                        Utilisez ce menu pour charger une description existante, ou saisissez directement ci-dessous.
+                                    </p>
+                                </div>
+
+                                {/* Saisie Libre */}
+                                <div style={{ display: "grid", gridTemplateColumns: "3fr 1fr", gap: "1.5rem" }}>
+                                    <div>
+                                        <label>Nature des marchandises (Texte libre) *</label>
+                                        <textarea
+                                            {...register("descriptionGoods")}
+                                            placeholder="Description détaillée des marchandises..."
+                                            rows={6}
+                                            style={{ 
+                                                width: "100%", 
+                                                minHeight: "120px",
+                                                resize: "vertical",
+                                                padding: "0.75rem",
+                                                borderRadius: "12px",
+                                                border: "2px solid #e2e8f0",
+                                                fontFamily: "inherit",
+                                                fontSize: "0.95rem"
+                                            }}
+                                            className={fc(values.descriptionGoods)}
+                                            disabled={!canWrite}
+                                        />
+                                        {errors.descriptionGoods && <span className="error-msg">{(errors.descriptionGoods as any).message}</span>}
+                                    </div>
+                                    <div>
+                                        <label>Code HS (Optionnel)</label>
+                                        <input
+                                            {...register("hsCode")}
+                                            placeholder="Ex: 8471.30"
+                                            className={fc(values.hsCode)}
+                                            disabled={!canWrite}
+                                        />
+                                        {errors.hsCode && <span className="error-msg">{(errors.hsCode as any).message}</span>}
+                                        <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>
+                                            Code douanier harmonisé.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </section>
 
