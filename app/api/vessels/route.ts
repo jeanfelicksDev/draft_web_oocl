@@ -19,7 +19,17 @@ export async function GET() {
             include: { voyages: true },
             orderBy: { name: 'asc' }
         });
-        return NextResponse.json(vessels);
+
+        // Déduplication par nom (priorité à la première occurrence trouvée)
+        const uniqueVessels = Array.from(
+            vessels.reduce((map, vessel) => {
+                const nameKey = vessel.name.trim().toUpperCase();
+                if (!map.has(nameKey)) map.set(nameKey, vessel);
+                return map;
+            }, new Map()).values()
+        );
+
+        return NextResponse.json(uniqueVessels);
     } catch (error) {
         return NextResponse.json({ error: "Failed to fetch vessels" }, { status: 500 });
     }
