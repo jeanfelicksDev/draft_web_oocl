@@ -72,6 +72,7 @@ export function ContainerTable({
     ]));
 
     const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
+        mode: "onBlur",
         resolver: yupResolver(containerSchema),
         defaultValues: {
             containerNum: "",
@@ -100,7 +101,7 @@ export function ContainerTable({
         let numbers = val.slice(4, 11).replace(/[^0-9]/g, '');
         const final = letters + numbers;
         e.currentTarget.value = final;
-        setValue("containerNum", final, { shouldValidate: true });
+        setValue("containerNum", final);
     };
 
     const onSubmit = (data: any) => {
