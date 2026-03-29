@@ -154,15 +154,16 @@ export async function GET(request: Request) {
 
         // Fetch available HS codes/goods for filter
         // Only if not already filtering by a specific one (or always to populate the dropdown)
-        const goodsForFilter = await prisma.goods.findMany({
+        // Fetch available HS codes/goods for filter from the official HSCode table
+        const hscodesForFilter = await prisma.hSCode.findMany({
             where: isAdmin && targetUserId ? { userId: targetUserId } : (isAdmin ? {} : { userId }),
-            select: { hsCode: true, description: true },
-            distinct: ['hsCode']
+            select: { code: true, description: true },
+            orderBy: { code: 'asc' }
         });
-        const hsCodeList = goodsForFilter.map((g: any) => ({
-            id: g.hsCode,
-            name: g.description ? `${g.hsCode} - ${g.description}` : g.hsCode
-        })).sort((a, b) => a.id.localeCompare(b.id));
+        const hsCodeList = hscodesForFilter.map((h: any) => ({
+            id: h.code,
+            name: h.description ? `${h.code} - ${h.description}` : h.code
+        }));
 
         // If Admin, also provide list of users/companies for the filter
         let companies: any[] = [];
