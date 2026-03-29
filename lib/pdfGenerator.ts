@@ -165,13 +165,13 @@ export function generateBLPDF(data: any, preview: boolean = true) {
     // Description Goods Box (Dynamic Right)
     const descX = 110;
     const descY = rightY;
-    const descriptionGoods = data.descriptionGoods || data.goods?.description || "";
+    const descriptionGoods = data.goods?.description || "";
     
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
     const gLines = doc.splitTextToSize(descriptionGoods, boxWidth - 4);
     const textH = gLines.length * 4;
-    const hs = data.hsCode || data.goods?.hsCode || "";
+    const hs = data.goods?.hsCode || "";
     const decl = data.goods?.declNo || data.declNo || "";
     const codeH = (hs || decl) ? 10 : 0;
     const hGoods = Math.max(45, textH + codeH + 12);
