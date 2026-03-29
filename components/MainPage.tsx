@@ -62,7 +62,7 @@ export default function MainPage() {
     const canWrite = hasPermission("BL_WRITE");
     const canDelete = hasPermission("BL_DELETE");
     const canManageUsers = hasPermission("ADMIN_ACCESS");
-    const canEditRefTables = hasPermission("ADMIN_ACCESS");
+    const canEditRefTables = hasPermission("BL_WRITE"); // Les clients peuvent aussi gérer leurs partenaires
 
     const [containers, setContainers] = useState<any[]>([]);
     const [currentBlId, setCurrentBlId] = useState<string | null>(null);
