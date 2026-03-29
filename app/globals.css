@@ -852,10 +852,10 @@ tr:hover td {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 800;
   padding: 0.2rem 0.65rem;
-  border-radius: 9999px;
+  border-radius: 8px;
   background: #ecfdf5;
   color: #059669;
   border: 1px solid #a7f3d0;
@@ -867,10 +867,10 @@ tr:hover td {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 800;
   padding: 0.2rem 0.65rem;
-  border-radius: 9999px;
+  border-radius: 8px;
   background: #fffbeb;
   color: #d97706;
   border: 1px solid #fde68a;

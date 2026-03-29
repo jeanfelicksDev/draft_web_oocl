@@ -2,20 +2,62 @@
 
 import React from "react";
 import { ModalForm } from "../ModalForm";
-import { useForm } from "react-hook-form";
 import * as yup from "yup";
+import { countryRequirements, cityRequirements } from "../../lib/constants";
+import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
+
+import { SearchableDropdown } from "../SearchableDropdown";
+import { MARITIME_COUNTRIES, WORLD_PORTS_BY_COUNTRY } from "../../lib/world-ports-data";
 
 const schema = yup.object().shape({
     name: yup.string().required("Le nom est requis"),
-    description: yup.string().required("La description est requise"),
+    address: yup.string().required("L'adresse est requise"),
+    country: yup.string().required("Le pays est requis"),
+    city: yup.string().required("La ville est requise"),
+    phone: yup.string().required("Le téléphone est requis"),
+    email: yup.string().email("Email invalide").required("L'email est requis"),
+    vat: yup.string().nullable().when(["country", "city"], {
+        is: (country: string, city: string) => countryRequirements[country]?.includes("VAT") || cityRequirements[city]?.includes("VAT"),
+        then: (s: any) => s.required("Le N°VAT est requis pour cette destination."),
+        otherwise: (s: any) => s.nullable(),
+    }),
+    eori: yup.string().nullable().when(["country", "city"], {
+        is: (country: string, city: string) => countryRequirements[country]?.includes("EORI") || cityRequirements[city]?.includes("EORI"),
+        then: (s: any) => s.required("Le N°EORI est requis pour cette destination."),
+        otherwise: (s: any) => s.nullable(),
+    }),
+    bin: yup.string().nullable().when(["country", "city"], {
+        is: (country: string, city: string) => countryRequirements[country]?.includes("BIN") || cityRequirements[city]?.includes("BIN"),
+        then: (s: any) => s.required("Le BIN est requis pour cette destination."),
+        otherwise: (s: any) => s.nullable(),
+    }),
+    usci: yup.string().nullable().when(["country", "city"], {
+        is: (country: string, city: string) => countryRequirements[country]?.includes("USCI") || cityRequirements[city]?.includes("USCI"),
+        then: (s: any) => s.required("L'USCI est requis pour cette destination."),
+        otherwise: (s: any) => s.nullable(),
+    }),
 });
+
+const defaultValues = {
+    name: "",
+    address: "",
+    country: "",
+    city: "",
+    phone: "",
+    email: "",
+    vat: "",
+    eori: "",
+    bin: "",
+    usci: "",
+};
 
 export function AlsoNotifyForm({
     title,
     isOpen,
     onClose,
     onSuccess,
+    onDelete,
     initialData,
     maxWidth = "800px"
 }: {
@@ -23,21 +65,38 @@ export function AlsoNotifyForm({
     isOpen: boolean;
     onClose: () => void;
     onSuccess: (item: any) => void;
+    onDelete?: (id: string) => void;
     initialData?: any;
     maxWidth?: string;
 }) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
         resolver: yupResolver(schema),
-        defaultValues: initialData || { name: "ALSO NOTIFY", description: "" },
+        defaultValues: initialData ? { ...defaultValues, ...initialData } : defaultValues,
     });
+
+    const country = watch("country");
+    const city = watch("city");
+
+    const availablePorts = country ? (WORLD_PORTS_BY_COUNTRY[country] || []) : [];
+
+    const isNeeded = (field: string) => {
+        return countryRequirements[country]?.includes(field) || cityRequirements[city]?.includes(field);
+    };
 
     React.useEffect(() => {
         if (isOpen) {
-            reset(initialData || { name: "ALSO NOTIFY", description: "" });
+            reset(initialData ? { ...defaultValues, ...initialData } : defaultValues);
         }
     }, [isOpen, initialData, reset]);
+
+    React.useEffect(() => {
+        if (!isNeeded("VAT")) setValue("vat", "");
+        if (!isNeeded("EORI")) setValue("eori", "");
+        if (!isNeeded("BIN")) setValue("bin", "");
+        if (!isNeeded("USCI")) setValue("usci", "");
+    }, [country, city, setValue]);
 
     const handleFormSubmit = async (data: any) => {
         setIsSubmitting(true);
@@ -47,7 +106,7 @@ export function AlsoNotifyForm({
             const res = await fetch(url, {
                 method: isEditing ? "PUT" : "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
+                body: JSON.stringify({ ...data, saveStatus: "VALIDATED" }),
             });
 
             if (res.ok) {
@@ -62,27 +121,153 @@ export function AlsoNotifyForm({
         }
     };
 
+    const handleSaveAsDraft = async () => {
+        const data = watch();
+        if (!data.name) {
+            alert("Le nom est obligatoire même pour un brouillon.");
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            const isEditing = !!initialData?.id;
+            const url = isEditing ? `/api/alsonotify/${initialData.id}` : "/api/alsonotify";
+            const res = await fetch(url, {
+                method: isEditing ? "PUT" : "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ...data, saveStatus: "DRAFT" }),
+            });
+
+            if (res.ok) {
+                const saved = await res.json();
+                onSuccess(saved);
+                onClose();
+            } else {
+                alert("Erreur lors de l'enregistrement du brouillon.");
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!initialData?.id || !onDelete) return;
+        setIsSubmitting(true);
+        try {
+            const url = `/api/alsonotify/${initialData.id}`;
+            const res = await fetch(url, { method: "DELETE" });
+            if (res.ok) {
+                onDelete(initialData.id);
+                onClose();
+            } else {
+                alert("Erreur lors de la suppression.");
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
         <ModalForm
-            title={title}
+            title={initialData ? `Modifier Also Notify` : title}
             isOpen={isOpen}
             onClose={onClose}
             onSubmit={handleSubmit(handleFormSubmit)}
+            onSaveDraft={handleSaveAsDraft}
+            onDelete={initialData && onDelete ? handleDelete : undefined}
             isSubmitting={isSubmitting}
             maxWidth={maxWidth}
         >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div>
-                    <label style={{ fontWeight: 700, color: 'var(--oocl-blue)', marginBottom: '0.4rem', display: 'block' }}>Also Notify *</label>
-                    <input {...register("name")} placeholder="ex: Nom de l'entité" />
+                    <label>Also Notify *</label>
+                    <input {...register("name")} placeholder="Nom du tiers..." />
                     {errors.name && <span className="error-msg">{errors.name.message as string}</span>}
                 </div>
-                
+
                 <div>
-                    <label style={{ fontWeight: 700, color: 'var(--oocl-blue)', marginBottom: '0.4rem', display: 'block' }}>Description (Also Notify) *</label>
-                    <textarea {...register("description")} rows={6} placeholder="Détails de l'adresse, contact, etc." />
-                    {errors.description && <span className="error-msg">{errors.description.message as string}</span>}
+                    <label>Adresse *</label>
+                    <textarea {...register("address")} rows={3} placeholder="Adresse complète..." />
+                    {errors.address && <span className="error-msg">{errors.address.message as string}</span>}
                 </div>
+
+                <div className="grid-2">
+                    <div>
+                        <SearchableDropdown
+                            label="Pays *"
+                            options={MARITIME_COUNTRIES}
+                            value={country}
+                            onSelect={(val) => {
+                                setValue("country", val);
+                                setValue("city", "");
+                            }}
+                            placeholder="Sélectionner un pays..."
+                            error={errors.country?.message as string}
+                        />
+                    </div>
+                    <div>
+                        <SearchableDropdown
+                            label="Ville *"
+                            options={availablePorts}
+                            value={city}
+                            onSelect={(val) => setValue("city", val)}
+                            placeholder={country ? "Sélectionner une ville..." : "⬅ Choisir d'abord un pays"}
+                            disabled={!country}
+                            error={errors.city?.message as string}
+                        />
+                    </div>
+                </div>
+
+                <div className="grid-2">
+                    <div>
+                        <label>Téléphone *</label>
+                        <input {...register("phone")} type="tel" placeholder="+225..." />
+                        {errors.phone && <span className="error-msg">{errors.phone.message as string}</span>}
+                    </div>
+                    <div>
+                        <label>Email *</label>
+                        <input {...register("email")} type="email" placeholder="email@exemple.com" />
+                        {errors.email && <span className="error-msg">{errors.email.message as string}</span>}
+                    </div>
+                </div>
+
+                {(isNeeded("VAT") || isNeeded("EORI") || isNeeded("BIN") || isNeeded("USCI")) && (
+                    <>
+                        <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
+                        <h4 style={{ color: 'var(--text-muted)' }}>Informations spécifiques à la destination</h4>
+                        <div className="grid-2">
+                            {isNeeded("VAT") && (
+                                <div>
+                                    <label>N°VAT *</label>
+                                    <input {...register("vat")} />
+                                    {errors.vat && <span className="error-msg">{errors.vat.message as string}</span>}
+                                </div>
+                            )}
+                            {isNeeded("EORI") && (
+                                <div>
+                                    <label>N°EORI *</label>
+                                    <input {...register("eori")} />
+                                    {errors.eori && <span className="error-msg">{errors.eori.message as string}</span>}
+                                </div>
+                            )}
+                        </div>
+                        <div className="grid-2">
+                            {isNeeded("BIN") && (
+                                <div>
+                                    <label>BIN *</label>
+                                    <input {...register("bin")} />
+                                    {errors.bin && <span className="error-msg">{errors.bin.message as string}</span>}
+                                </div>
+                            )}
+                            {isNeeded("USCI") && (
+                                <div>
+                                    <label>USCI *</label>
+                                    <input {...register("usci")} />
+                                    {errors.usci && <span className="error-msg">{errors.usci.message as string}</span>}
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
             </div>
         </ModalForm>
     );

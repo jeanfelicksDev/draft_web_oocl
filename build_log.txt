@@ -1,0 +1,93 @@
+
+> draft-oocl-online-v2@0.1.0 build
+> next build
+
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\HP\AntiGravity\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\HP\AntiGravity\draft_web_oocl\package-lock.json
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 9.0s
+  Running TypeScript ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/42) ...
+  Generating static pages using 11 workers (10/42) 
+  Generating static pages using 11 workers (20/42) 
+  Generating static pages using 11 workers (31/42) 
+✓ Generating static pages using 11 workers (42/42) in 677.4ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /admin/ports
+├ ○ /admin/references
+├ ○ /admin/users
+├ ○ /admin/vessels
+├ ƒ /api/admin/global-countries
+├ ƒ /api/admin/global-ports
+├ ƒ /api/admin/global-ports/[id]
+├ ƒ /api/admin/users
+├ ƒ /api/admin/users/[id]
+├ ƒ /api/admin/users/[id]/authorize
+├ ƒ /api/alsonotify
+├ ƒ /api/alsonotify/[id]
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/auth/change-password
+├ ƒ /api/auth/forgot-password
+├ ƒ /api/auth/register
+├ ƒ /api/auth/reset-password
+├ ƒ /api/billoflading
+├ ƒ /api/billoflading/[id]
+├ ƒ /api/cities
+├ ƒ /api/cities/[id]
+├ ƒ /api/cities/findorcreate
+├ ƒ /api/consignees
+├ ƒ /api/consignees/[id]
+├ ƒ /api/dashboard/stats
+├ ƒ /api/forwarders
+├ ƒ /api/forwarders/[id]
+├ ƒ /api/freightbuyers
+├ ƒ /api/freightbuyers/[id]
+├ ƒ /api/globals/countries
+├ ƒ /api/globals/ports
+├ ƒ /api/goods
+├ ƒ /api/goods/[id]
+├ ƒ /api/hscodes
+├ ƒ /api/hscodes/[id]
+├ ƒ /api/notify
+├ ƒ /api/notify/[id]
+├ ƒ /api/packagetypes
+├ ƒ /api/packagetypes/[id]
+├ ƒ /api/ports
+├ ƒ /api/ports/[id]
+├ ƒ /api/ports/findorcreate
+├ ƒ /api/save-to-desktop
+├ ƒ /api/shippers
+├ ƒ /api/shippers/[id]
+├ ƒ /api/typereleased
+├ ƒ /api/typereleased/[id]
+├ ƒ /api/typetc
+├ ƒ /api/typetc/[id]
+├ ƒ /api/vessels
+├ ƒ /api/vessels/[id]
+├ ƒ /api/voyages
+├ ƒ /api/voyages/[id]
+├ ○ /dashboard
+├ ○ /forgot-password
+├ ○ /login
+├ ○ /register
+└ ○ /reset-password
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

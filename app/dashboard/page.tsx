@@ -23,6 +23,9 @@ export default function DashboardPage() {
     const [isAdmin, setIsAdmin]       = useState(false);
     const [isLoading, setIsLoading]   = useState(true);
     const [fetchError, setFetchError] = useState<string | null>(null);
+    const [activeTab, setActiveTab]   = useState("stats"); // stats or vessels
+    const [vessels, setVessels]       = useState<any[]>([]);
+    const [isVesselsLoading, setIsVesselsLoading] = useState(false);
 
     const [startDate, setStartDate]             = useState("");
     const [endDate, setEndDate]                 = useState("");
@@ -30,12 +33,16 @@ export default function DashboardPage() {
     const [selectedHsCode, setSelectedHsCode]       = useState("");
     const [hsCodes, setHsCodes]                     = useState<any[]>([]);
     const [selectedYear, setSelectedYear]           = useState(new Date().getFullYear().toString());
+    const [selectedMonth, setSelectedMonth]         = useState("");
+
+    const isDateRange = !!(startDate || endDate);
 
     const fetchStats = async () => {
         setIsLoading(true);
         setFetchError(null);
         try {
             let url = `/api/dashboard/stats?year=${selectedYear}`;
+            if (selectedMonth)     url += `&month=${selectedMonth}`;
             if (startDate)         url += `&startDate=${startDate}`;
             if (endDate)           url += `&endDate=${endDate}`;
             if (selectedCompanyId) url += `&companyId=${selectedCompanyId}`;
@@ -59,9 +66,27 @@ export default function DashboardPage() {
         }
     };
 
+    const fetchVessels = async () => {
+        setIsVesselsLoading(true);
+        try {
+            const res = await fetch("/api/dashboard/vessels");
+            if (res.ok) {
+                const data = await res.json();
+                setVessels(data);
+            }
+        } catch (error) {
+            console.error("Fetch vessels error:", error);
+        } finally {
+            setIsVesselsLoading(false);
+        }
+    };
+
     useEffect(() => {
-        if (status === "authenticated") fetchStats();
-    }, [status, startDate, endDate, selectedCompanyId, selectedHsCode, selectedYear]);
+        if (status === "authenticated") {
+            fetchStats();
+            fetchVessels();
+        }
+    }, [status, startDate, endDate, selectedCompanyId, selectedHsCode, selectedYear, selectedMonth]);
 
     const monthNames = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"];
     const chartData  = stats?.monthlyStats?.map((s: any) => ({
@@ -69,6 +94,22 @@ export default function DashboardPage() {
         Tonnage: s.tonnage,
         TEU:     s.teu,
     })) || [];
+
+    const months = [
+        { id: "", name: "Toute l'année" },
+        { id: "1", name: "Janvier" },
+        { id: "2", name: "Février" },
+        { id: "3", name: "Mars" },
+        { id: "4", name: "Avril" },
+        { id: "5", name: "Mai" },
+        { id: "6", name: "Juin" },
+        { id: "7", name: "Juill." },
+        { id: "8", name: "Août" },
+        { id: "9", name: "Sept." },
+        { id: "10", name: "Oct." },
+        { id: "11", name: "Nov." },
+        { id: "12", name: "Déc." },
+    ];
 
     const years = Array.from({ length: 5 }, (_, i) => {
         const y = new Date().getFullYear() - 2 + i;
@@ -81,6 +122,7 @@ export default function DashboardPage() {
         setSelectedCompanyId("");
         setSelectedHsCode("");
         setSelectedYear(new Date().getFullYear().toString());
+        setSelectedMonth("");
     };
 
     /* ── Loading ── */
@@ -216,12 +258,46 @@ export default function DashboardPage() {
                             <h1>Tableau de Bord</h1>
                         </div>
 
-                        {(startDate || endDate || selectedCompanyId || selectedHsCode) && (
-                            <button onClick={resetFilters} className="btn-outline"
-                                style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>
-                                <X size={14} /> Effacer les filtres
-                            </button>
-                        )}
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            {sessionIsAdmin && (
+                                <div style={{
+                                    background: 'white', border: '2px solid #e2e8f0',
+                                    padding: '4px', borderRadius: '12px', display: 'flex'
+                                }}>
+                                    <button
+                                        onClick={() => setActiveTab("stats")}
+                                        style={{
+                                            border: 'none', padding: '0.5rem 1.25rem', borderRadius: '8px',
+                                            background: activeTab === "stats" ? "var(--primary)" : "transparent",
+                                            color: activeTab === "stats" ? "white" : "#64748b",
+                                            fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        <BarChart3 size={14} style={{ marginRight: '6px' }} /> Statistiques
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab("vessels")}
+                                        style={{
+                                            border: 'none', padding: '0.5rem 1.25rem', borderRadius: '8px',
+                                            background: activeTab === "vessels" ? "var(--primary)" : "transparent",
+                                            color: activeTab === "vessels" ? "white" : "#64748b",
+                                            fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        <Ship size={14} style={{ marginRight: '6px' }} /> Ma Flotte
+                                    </button>
+                                </div>
+                            )}
+
+                            {(startDate || endDate || selectedCompanyId || selectedHsCode) && (
+                                <button onClick={resetFilters} className="btn-outline"
+                                    style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>
+                                    <X size={14} /> Effacer les filtres
+                                </button>
+                            )}
+                        </div>
                     </header>
 
                     {/* ─── Filters Card ─── */}
@@ -229,13 +305,13 @@ export default function DashboardPage() {
                         background: "var(--bg-card)",
                         borderRadius: "var(--radius-xl)",
                         border: "1px solid rgba(226,232,240,0.8)",
-                        padding: "1.25rem 1.5rem",
+                        padding: "1rem 1.5rem",
                         marginBottom: "1.5rem",
                         boxShadow: "var(--shadow-md)",
                         display: "flex",
                         flexWrap: "nowrap",
-                        gap: "1rem",
-                        alignItems: "flex-end",
+                        gap: "1.25rem",
+                        alignItems: "flex-start",
                         position: "relative",
                         overflow: "hidden",
                     }}>
@@ -246,57 +322,61 @@ export default function DashboardPage() {
                         }} />
 
                         {/* Date début */}
-                        <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", flexShrink: 0 }}>
-                            <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.75rem", fontWeight: 700 }}>
-                                <Calendar size={12} /> Date Début
+                        <div style={{ display: "flex", flexDirection: "column", flexShrink: 0 }}>
+                            <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", fontWeight: 700, color: "var(--oocl-blue)", marginBottom: "0.45rem" }}>
+                                <Calendar size={13} /> Date Début
                             </label>
                             <input type="date" value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
-                                style={{ width: 145 }} />
+                                style={{ width: 155, height: 46, padding: "0.6rem 0.8rem", borderRadius: "12px", border: "1.5px solid var(--border)", fontWeight: 700, fontSize: "1rem", color: "#0a1f5c" }} />
                         </div>
 
                         {/* Date fin */}
-                        <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", flexShrink: 0 }}>
-                            <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.75rem", fontWeight: 700 }}>
-                                <Calendar size={12} /> Date Fin
+                        <div style={{ display: "flex", flexDirection: "column", flexShrink: 0 }}>
+                            <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", fontWeight: 700, color: "var(--oocl-blue)", marginBottom: "0.45rem" }}>
+                                <Calendar size={13} /> Date Fin
                             </label>
                             <input type="date" value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
-                                style={{ width: 145 }} />
+                                style={{ width: 155, height: 46, padding: "0.6rem 0.8rem", borderRadius: "12px", border: "1.5px solid var(--border)", fontWeight: 700, fontSize: "1rem", color: "#0a1f5c" }} />
                         </div>
 
                         {/* Admin company filter */}
                         {(isAdmin || sessionIsAdmin) && (
-                            <div style={{ flex: "1 1 auto", minWidth: 200 }}>
-                                <Combobox
-                                    label="Entreprise / Client"
-                                    items={[
-                                        { id: "", companyName: "Toutes les entreprises" },
-                                        ...companies.map(c => ({ id: c.id, companyName: c.companyName || c.email }))
-                                    ]}
-                                    displayKey="companyName"
-                                    valueKey="id"
-                                    value={selectedCompanyId}
-                                    onChange={(val) => setSelectedCompanyId(val)}
-                                    placeholder={companies.length > 0 ? "Filtrer client…" : "Aucun client"}
-                                />
+                            <div style={{ flex: 1, minWidth: 100 }}>
+                                <div style={{ marginBottom: "-1rem" }}>
+                                    <Combobox
+                                        label="Entreprise / Client"
+                                        items={[
+                                            { id: "", companyName: "Toutes les entreprises" },
+                                            ...companies.map(c => ({ id: c.id, companyName: c.companyName || c.email }))
+                                        ]}
+                                        displayKey="companyName"
+                                        valueKey="id"
+                                        value={selectedCompanyId}
+                                        onChange={(val) => setSelectedCompanyId(val)}
+                                        placeholder={companies.length > 0 ? "Filtrer client…" : "Aucun client"}
+                                    />
+                                </div>
                             </div>
                         )}
 
                         {/* HS Code filter */}
-                        <div style={{ flex: "1 1 auto", minWidth: 200 }}>
-                            <Combobox
-                                label="HS Code / Marchandise"
-                                items={[
-                                    { id: "", name: "Toutes les marchandises" },
-                                    ...hsCodes
-                                ]}
-                                displayKey="name"
-                                valueKey="id"
-                                value={selectedHsCode}
-                                onChange={(val) => setSelectedHsCode(val)}
-                                placeholder={hsCodes.length > 0 ? "Filtrer code…" : "Aucun code"}
-                            />
+                        <div style={{ flex: 1, minWidth: 100 }}>
+                            <div style={{ marginBottom: "-1rem" }}>
+                                <Combobox
+                                    label="HS Code / Marchandise"
+                                    items={[
+                                        { id: "", name: "Toutes les marchandises" },
+                                        ...hsCodes
+                                    ]}
+                                    displayKey="name"
+                                    valueKey="id"
+                                    value={selectedHsCode}
+                                    onChange={(val) => setSelectedHsCode(val)}
+                                    placeholder={hsCodes.length > 0 ? "Filtrer code…" : "Aucun code"}
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -331,191 +411,257 @@ export default function DashboardPage() {
                     ) : (
                         <>
                             {/* ── KPI Cards ── */}
-                            <div className="grid-4" style={{ marginBottom: "2rem" }}>
-                                <StatCard icon={<FileText size={18} />} label="Total BLs"
-                                    value={stats?.countBL || 0}
-                                    iconBg="rgba(230,0,18,0.08)" iconColor="var(--primary)" accent />
+                            {activeTab === "stats" && (
+                                <>
+                                    <div className="grid-4" style={{ marginBottom: "2rem" }}>
+                                        <StatCard icon={<FileText size={18} />} label="Total BLs"
+                                            value={stats?.countBL || 0}
+                                            iconBg="rgba(230,0,18,0.08)" iconColor="var(--primary)" accent />
 
-                                <StatCard icon={<Box size={18} />} label="Conteneurs 20'"
-                                    value={stats?.count20 || 0}
-                                    iconBg="rgba(16,185,129,0.1)" iconColor="var(--success)" />
+                                        <StatCard icon={<Box size={18} />} label="Conteneurs 20'"
+                                            value={stats?.count20 || 0}
+                                            iconBg="rgba(16,185,129,0.1)" iconColor="var(--success)" />
 
-                                <StatCard icon={<Package size={18} />} label="Conteneurs 40'"
-                                    value={stats?.count40 || 0}
-                                    iconBg="rgba(59,130,246,0.1)" iconColor="#3b82f6" />
+                                        <StatCard icon={<Package size={18} />} label="Conteneurs 40'"
+                                            value={stats?.count40 || 0}
+                                            iconBg="rgba(59,130,246,0.1)" iconColor="#3b82f6" />
 
-                                <StatCard icon={<Weight size={18} />} label="Tonnage Total (kg)"
-                                    value={stats?.totalTonnage?.toLocaleString() || 0}
-                                    iconBg="rgba(245,158,11,0.1)" iconColor="var(--warning)" />
-                            </div>
-
-                            {/* ── Performance Chart ── */}
-                            <div style={{
-                                background: "var(--bg-card)",
-                                borderRadius: "var(--radius-xl)",
-                                border: "1px solid rgba(226,232,240,0.8)",
-                                padding: "2rem",
-                                marginBottom: "2rem",
-                                boxShadow: "var(--shadow-md)",
-                                position: "relative",
-                                overflow: "hidden",
-                            }}>
-                                {/* Accent */}
-                                <div style={{
-                                    position: "absolute", top: 0, left: 0, right: 0, height: 3,
-                                    background: "linear-gradient(90deg, var(--primary), #ff4d5e)",
-                                }} />
-
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-                                    <div>
-                                        <p style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.25rem" }}>
-                                            Performance mensuelle
-                                        </p>
-                                        <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--text)", letterSpacing: "-0.02em", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                                            <TrendingUp size={20} style={{ color: "var(--primary)" }} />
-                                            Tonnage &amp; TEU — {selectedYear}
-                                        </h2>
+                                        <StatCard icon={<Weight size={18} />} label="Tonnage Total (kg)"
+                                            value={stats?.totalTonnage?.toLocaleString() || 0}
+                                            iconBg="rgba(245,158,11,0.1)" iconColor="var(--warning)" />
                                     </div>
-                                    <div style={{ width: 140 }}>
-                                        <Combobox
-                                            label="Année"
-                                            items={years}
-                                            displayKey="name"
-                                            valueKey="id"
-                                            value={selectedYear}
-                                            onChange={(val) => setSelectedYear(val)} />
-                                    </div>
-                                </div>
 
-                                <div style={{ width: "100%", height: 380 }}>
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false}
-                                                stroke="var(--border)" opacity={0.4} />
-                                            <XAxis dataKey="name" axisLine={false} tickLine={false}
-                                                tick={{ fontSize: 12, fontWeight: 700, fill: "var(--text-muted)" }} />
-                                            <YAxis yAxisId="left" axisLine={false} tickLine={false}
-                                                tick={{ fontSize: 12, fontWeight: 700, fill: "var(--text-muted)" }}
-                                                label={{ value: "Tonnage (Kg)", angle: -90, position: "insideLeft", offset: 10, fill: "#f59e0b", fontWeight: 800 }} />
-                                            <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false}
-                                                tick={{ fontSize: 12, fontWeight: 700, fill: "var(--text-muted)" }}
-                                                label={{ value: "TEU", angle: 90, position: "insideRight", offset: 10, fill: "#3b82f6", fontWeight: 800 }} />
-                                            <Tooltip contentStyle={{
-                                                borderRadius: "var(--radius-lg)",
-                                                border: "1px solid var(--border)",
-                                                boxShadow: "var(--shadow-lg)",
-                                                fontWeight: 700,
-                                            }} />
-                                            <Legend wrapperStyle={{ paddingTop: "1.25rem", fontWeight: 700 }} />
-                                            <Line yAxisId="left" type="monotone" dataKey="Tonnage"
-                                                stroke="#f59e0b" strokeWidth={3}
-                                                dot={{ r: 5, fill: "#f59e0b", strokeWidth: 2, stroke: "#fff" }}
-                                                activeDot={{ r: 7, strokeWidth: 0 }} />
-                                            <Line yAxisId="right" type="monotone" dataKey="TEU"
-                                                stroke="#3b82f6" strokeWidth={3}
-                                                dot={{ r: 5, fill: "#3b82f6", strokeWidth: 2, stroke: "#fff" }}
-                                                activeDot={{ r: 7, strokeWidth: 0 }} />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-
-                            {/* ── Destinations + Goods ── */}
-                            <div className="grid-2" style={{ gap: "2rem" }}>
-
-                                {/* Destinations */}
-                                <div style={{
-                                    background: "var(--bg-card)",
-                                    borderRadius: "var(--radius-xl)",
-                                    border: "1px solid rgba(226,232,240,0.8)",
-                                    padding: "1.75rem",
-                                    boxShadow: "var(--shadow-md)",
-                                }}>
-                                    <h3 style={{
-                                        fontSize: "1rem", fontWeight: 800, color: "var(--text)",
-                                        marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem",
-                                        letterSpacing: "-0.01em",
+                                    {/* ── Performance Chart ── */}
+                                    <div style={{
+                                        background: "var(--bg-card)",
+                                        borderRadius: "var(--radius-xl)",
+                                        border: "1px solid rgba(226,232,240,0.8)",
+                                        padding: "2rem",
+                                        marginBottom: "2rem",
+                                        boxShadow: "var(--shadow-md)",
+                                        position: "relative",
+                                        overflow: "hidden",
                                     }}>
-                                        <Globe size={18} style={{ color: "var(--success)" }} />
-                                        Destinations desservies
-                                    </h3>
-                                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", maxHeight: 380, overflowY: "auto" }}>
-                                        {!stats?.destList?.length ? (
-                                            <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "2rem 0", fontSize: "0.875rem" }}>
-                                                Aucune donnée disponible
-                                            </p>
-                                        ) : stats.destList.map((d: any, idx: number) => (
-                                            <div key={idx} style={{
-                                                display: "flex", justifyContent: "space-between", alignItems: "center",
-                                                padding: "0.875rem 1rem",
-                                                background: "var(--bg)", borderRadius: "var(--radius)",
-                                            }}>
-                                                <div style={{ display: "flex", alignItems: "center", gap: "0.875rem" }}>
-                                                    <span style={{
-                                                        fontSize: "0.72rem", fontWeight: 900, color: "var(--primary)",
-                                                        background: "var(--primary-light)",
-                                                        width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center",
-                                                        borderRadius: "6px", flexShrink: 0,
-                                                    }}>
-                                                        {idx + 1}
-                                                    </span>
-                                                    <span style={{ fontWeight: 700, color: "var(--text)", textTransform: "uppercase", fontSize: "0.875rem" }}>
-                                                        {d.name}
-                                                    </span>
-                                                </div>
-                                                <span style={{ fontWeight: 800, color: "var(--primary)", fontSize: "0.875rem" }}>
-                                                    {d.count} fois
-                                                </span>
+                                        {/* Accent */}
+                                        <div style={{
+                                            position: "absolute", top: 0, left: 0, right: 0, height: 3,
+                                            background: "linear-gradient(90deg, var(--primary), #ff4d5e)",
+                                        }} />
+
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
+                                            <div>
+                                                <p style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.25rem" }}>
+                                                    Performance mensuelle
+                                                </p>
+                                                <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--text)", letterSpacing: "-0.02em", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                                    <TrendingUp size={20} style={{ color: "var(--primary)" }} />
+                                                    Tonnage &amp; TEU
+                                                </h2>
                                             </div>
-                                        ))}
-                                    </div>
-                                </div>
+                                        </div>
 
-                                {/* Goods distribution */}
-                                <div style={{
-                                    background: "var(--bg-card)",
-                                    borderRadius: "var(--radius-xl)",
-                                    border: "1px solid rgba(226,232,240,0.8)",
-                                    padding: "1.75rem",
-                                    boxShadow: "var(--shadow-md)",
-                                }}>
-                                    <h3 style={{
-                                        fontSize: "1rem", fontWeight: 800, color: "var(--text)",
-                                        marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem",
-                                        letterSpacing: "-0.01em",
-                                    }}>
-                                        <BarChart3 size={18} style={{ color: "var(--primary)" }} />
-                                        Type de marchandises (%)
-                                    </h3>
-                                    <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                                        {!stats?.goodsList?.length ? (
-                                            <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "2rem 0", fontSize: "0.875rem" }}>
-                                                Aucune donnée disponible
-                                            </p>
-                                        ) : stats.goodsList.map((g: any, idx: number) => {
-                                            const colors = ["var(--primary)", "#3b82f6", "var(--success)", "var(--warning)", "#8b5cf6"];
-                                            const color  = colors[idx % colors.length];
-                                            return (
-                                                <div key={idx}>
-                                                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.45rem" }}>
-                                                        <span style={{ fontWeight: 700, color: "var(--text)", fontSize: "0.875rem" }}>{g.name}</span>
-                                                        <span style={{ fontWeight: 800, color: color, fontSize: "0.875rem" }}>
-                                                            {g.percentage.toFixed(1)}%
+                                        <div style={{ width: "100%", height: 380 }}>
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <LineChart data={chartData} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false}
+                                                        stroke="var(--border)" opacity={0.4} />
+                                                    <XAxis dataKey="name" axisLine={false} tickLine={false}
+                                                        tick={{ fontSize: 12, fontWeight: 700, fill: "var(--text-muted)" }} />
+                                                    <YAxis yAxisId="left" axisLine={false} tickLine={false}
+                                                        tick={{ fontSize: 12, fontWeight: 700, fill: "var(--text-muted)" }}
+                                                        label={{ value: "Tonnage (Kg)", angle: -90, position: "insideLeft", offset: -30, fill: "#22c55e", fontWeight: 800 }} />
+                                                    <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false}
+                                                        tick={{ fontSize: 12, fontWeight: 700, fill: "var(--text-muted)" }}
+                                                        label={{ value: "TEU", angle: 90, position: "insideRight", offset: 10, fill: "#3b82f6", fontWeight: 800 }} />
+                                                    <Tooltip contentStyle={{
+                                                        borderRadius: "var(--radius-lg)",
+                                                        border: "1px solid var(--border)",
+                                                        boxShadow: "var(--shadow-lg)",
+                                                        fontWeight: 700,
+                                                    }} />
+                                                    <Legend wrapperStyle={{ paddingTop: "1.25rem", fontWeight: 700 }} />
+                                                    <Line yAxisId="left" type="monotone" dataKey="Tonnage"
+                                                        stroke="#22c55e" strokeWidth={3}
+                                                        dot={{ r: 5, fill: "#22c55e", strokeWidth: 2, stroke: "#fff" }}
+                                                        activeDot={{ r: 7, strokeWidth: 0 }} />
+                                                    <Line yAxisId="right" type="monotone" dataKey="TEU"
+                                                        stroke="#3b82f6" strokeWidth={3}
+                                                        dot={{ r: 5, fill: "#3b82f6", strokeWidth: 2, stroke: "#fff" }}
+                                                        activeDot={{ r: 7, strokeWidth: 0 }} />
+                                                </LineChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+
+                                    {/* ── Destinations + Goods ── */}
+                                    <div className="grid-2" style={{ gap: "2rem" }}>
+
+                                        {/* Destinations */}
+                                        <div style={{
+                                            background: "var(--bg-card)",
+                                            borderRadius: "var(--radius-xl)",
+                                            border: "1px solid rgba(226,232,240,0.8)",
+                                            padding: "1.75rem",
+                                            boxShadow: "var(--shadow-md)",
+                                        }}>
+                                            <h3 style={{
+                                                fontSize: "1rem", fontWeight: 800, color: "var(--text)",
+                                                marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem",
+                                                letterSpacing: "-0.01em",
+                                            }}>
+                                                <Globe size={18} style={{ color: "var(--success)" }} />
+                                                Destinations desservies
+                                            </h3>
+                                            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", maxHeight: 380, overflowY: "auto" }}>
+                                                {!stats?.destList?.length ? (
+                                                    <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "2rem 0", fontSize: "0.875rem" }}>
+                                                        Aucune donnée disponible
+                                                    </p>
+                                                ) : stats.destList.map((d: any, idx: number) => (
+                                                    <div key={idx} style={{
+                                                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                                                        padding: "0.875rem 1rem",
+                                                        background: "var(--bg)", borderRadius: "var(--radius)",
+                                                    }}>
+                                                        <div style={{ display: "flex", alignItems: "center", gap: "0.875rem" }}>
+                                                            <span style={{
+                                                                fontSize: "0.72rem", fontWeight: 900, color: "var(--primary)",
+                                                                background: "var(--primary-light)",
+                                                                width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center",
+                                                                borderRadius: "6px", flexShrink: 0,
+                                                            }}>
+                                                                {idx + 1}
+                                                            </span>
+                                                            <span style={{ fontWeight: 700, color: "var(--text)", textTransform: "uppercase", fontSize: "0.875rem" }}>
+                                                                {d.name}
+                                                            </span>
+                                                        </div>
+                                                        <span style={{ fontWeight: 800, color: "var(--primary)", fontSize: "0.875rem" }}>
+                                                            {d.count} fois
                                                         </span>
                                                     </div>
-                                                    <div style={{ width: "100%", height: 8, background: "var(--bg)", borderRadius: 99, overflow: "hidden" }}>
-                                                        <div style={{
-                                                            width: `${g.percentage}%`, height: "100%",
-                                                            background: color, borderRadius: 99,
-                                                            transition: "width 1s cubic-bezier(0.4,0,0.2,1)",
-                                                        }} />
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Goods distribution */}
+                                        <div style={{
+                                            background: "var(--bg-card)",
+                                            borderRadius: "var(--radius-xl)",
+                                            border: "1px solid rgba(226,232,240,0.8)",
+                                            padding: "1.75rem",
+                                            boxShadow: "var(--shadow-md)",
+                                        }}>
+                                            <h3 style={{
+                                                fontSize: "1rem", fontWeight: 800, color: "var(--text)",
+                                                marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem",
+                                                letterSpacing: "-0.01em",
+                                            }}>
+                                                <BarChart3 size={18} style={{ color: "var(--primary)" }} />
+                                                Type de marchandises (%)
+                                            </h3>
+                                            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                                                {!stats?.goodsList?.length ? (
+                                                    <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "2rem 0", fontSize: "0.875rem" }}>
+                                                        Aucune donnée disponible
+                                                    </p>
+                                                ) : stats.goodsList.map((g: any, idx: number) => {
+                                                    const colors = ["var(--primary)", "#3b82f6", "var(--success)", "var(--warning)", "#8b5cf6"];
+                                                    const color  = colors[idx % colors.length];
+                                                    return (
+                                                        <div key={idx}>
+                                                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.45rem" }}>
+                                                                <span style={{ fontWeight: 700, color: "var(--text)", fontSize: "0.875rem" }}>{g.name}</span>
+                                                                <span style={{ fontWeight: 800, color: color, fontSize: "0.875rem" }}>
+                                                                    {g.percentage.toFixed(1)}%
+                                                                </span>
+                                                            </div>
+                                                            <div style={{ width: "100%", height: 8, background: "var(--bg)", borderRadius: 99, overflow: "hidden" }}>
+                                                                <div style={{
+                                                                    width: `${g.percentage}%`, height: "100%",
+                                                                    background: color, borderRadius: 99,
+                                                                    transition: "width 1s cubic-bezier(0.4,0,0.2,1)",
+                                                                }} />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {activeTab === "vessels" && (
+                                <div style={{
+                                    background: "white", borderRadius: "16px", border: '1px solid #e2e8f0',
+                                    padding: '2rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+                                }}>
+                                    <div style={{ marginBottom: '2rem' }}>
+                                        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0a1f5c', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <Ship size={24} style={{ color: 'var(--primary)' }} />
+                                            Ma Flotte OOCL
+                                        </h2>
+                                        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Vue d'ensemble de vos navires et leur activité.</p>
+                                    </div>
+
+                                    <div style={{ overflowX: 'auto' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                            <thead>
+                                                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                                                    <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 800, color: '#444' }}>NAVIRE</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 800, color: '#444' }}>DERNIER VOYAGE</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'center', fontWeight: 800, color: '#444' }}>ROTATIONS</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'center', fontWeight: 800, color: '#444' }}>SI TOTAL</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'right', fontWeight: 800, color: '#444' }}>ACTION</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {vessels.map(v => (
+                                                    <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                        <td style={{ padding: '1rem' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                                <div style={{ width: 32, height: 32, borderRadius: '8px', background: '#f0f4f8', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0a1f5c' }}>
+                                                                    <Ship size={16} />
+                                                                </div>
+                                                                <span style={{ fontWeight: 800 }}>{v.name}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td style={{ padding: '1rem' }}>
+                                                            {v.voyages?.[0] ? (
+                                                                <div>
+                                                                    <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{v.voyages[0].number}</div>
+                                                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                                                        ETD: {v.voyages[0].etdDate ? new Date(v.voyages[0].etdDate).toLocaleDateString() : '—'}
+                                                                    </div>
+                                                                </div>
+                                                            ) : '—'}
+                                                        </td>
+                                                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                                            <span style={{ fontWeight: 700 }}>{v._count?.voyages || 0}</span>
+                                                        </td>
+                                                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                                            <span style={{ fontWeight: 700 }}>{v._count?.billsOfLading || 0}</span>
+                                                        </td>
+                                                        <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                                            <Link href="/admin/vessels" style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#0a1f5c', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 700 }}>
+                                                                Gérer
+                                                            </Link>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {vessels.length === 0 && (
+                                                    <tr>
+                                                        <td colSpan={5} style={{ padding: '4rem', textAlign: 'center', color: '#94a3b8' }}>
+                                                            Aucun navire trouvé.
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
-                            </div>
+                            )}
                         </>
                     )}
                 </div>

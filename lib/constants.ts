@@ -13,7 +13,6 @@ export const countryRequirements: Record<string, string[]> = {
 };
 
 export const cityRequirements: Record<string, string[]> = {
-    "Abidjan": ["VAT"],
     "Cotonou": ["BIN"],
     "Bruxelles": ["VAT"],
     "Hô Chi Minh-Ville (Cai Mep)": ["VAT"]

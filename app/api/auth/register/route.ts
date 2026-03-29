@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 
 export async function POST(request: Request) {
     try {
-        const { email, password, name, companyName, role } = await request.json();
+        const { email, password, name, companyName, phone, role } = await request.json();
 
         if (!email || !password) {
             return NextResponse.json({ error: "Email and password required" }, { status: 400 });
@@ -36,6 +36,7 @@ export async function POST(request: Request) {
                 password: hashedPassword,
                 name,
                 companyName,
+                phone,
                 role: role || "CLIENT",
             },
         });

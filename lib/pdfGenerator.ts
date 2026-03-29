@@ -115,24 +115,30 @@ export function generateBLPDF(data: any, preview: boolean = true) {
 
     doc.setFontSize(8);
     doc.setTextColor(0);
-    doc.text("Booking Number", 50, 25, { align: "center" });
-    doc.text("Contract Number", 105, 25, { align: "center" });
-    doc.text("Type released", 160, 25, { align: "center" });
+    doc.text("Booking Number", 40, 25, { align: "center" });
+    doc.text("Contract Number", 83, 25, { align: "center" });
+    doc.text("Ship / Vessel", 126, 25, { align: "center" });
+    doc.text("Voyage", 170, 25, { align: "center" });
 
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setTextColor(0);
-    doc.text(data.bookingNumber || "", 50, 30, { align: "center" });
+    doc.text(data.bookingNumber || "", 40, 30, { align: "center" });
+    doc.text(data.contractNumber || "", 83, 30, { align: "center" });
+    doc.text(data.vessel || "", 126, 30, { align: "center" });
+    doc.text(data.voyage || "", 170, 30, { align: "center" });
 
-    doc.setTextColor(0);
-    doc.text(data.contractNumber || "", 105, 30, { align: "center" });
+    doc.setFontSize(8);
+    doc.text("Type released", 10, 38);
+    doc.text("ETD Date", 110, 38);
 
+    doc.setFontSize(10);
     const typeReleasedName = typeof data.typeReleased === 'object' ? data.typeReleased?.name : data.typeReleased;
-    doc.setTextColor(0);
-    doc.text(typeReleasedName || "", 160, 30, { align: "center" });
+    doc.text(typeReleasedName || "", 10, 43);
+    doc.text(data.etd ? new Date(data.etd).toLocaleDateString() : "", 110, 43);
 
     // --- Grid Boxes ---
     const boxWidth = 90;
-    const startY = 35;
+    const startY = 48;
     const gap = 5;
     let leftY = startY;
     let rightY = startY;

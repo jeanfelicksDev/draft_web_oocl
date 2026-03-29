@@ -19,7 +19,7 @@ export async function GET(req: Request) {
       },
       orderBy: { name: "asc" }
     });
-    return NextResponse.json(ports.map(p => p.name));
+    return NextResponse.json(ports.map((p: any) => p.name));
   } catch (error: any) {
     console.error("Fetch ports error:", error);
     return NextResponse.json({ error: "Erreur" }, { status: 500 });

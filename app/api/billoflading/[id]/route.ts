@@ -61,7 +61,8 @@ export async function PUT(
             'bookingNumber', 'contractNumber', 'saveStatus', 
             'portCountryText', 'portCityText', 'typeReleasedId', 
             'shipperId', 'consigneeId', 'notifyId', 'alsoNotifyId', 
-            'forwarderId', 'freightBuyerId', 'goodsId'
+            'forwarderId', 'freightBuyerId', 'goodsId',
+            'vesselId', 'voyageId', 'descriptionGoods', 'hsCode'
         ];
 
         let updateData: any = {

@@ -83,7 +83,8 @@ export async function POST(request: Request) {
             'bookingNumber', 'contractNumber', 'saveStatus', 
             'portCountryText', 'portCityText', 'typeReleasedId', 
             'shipperId', 'consigneeId', 'notifyId', 'alsoNotifyId', 
-            'forwarderId', 'freightBuyerId', 'goodsId'
+            'forwarderId', 'freightBuyerId', 'goodsId',
+            'vesselId', 'voyageId', 'descriptionGoods', 'hsCode'
         ];
 
         // Convert empty strings to null AND filter out unknown fields

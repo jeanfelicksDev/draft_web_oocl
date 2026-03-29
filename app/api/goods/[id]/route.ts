@@ -15,6 +15,8 @@ export async function PUT(
                 description: data.description,
                 hsCode: data.hsCode || null,
                 declNo: data.declNo || null,
+                saveStatus: data.saveStatus || "VALIDATED",
+
             },
         });
 

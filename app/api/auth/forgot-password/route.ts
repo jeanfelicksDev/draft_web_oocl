@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
+import crypto from 'crypto';
+import { sendPasswordResetEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
     try {
@@ -15,29 +16,38 @@ export async function POST(req: Request) {
         });
 
         if (!user) {
-            return NextResponse.json({ message: "Si un compte existe, l'administrateur a été informé." });
+            // Pour des raisons de sécurité, ne pas indiquer si l'utilisateur existe
+            return NextResponse.json({ 
+                message: "Si un compte existe, un email de réinitialisation vous a été envoyé." 
+            });
         }
 
-        // Générer un mot de passe temporaire lisible (ex: OOCL-1234)
-        const tempPass = `OOCL-${Math.floor(1000 + Math.random() * 9000)}`;
-        const hashedPassword = await bcrypt.hash(tempPass, 10);
+        // Générer un token sécurisé
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        
+        // Le token expirera dans 1 heure
+        const resetTokenExpiry = new Date(Date.now() + 3600000);
 
-        console.log(`FORGOT PASS: Generated ${tempPass} for ${email}`);
-
-        // Update password and set mustChangePassword flag
+        // Mettre à jour la DB
         await prisma.user.update({
             where: { email },
             data: {
-                password: hashedPassword,
-                tempPassword: tempPass,
-                mustChangePassword: true,
-            } as any, // Cast to any to handle potential stale types in IDE, though functionally correct
+                resetToken,
+                resetTokenExpiry,
+            },
         });
-        console.log("Successfully updated password via Prisma");
+
+        // Envoyer l'email
+        try {
+            await sendPasswordResetEmail(email, resetToken);
+            console.log(`Email de réinitialisation envoyé avec succès à ${email}`);
+        } catch (emailError) {
+            console.error('Erreur d\'envoi d\'email:', emailError);
+            return NextResponse.json({ error: "Une erreur est survenue lors de l'envoi de l'email." }, { status: 500 });
+        }
 
         return NextResponse.json({ 
-            message: "Demande envoyée. Votre administrateur vous transmettra votre mot de passe temporaire.",
-            debug: `TEMP PASS: ${tempPass}` // Temporary for debug if they can't see the dashboard
+            message: "Si un compte existe, un email de réinitialisation vous a été envoyé."
         });
     } catch (error) {
         console.error("Forgot password general error:", error);

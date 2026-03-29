@@ -16,6 +16,7 @@ interface ComboboxProps {
     error?: string;
     disabled?: boolean;
     multiline?: boolean;
+    isDraft?: boolean;
 }
 
 /**
@@ -35,13 +36,33 @@ export function Combobox({
     error,
     disabled = false,
     multiline = false,
+    isDraft = false,
 }: ComboboxProps) {
     const safeItems = Array.isArray(items) ? items : [];
 
+    const getBorderColor = () => {
+        if (error) return 'var(--danger)';
+        if (isDraft) return '#d97706';
+        return 'var(--border)';
+    };
+
+    const getBgColor = () => {
+        if (isDraft) return 'rgba(217, 119, 6, 0.05)';
+        if (value) return 'rgba(16, 185, 129, 0.05)';
+        return 'var(--input-bg)';
+    };
+
     return (
         <div style={{ width: '100%', marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.45rem', fontSize: '0.85rem', fontWeight: 700, color: 'var(--oocl-blue)' }}>
-                {label}
+            <label style={{ 
+                marginBottom: '0.45rem', 
+                fontSize: '0.85rem', 
+                fontWeight: 700, 
+                color: isDraft ? '#b45309' : 'var(--oocl-blue)',
+                display: 'flex',
+                justifyContent: 'space-between'
+            }}>
+                <span>{label}</span>
             </label>
             
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -57,13 +78,14 @@ export function Combobox({
                                 width: '100%',
                                 padding: '0.6rem 1rem',
                                 borderRadius: '12px',
-                                border: `1.5px solid ${error ? 'var(--danger)' : 'var(--border)'}`,
-                                backgroundColor: value ? 'rgba(16, 185, 129, 0.05)' : 'var(--input-bg)',
-                                color: '#0a1f5c',
+                                border: `2px solid ${getBorderColor()}`,
+                                backgroundColor: getBgColor(),
+                                color: isDraft ? '#92400e' : '#0a1f5c',
                                 fontSize: '1.1rem',
                                 fontWeight: 700,
                                 minHeight: '100px',
-                                cursor: onEdit ? 'pointer' : 'default'
+                                cursor: onEdit ? 'pointer' : 'default',
+                                transition: 'all 0.2s'
                             }}
                         />
                     ) : (
@@ -76,24 +98,28 @@ export function Combobox({
                                 height: '46px',
                                 padding: '0.6rem 2.5rem 0.6rem 1rem',
                                 borderRadius: '12px',
-                                border: `1.5px solid ${error ? 'var(--danger)' : 'var(--border)'}`,
-                                backgroundColor: value ? 'rgba(16, 185, 129, 0.05)' : 'var(--input-bg)',
-                                color: '#0a1f5c',
+                                border: `2px solid ${getBorderColor()}`,
+                                backgroundColor: getBgColor(),
+                                color: isDraft ? '#92400e' : '#0a1f5c',
                                 fontSize: '1.1rem',
                                 fontWeight: 700,
                                 appearance: 'none',
                                 cursor: 'pointer',
                                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E")`,
                                 backgroundRepeat: 'no-repeat',
-                                backgroundPosition: 'right 1rem center'
+                                backgroundPosition: 'right 1rem center',
+                                transition: 'all 0.2s'
                             }}
                         >
                             <option value="">{placeholder}</option>
-                            {safeItems.map((item) => (
-                                <option key={item[valueKey]} value={item[valueKey]}>
-                                    {String(item[displayKey]).toUpperCase()}
-                                </option>
-                            ))}
+                            {safeItems.map((item) => {
+                                const isItemDraft = item.saveStatus === "DRAFT";
+                                return (
+                                    <option key={item[valueKey]} value={item[valueKey]}>
+                                        {String(item[displayKey]).toUpperCase()}
+                                    </option>
+                                );
+                            })}
                         </select>
                     )}
                 </div>

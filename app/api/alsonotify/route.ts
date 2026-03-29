@@ -23,11 +23,21 @@ export async function POST(request: Request) {
         const userId = await getUserId();
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const data = await request.json();
+        const { name, address, country, city, phone, email, vat, eori, bin, usci, saveStatus } = await request.json();
+        
         const newAlsoNotify = await prisma.alsoNotify.create({
             data: { 
-                name: data.name,
-                description: data.description, 
+                name,
+                address,
+                country,
+                city,
+                phone,
+                email,
+                vat: vat || null,
+                eori: eori || null,
+                bin: bin || null,
+                usci: usci || null,
+                saveStatus: saveStatus || "VALIDATED",
                 userId 
             },
         });

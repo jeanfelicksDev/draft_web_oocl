@@ -36,6 +36,7 @@ export async function POST(request: Request) {
                 eori: data.eori,
                 bin: data.bin,
                 usci: data.usci,
+                saveStatus: data.saveStatus || "VALIDATED",
                 userId,
             },
         });

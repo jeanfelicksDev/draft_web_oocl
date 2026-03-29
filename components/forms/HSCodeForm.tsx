@@ -88,7 +88,7 @@ export function HSCodeForm({ title = "", isOpen, onClose, onSuccess, onDelete, i
 
                 <div>
                     <label>Nature de la marchandise *</label>
-                    <textarea {...register("description")} rows={3} placeholder="Désignation courte" />
+                    <input {...register("description")} placeholder="Désignation courte" />
                     {errors.description && <span className="error-msg">{errors.description.message as string}</span>}
                 </div>
             </div>

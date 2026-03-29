@@ -27,14 +27,11 @@ export async function createBLSnapshot(blId: string) {
         shipper: bl.shipper || {},
         consignee: bl.consignee || {},
         notify: bl.notify || {},
-        alsoNotify: bl.alsoNotify?.description || "",
+        alsoNotify: bl.alsoNotify || {},
         forwarder: bl.forwarder || {},
         freightBuyer: bl.freightBuyer || {},
-        goods: {
-            description: bl.goods?.description || "",
-            hsCode: bl.goods?.hsCode || "",
-            declNo: bl.goods?.declNo || "",
-        },
+        descriptionGoods: bl.descriptionGoods || bl.goods?.description || "",
+        hsCode: bl.hsCode || bl.goods?.hsCode || "",
         containers: bl.containers || []
     };
 }

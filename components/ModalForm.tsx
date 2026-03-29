@@ -21,9 +21,10 @@ export function ModalForm({
     onSubmit,
     onDelete,
     isSubmitting = false,
+    onSaveDraft,
     children,
     maxWidth,
-}: ModalFormProps) {
+}: ModalFormProps & { onSaveDraft?: () => void }) {
     if (!isOpen) return null;
 
     return (
@@ -83,35 +84,65 @@ export function ModalForm({
                 <form onSubmit={onSubmit}>
                     {children}
 
-                    <div style={{ display: 'flex', justifyContent: onDelete ? 'space-between' : 'flex-end', alignItems: 'center', marginTop: '2.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1rem', marginTop: '2.5rem' }}>
                         {onDelete && (
+                            <div style={{ marginRight: 'auto' }}>
+                                <button
+                                    type="button"
+                                    onClick={async (e) => {
+                                        e.preventDefault();
+                                        if (window.confirm("Voulez-vous vraiment supprimer cet enregistrement ?")) {
+                                            await onDelete();
+                                        }
+                                    }}
+                                    disabled={isSubmitting}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        color: 'var(--danger)',
+                                        fontSize: '1.4rem',
+                                        cursor: 'pointer',
+                                        transition: 'transform 0.2s',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        padding: '0.5rem'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                    title="Supprimer définitivement"
+                                >
+                                    <Trash2 size={24} />
+                                </button>
+                            </div>
+                        )}
+
+                        {onSaveDraft && (
                             <button
                                 type="button"
-                                onClick={async (e) => {
-                                    e.preventDefault();
-                                    if (window.confirm("Voulez-vous vraiment supprimer cet enregistrement ?")) {
-                                        await onDelete();
-                                    }
-                                }}
+                                onClick={onSaveDraft}
                                 disabled={isSubmitting}
                                 style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: 'var(--danger)',
-                                    fontSize: '1.4rem',
+                                    padding: '0.75rem 1.5rem',
+                                    borderRadius: '10px',
+                                    border: '2px solid #d97706',
+                                    background: 'transparent',
+                                    color: '#d97706',
+                                    fontWeight: 700,
+                                    fontSize: '0.95rem',
                                     cursor: 'pointer',
-                                    transition: 'transform 0.2s',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    padding: '0.5rem'
+                                    transition: 'all 0.2s',
                                 }}
-                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
-                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                                title="Supprimer définitivement"
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = '#fffbeb';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'transparent';
+                                }}
                             >
-                                <Trash2 size={24} />
+                                Brouillon
                             </button>
                         )}
+
                         <button
                             type="submit"
                             style={{

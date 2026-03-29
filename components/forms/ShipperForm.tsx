@@ -70,11 +70,21 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
         if (!isNeeded("USCI")) setValue("usci", "");
     }, [country, city, setValue]);
 
+    // Helper to ensure uppercase and sync with react-hook-form
+    const handleUpper = (fieldName: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value.toUpperCase();
+        setValue(fieldName, val);
+    };
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div>
                 <label>Nom du Shipper *</label>
-                <input {...register("name")} />
+                <input 
+                    {...register("name")} 
+                    onChange={handleUpper("name")} 
+                    style={{ textTransform: 'uppercase' }} 
+                />
                 {errors.name && <span className="error-msg">{errors.name.message}</span>}
             </div>
 
@@ -114,7 +124,12 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
             <div className="grid-2">
                 <div>
                     <label>Téléphone *</label>
-                    <input {...register("phone")} type="tel" />
+                    <input 
+                        {...register("phone")} 
+                        type="tel" 
+                        onChange={handleUpper("phone")} 
+                        style={{ textTransform: 'uppercase' }} 
+                    />
                     {errors.phone && <span className="error-msg">{errors.phone.message}</span>}
                 </div>
                 <div>
@@ -132,14 +147,22 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
                         {isNeeded("VAT") && (
                             <div>
                                 <label>N°VAT *</label>
-                                <input {...register("vat")} />
+                                <input 
+                                    {...register("vat")} 
+                                    onChange={handleUpper("vat")} 
+                                    style={{ textTransform: 'uppercase' }} 
+                                />
                                 {errors.vat && <span className="error-msg">{errors.vat.message}</span>}
                             </div>
                         )}
                         {isNeeded("EORI") && (
                             <div>
                                 <label>N°EORI *</label>
-                                <input {...register("eori")} />
+                                <input 
+                                    {...register("eori")} 
+                                    onChange={handleUpper("eori")} 
+                                    style={{ textTransform: 'uppercase' }} 
+                                />
                                 {errors.eori && <span className="error-msg">{errors.eori.message}</span>}
                             </div>
                         )}
@@ -148,14 +171,22 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
                         {isNeeded("BIN") && (
                             <div>
                                 <label>BIN *</label>
-                                <input {...register("bin")} />
+                                <input 
+                                    {...register("bin")} 
+                                    onChange={handleUpper("bin")} 
+                                    style={{ textTransform: 'uppercase' }} 
+                                />
                                 {errors.bin && <span className="error-msg">{errors.bin.message}</span>}
                             </div>
                         )}
                         {isNeeded("USCI") && (
                             <div>
                                 <label>USCI *</label>
-                                <input {...register("usci")} />
+                                <input 
+                                    {...register("usci")} 
+                                    onChange={handleUpper("usci")} 
+                                    style={{ textTransform: 'uppercase' }} 
+                                />
                                 {errors.usci && <span className="error-msg">{errors.usci.message}</span>}
                             </div>
                         )}
@@ -187,7 +218,7 @@ export function ShipperForm({ title = "", isOpen, onClose, onSuccess, onDelete, 
             const res = await fetch(isEditing ? `/api/shippers/${initialData.id}` : "/api/shippers", {
                 method: isEditing ? "PUT" : "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
+                body: JSON.stringify({ ...data, saveStatus: "VALIDATED" }),
             });
 
             if (res.ok) {
@@ -196,6 +227,33 @@ export function ShipperForm({ title = "", isOpen, onClose, onSuccess, onDelete, 
                 onClose();
             } else {
                 alert("Erreur lors de l'enregistrement.")
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleSaveAsDraft = async () => {
+        const data = watch();
+        if (!data.name) {
+            alert("Le nom est obligatoire même pour un brouillon.");
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            const isEditing = !!initialData?.id;
+            const res = await fetch(isEditing ? `/api/shippers/${initialData.id}` : "/api/shippers", {
+                method: isEditing ? "PUT" : "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ...data, saveStatus: "DRAFT" }),
+            });
+
+            if (res.ok) {
+                const savedShipper = await res.json();
+                onSuccess(savedShipper);
+                onClose();
+            } else {
+                alert("Erreur lors de l'enregistrement du brouillon.")
             }
         } finally {
             setIsSubmitting(false);
@@ -224,6 +282,7 @@ export function ShipperForm({ title = "", isOpen, onClose, onSuccess, onDelete, 
             isOpen={isOpen}
             onClose={onClose}
             onSubmit={handleSubmit(handleFormSubmit)}
+            onSaveDraft={handleSaveAsDraft}
             onDelete={initialData && onDelete ? handleDelete : undefined}
             isSubmitting={isSubmitting}
             maxWidth="800px"

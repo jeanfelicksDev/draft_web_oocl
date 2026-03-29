@@ -13,6 +13,7 @@ interface UserAccount {
     email: string;
     name: string | null;
     companyName: string | null;
+    phone: string | null;
     role: string;
     isAuthorized: boolean;
     permissions: string;
@@ -58,6 +59,7 @@ export default function AdminUsersPage() {
     }, [session]);
 
     const updateUserData = async (userId: string, data: any) => {
+        console.log("Updating user data:", userId, data);
         try {
             const res = await fetch(`/api/admin/users/${userId}`, {
                 method: "PUT",
@@ -67,12 +69,16 @@ export default function AdminUsersPage() {
 
             if (res.ok) {
                 const updated = await res.json();
-                setUsers(users.map(u => u.id === userId ? { ...u, ...updated } : u));
+                console.log("Update success:", updated);
+                setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updated } : u));
                 toast.success("Mise à jour réussie");
             } else {
-                toast.error("Erreur lors de la mise à jour");
+                const error = await res.json().catch(() => ({}));
+                console.error("Update failed:", error);
+                toast.error(`Erreur: ${error.details || "Inconnue"}`);
             }
         } catch (error) {
+            console.error("Update connection error:", error);
             toast.error("Erreur de connexion");
         }
     };
@@ -80,6 +86,7 @@ export default function AdminUsersPage() {
     // handlePermissionToggle supprimé
 
     const toggleAuthorization = async (userId: string, currentStatus: boolean) => {
+        console.log("Toggling auth for:", userId, "current:", currentStatus);
         try {
             const res = await fetch(`/api/admin/users/${userId}/authorize`, {
                 method: "PUT",
@@ -88,12 +95,17 @@ export default function AdminUsersPage() {
             });
 
             if (res.ok) {
+                const updated = await res.json();
+                console.log("Toggle success:", updated);
                 toast.success(currentStatus ? "Accès révoqué" : "Accès autorisé");
-                setUsers(users.map(u => u.id === userId ? { ...u, isAuthorized: !currentStatus } : u));
+                setUsers(prev => prev.map(u => u.id === userId ? { ...u, isAuthorized: !currentStatus } : u));
             } else {
-                toast.error("Erreur lors de la modification");
+                const error = await res.json().catch(() => ({}));
+                console.error("Toggle failed:", error);
+                toast.error(`Erreur: ${error.details || "Inconnue"}`);
             }
         } catch (error) {
+            console.error("Toggle connection error:", error);
             toast.error("Erreur de connexion");
         }
     };
@@ -101,19 +113,23 @@ export default function AdminUsersPage() {
     const handleDeleteUser = async (userId: string, userEmail: string) => {
         if (!confirm(`Voulez-vous vraiment supprimer définitivement le compte ${userEmail} ? Cette action est irréversible.`)) return;
 
+        console.log("Deleting user:", userId);
         try {
             const res = await fetch(`/api/admin/users/${userId}`, {
                 method: "DELETE"
             });
 
             if (res.ok) {
+                console.log("Delete success");
                 toast.success("Utilisateur supprimé");
-                setUsers(users.filter(u => u.id !== userId));
+                setUsers(prev => prev.filter(u => u.id !== userId));
             } else {
-                const d = await res.json();
-                toast.error(d.error || "Erreur lors de la suppression");
+                const error = await res.json().catch(() => ({}));
+                console.error("Delete failed:", error);
+                toast.error(`Erreur: ${error.details || "Inconnue"}`);
             }
         } catch (error) {
+            console.error("Delete connection error:", error);
             toast.error("Erreur de connexion");
         }
     };
@@ -151,8 +167,9 @@ export default function AdminUsersPage() {
                         <table style={{ width: "100%", borderCollapse: "collapse" }}>
                             <thead>
                                 <tr style={{ backgroundColor: "#f8fafc", borderBottom: "1px solid var(--border)" }}>
-                                    <th style={{ padding: "1.25rem", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)" }}>Email</th>
                                     <th style={{ padding: "1.25rem", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)" }}>Entreprise</th>
+                                    <th style={{ padding: "1.25rem", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)" }}>Téléphone</th>
+                                    <th style={{ padding: "1.25rem", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)" }}>Email</th>
                                     <th style={{ padding: "1.25rem", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)" }}>Rôle</th>
                                     <th style={{ padding: "1.25rem", textAlign: "center", fontSize: "0.85rem", color: "var(--text-muted)" }}>Statut</th>
                                     <th style={{ padding: "1.25rem", textAlign: "right", fontSize: "0.85rem", color: "var(--text-muted)" }}>Actions</th>
@@ -161,6 +178,16 @@ export default function AdminUsersPage() {
                             <tbody>
                                 {users.map((user) => (
                                     <tr key={user.id} style={{ borderBottom: "1px solid var(--border)", transition: "background 0.2s" }}>
+                                        <td style={{ padding: "1.25rem" }}>
+                                            <div style={{ fontSize: "0.9rem", fontWeight: 600 }}>
+                                                {user.companyName || "N/A"}
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: "1.25rem" }}>
+                                            <div style={{ fontSize: "0.9rem", fontWeight: 600 }}>
+                                                {user.phone || "N/A"}
+                                            </div>
+                                        </td>
                                         <td style={{ padding: "1.25rem" }}>
                                             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                                                 <div style={{ 
@@ -171,11 +198,6 @@ export default function AdminUsersPage() {
                                                     <User size={16} />
                                                 </div>
                                                 <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>{user.email}</div>
-                                            </div>
-                                        </td>
-                                        <td style={{ padding: "1.25rem" }}>
-                                            <div style={{ fontSize: "0.9rem", fontWeight: 600 }}>
-                                                {user.companyName || "N/A"}
                                             </div>
                                         </td>
                                         <td style={{ padding: "1.25rem" }}>
@@ -202,7 +224,7 @@ export default function AdminUsersPage() {
                                             )}
                                         </td>
                                         <td style={{ padding: "1.25rem", textAlign: "right" }}>
-                                            {user.role !== "ADMIN" && (
+                                            {user.id !== (session?.user as any)?.id && (
                                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.75rem" }}>
                                                     <button
                                                         onClick={() => toggleAuthorization(user.id, user.isAuthorized)}

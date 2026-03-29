@@ -12,7 +12,7 @@ export async function GET() {
       }
     });
 
-    return NextResponse.json(countries.map(c => ({
+    return NextResponse.json(countries.map((c: any) => ({
       id: c.id,
       name: c.name,
       portCount: c._count.ports

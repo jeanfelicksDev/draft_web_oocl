@@ -14,8 +14,10 @@ export async function GET(request: Request) {
         const endDate = searchParams.get("endDate");
         const targetUserId = searchParams.get("companyId"); // Only for admins
         const yearParam = searchParams.get("year");
+        const monthParam = searchParams.get("month");
         const selectedHsCode = searchParams.get("hsCode");
         const selectedYear = yearParam ? parseInt(yearParam) : new Date().getFullYear();
+        const selectedMonth = monthParam ? parseInt(monthParam) : null;
 
         // Build filters
         const filters: any = {};
@@ -25,15 +27,18 @@ export async function GET(request: Request) {
             filters.userId = targetUserId;
         } else if (!isAdmin) {
             filters.userId = userId;
-        } else if (isAdmin && !targetUserId) {
-            // Admin viewing "global" stats - no specific userId filter
         }
 
-        // Date filter
+        // Date filter (Manual overwrite of year if provided)
         if (startDate || endDate) {
             filters.createdAt = {};
             if (startDate) filters.createdAt.gte = new Date(startDate);
             if (endDate) filters.createdAt.lte = new Date(endDate);
+        } else if (yearParam) {
+            // Optimization: Filter by year if possible
+            const startOfYear = new Date(selectedYear, 0, 1);
+            const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+            filters.createdAt = { gte: startOfYear, lte: endOfYear };
         }
 
         // HS Code filter
@@ -51,7 +56,7 @@ export async function GET(request: Request) {
         });
 
         // Calculations
-        let countBL = bls.length;
+        let countBL = 0;
         let count20 = 0;
         let count40 = 0;
         let totalTonnage = 0;
@@ -73,41 +78,66 @@ export async function GET(request: Request) {
         const natureMap: Record<string, string> = {};
         hsCodesData.forEach(h => { natureMap[h.code] = h.description; });
 
+        const isDateRange = !!(startDate || endDate);
+
         bls.forEach(bl => {
             const blDate = new Date(bl.createdAt);
-            const blMonth = blDate.getMonth(); // 0-11
-            const isSameYear = blDate.getFullYear() === selectedYear;
+            const blMonthIndex = blDate.getMonth(); 
+            const blMonthNum = blMonthIndex + 1;
+            const blYear = blDate.getFullYear();
+            
+            const isSelectedYear = selectedYear ? blYear === selectedYear : true;
+            const isSelectedMonth = selectedMonth ? blMonthNum === selectedMonth : true;
+
+            // Global stats condition: 
+            // If date range provided, use all records (already filtered by Prisma)
+            // Otherwise, respect year/month selection
+            const isInContext = isDateRange || (isSelectedYear && isSelectedMonth);
+
+            if (isInContext) {
+                countBL += 1;
+            }
 
             // Containers
             bl.containers.forEach(cn => {
                 const type = cn.typeTc.toLowerCase();
                 let teu = 0;
                 if (type.includes("20")) {
-                    count20 += 1;
                     teu = 1;
+                    if (isInContext) count20 += 1;
                 } else if (type.includes("40")) {
-                    count40 += 1;
                     teu = 2;
+                    if (isInContext) count40 += 1;
                 }
 
-                totalTonnage += cn.grossWeight || 0;
+                if (isInContext) {
+                    totalTonnage += cn.grossWeight || 0;
+                }
 
-                // Accumulate monthly stats if it's the right year
-                if (isSameYear) {
-                    monthlyStats[blMonth].tonnage += cn.grossWeight || 0;
-                    monthlyStats[blMonth].teu += teu;
+                // Monthly stats for chart
+                // If it's a specific year view, fill the 12-month array
+                if (!isDateRange && blYear === selectedYear) {
+                    monthlyStats[blMonthIndex].tonnage += cn.grossWeight || 0;
+                    monthlyStats[blMonthIndex].teu += teu;
+                } 
+                // If it's a date range, we just accumulate but chart might need logic 
+                // (for now let's keep it simple: if date range, monthlyStats will only have data for those months)
+                else if (isDateRange) {
+                    monthlyStats[blMonthIndex].tonnage += cn.grossWeight || 0;
+                    monthlyStats[blMonthIndex].teu += teu;
                 }
             });
 
-            // Goods (Percentage)
-            const hs = bl.goods?.hsCode;
-            const nature = hs ? natureMap[hs] : null;
-            const goodsName = hs ? (nature ? `${hs} - ${nature}` : hs) : "Non spécifié";
-            goodsMap[goodsName] = (goodsMap[goodsName] || 0) + 1;
+            // Goods & Destinations - relative to context
+            if (isInContext) {
+                const hs = bl.goods?.hsCode;
+                const nature = hs ? natureMap[hs] : null;
+                const goodsName = hs ? (nature ? `${hs} - ${nature}` : hs) : "Non spécifié";
+                goodsMap[goodsName] = (goodsMap[goodsName] || 0) + 1;
 
-            // Destinations
-            const dest = bl.portCityText || bl.portCountryText || "Inconnu";
-            destMap[dest] = (destMap[dest] || 0) + 1;
+                const dest = bl.portCityText || bl.portCountryText || "Inconnu";
+                destMap[dest] = (destMap[dest] || 0) + 1;
+            }
         });
 
         // Format goods for percentages
@@ -129,7 +159,7 @@ export async function GET(request: Request) {
             select: { hsCode: true, description: true },
             distinct: ['hsCode']
         });
-        const hsCodeList = goodsForFilter.map(g => ({
+        const hsCodeList = goodsForFilter.map((g: any) => ({
             id: g.hsCode,
             name: g.description ? `${g.hsCode} - ${g.description}` : g.hsCode
         })).sort((a, b) => a.id.localeCompare(b.id));

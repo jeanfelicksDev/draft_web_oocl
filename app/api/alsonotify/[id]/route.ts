@@ -13,7 +13,16 @@ export async function PUT(
             where: { id },
             data: { 
                 name: data.name,
-                description: data.description 
+                address: data.address,
+                country: data.country,
+                city: data.city,
+                phone: data.phone,
+                email: data.email,
+                vat: data.vat || null,
+                eori: data.eori || null,
+                bin: data.bin || null,
+                usci: data.usci || null,
+                saveStatus: data.saveStatus || "VALIDATED"
             },
         });
 

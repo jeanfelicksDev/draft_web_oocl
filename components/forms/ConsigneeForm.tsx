@@ -191,7 +191,7 @@ export function ConsigneeForm({ isOpen, onClose, onSuccess, onDelete, title = "N
             const res = await fetch(submitEndpoint, {
                 method: isEditing ? "PUT" : "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
+                body: JSON.stringify({ ...data, saveStatus: "VALIDATED" }),
             });
 
             if (res.ok) {
@@ -200,6 +200,35 @@ export function ConsigneeForm({ isOpen, onClose, onSuccess, onDelete, title = "N
                 onClose();
             } else {
                 alert("Erreur lors de l'enregistrement.")
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleSaveAsDraft = async () => {
+        const data = watch(); // or getValues()
+        if (!data.name) {
+            alert("Le nom est obligatoire même pour un brouillon.");
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            const isEditing = !!initialData?.id;
+            const submitEndpoint = isEditing ? `${endpoint}/${initialData.id}` : endpoint;
+
+            const res = await fetch(submitEndpoint, {
+                method: isEditing ? "PUT" : "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ...data, saveStatus: "DRAFT" }),
+            });
+
+            if (res.ok) {
+                const newItem = await res.json();
+                onSuccess(newItem);
+                onClose();
+            } else {
+                alert("Erreur lors de l'enregistrement du brouillon.")
             }
         } finally {
             setIsSubmitting(false);
@@ -229,6 +258,7 @@ export function ConsigneeForm({ isOpen, onClose, onSuccess, onDelete, title = "N
             isOpen={isOpen}
             onClose={onClose}
             onSubmit={handleSubmit(handleFormSubmit)}
+            onSaveDraft={handleSaveAsDraft}
             onDelete={initialData && onDelete ? handleDelete : undefined}
             isSubmitting={isSubmitting}
             maxWidth="800px"

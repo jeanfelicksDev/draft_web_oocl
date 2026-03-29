@@ -82,15 +82,13 @@ export default function AdminPortsPage() {
             <Sidebar />
             <main style={{ flex: 1, padding: '2.5rem', overflowY: 'auto' }}>
 
-                {/* En-tête */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
-                    <div style={{ padding: '0.75rem', background: 'white', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                {/* En-tête Centré */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '2.5rem' }}>
+                    <div style={{ padding: '0.75rem', background: 'white', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '1rem' }}>
                         <MapPin size={28} color="#e60012" />
                     </div>
-                    <div>
-                        <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800, color: '#0a1f5c' }}>Gestion des Ports & Pays</h1>
-                        <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>Référentiel maritime — Accès Administrateur</p>
-                    </div>
+                    <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800, color: '#0a1f5c' }}>Gestion des Ports & Pays</h1>
+                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>Référentiel maritime — Accès Administrateur</p>
                 </div>
 
                 {/* Contenu limité à 50% de largeur */}

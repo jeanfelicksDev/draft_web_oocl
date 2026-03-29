@@ -11,7 +11,8 @@ import {
     User,
     Package,
     Box,
-    MapPin
+    MapPin,
+    FileText
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useAuth } from "./AuthProvider";
@@ -55,7 +56,51 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                     </div>
                 </Link>
 
-                {/* Tables de référence (Actions rapides) - Réservé ADMIN */}
+                {/* Administration principale */}
+                {canManageUsers && (
+                    <>
+                        <Link href="/admin/users" passHref style={{ textDecoration: "none" }}>
+                            <div className={`nav-item admin-nav-item ${pathname === '/admin/users' ? 'active' : ''}`} style={{ 
+                                marginTop: "1.5rem",
+                                borderTop: "1px solid var(--border)",
+                                paddingTop: "1rem",
+                                color: pathname === '/admin/users' ? "white" : "var(--primary)"
+                            }}>
+                                <ShieldCheck size={19} strokeWidth={2.5} />
+                                <span style={{ fontWeight: 600 }}>Accès Utilisateurs</span>
+                            </div>
+                        </Link>
+                        <Link href="/admin/ports" passHref style={{ textDecoration: "none" }}>
+                            <div className={`nav-item admin-nav-item ${pathname === '/admin/ports' ? 'active' : ''}`} style={{ 
+                                marginTop: "0.25rem",
+                                color: pathname === '/admin/ports' ? "white" : "var(--primary)"
+                            }}>
+                                <MapPin size={19} strokeWidth={2.5} />
+                                <span style={{ fontWeight: 600 }}>Gérer Ports & Pays</span>
+                            </div>
+                        </Link>
+                        <Link href="/admin/vessels" passHref style={{ textDecoration: "none" }}>
+                            <div className={`nav-item admin-nav-item ${pathname === '/admin/vessels' ? 'active' : ''}`} style={{ 
+                                marginTop: "0.25rem",
+                                color: pathname === '/admin/vessels' ? "white" : "var(--primary)"
+                            }}>
+                                <Ship size={19} strokeWidth={2.5} />
+                                <span style={{ fontWeight: 600 }}>Gérer Navires & Voyages</span>
+                            </div>
+                        </Link>
+                        <Link href="/admin/drafts" passHref style={{ textDecoration: "none" }}>
+                            <div className={`nav-item admin-nav-item ${pathname === '/admin/drafts' ? 'active' : ''}`} style={{ 
+                                marginTop: "0.25rem",
+                                color: pathname === '/admin/drafts' ? "white" : "var(--primary)"
+                            }}>
+                                <FileText size={19} strokeWidth={2.5} />
+                                <span style={{ fontWeight: 600 }}>Suivi des Drafts Clients</span>
+                            </div>
+                        </Link>
+                    </>
+                )}
+
+                {/* Tables de référence (Actions rapides) - Déplacé en bas */}
                 {canManageUsers && (
                     <div style={{ marginTop: "1.5rem", padding: "0 1rem" }}>
                         <p style={{ 
@@ -105,31 +150,6 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                         </Link>
                     </div>
                 )}
-
-                {canManageUsers && (
-                    <>
-                        <Link href="/admin/users" passHref style={{ textDecoration: "none" }}>
-                            <div className={`nav-item admin-nav-item ${pathname === '/admin/users' ? 'active' : ''}`} style={{ 
-                                marginTop: "1.5rem",
-                                borderTop: "1px solid var(--border)",
-                                paddingTop: "1rem",
-                                color: pathname === '/admin/users' ? "white" : "var(--primary)"
-                            }}>
-                                <ShieldCheck size={19} strokeWidth={2.5} />
-                                <span style={{ fontWeight: 600 }}>Accès Utilisateurs</span>
-                            </div>
-                        </Link>
-                        <Link href="/admin/ports" passHref style={{ textDecoration: "none" }}>
-                            <div className={`nav-item admin-nav-item ${pathname === '/admin/ports' ? 'active' : ''}`} style={{ 
-                                marginTop: "0.25rem",
-                                color: pathname === '/admin/ports' ? "white" : "var(--primary)"
-                            }}>
-                                <MapPin size={19} strokeWidth={2.5} />
-                                <span style={{ fontWeight: 600 }}>Gérer Ports & Pays</span>
-                            </div>
-                        </Link>
-                    </>
-                )}
             </nav>
 
             {/* Session info + logout */}
@@ -160,7 +180,7 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                     style={{ width: "100%", padding: "0.6rem", fontSize: "0.8rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}
                 >
                     <LogOut size={16} />
-                    Se déconnecter
+                    Se deconnecter
                 </button>
             </div>
 

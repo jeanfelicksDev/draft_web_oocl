@@ -20,6 +20,7 @@ export async function GET() {
                 name: true,
                 companyName: true,
                 role: true,
+                phone: true,
                 isAuthorized: true,
                 tempPassword: true,
                 mustChangePassword: true,

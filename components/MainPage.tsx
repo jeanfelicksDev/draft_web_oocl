@@ -52,7 +52,11 @@ const blSchema = yup.object().shape({
     alsoNotifyId: yup.string().nullable(),
     forwarderId: yup.string().required("Forwarder requis"),
     freightBuyerId: yup.string().required("Freight Buyer requis"),
-    goodsId: yup.string().required("Description requis"),
+    descriptionGoods: yup.string().required("Nature de la marchandise requise"),
+    goodsId: yup.string().required("Nature de la marchandise requise"),
+    hsCode: yup.string().nullable(),
+    vesselId: yup.string().required("Navire requis"),
+    voyageId: yup.string().required("Voyage requis"),
 });
 
 export default function MainPage() {
@@ -79,6 +83,8 @@ export default function MainPage() {
     const [packageTypes, setPackageTypes]   = useState<any[]>([]);
     const [billOfLadings, setBillOfLadings] = useState<any[]>([]);
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+    const [vessels, setVessels]           = useState<any[]>([]);
+    const [filteredVoyages, setFilteredVoyages] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
     const [newPass, setNewPass] = useState("");
@@ -90,8 +96,10 @@ export default function MainPage() {
         defaultValues: {
             bookingNumber: "", contractNumber: "",
             shipperId: "", consigneeId: "", notifyId: "", alsoNotifyId: "",
-            forwarderId: "", freightBuyerId: "", goodsId: "",
+            forwarderId: "", freightBuyerId: "", 
+            descriptionGoods: "", goodsId: "", hsCode: "",
             portCountryText: "", portCityText: "", typeReleasedId: "",
+            vesselId: "", voyageId: "",
         }
     });
 
@@ -127,8 +135,9 @@ export default function MainPage() {
     const emptyForm = {
         bookingNumber: "", contractNumber: "",
         shipperId: "", consigneeId: "", notifyId: "", alsoNotifyId: "",
-        forwarderId: "", freightBuyerId: "", goodsId: "",
+        descriptionGoods: "", goodsId: "", hsCode: "",
         portCountryText: "", portCityText: "", typeReleasedId: "",
+        vesselId: "", voyageId: "",
     };
 
     const handleNewForm = () => {
@@ -176,7 +185,11 @@ export default function MainPage() {
                 setValue("alsoNotifyId", data.alsoNotifyId || "");
                 setValue("forwarderId", data.forwarderId || "");
                 setValue("freightBuyerId", data.freightBuyerId || "");
+                setValue("descriptionGoods", data.descriptionGoods || "");
                 setValue("goodsId", data.goodsId || "");
+                setValue("hsCode", data.hsCode || "");
+                setValue("vesselId", data.vesselId || "");
+                setValue("voyageId", data.voyageId || "");
 
                 if (data.containers) setContainers(data.containers);
                 setCurrentBlId(data.id);
@@ -193,7 +206,7 @@ export default function MainPage() {
     /* ─── Initial fetch ─── */
     React.useEffect(() => {
         const fetchAll = async () => {
-            const [s, c, n, a, f, fw, g, t, hs, ttc, pt, bls] = await Promise.all([
+            const [s, c, n, a, f, fw, g, t, hs, ttc, pt, bls, vss] = await Promise.all([
                 fetch('/api/shippers').then(r => r.ok ? r.json() : []),
                 fetch('/api/consignees').then(r => r.ok ? r.json() : []),
                 fetch('/api/notify').then(r => r.ok ? r.json() : []),
@@ -206,6 +219,7 @@ export default function MainPage() {
                 fetch('/api/typetc').then(r => r.ok ? r.json() : []),
                 fetch('/api/packagetypes').then(r => r.ok ? r.json() : []),
                 fetch('/api/billoflading').then(r => r.ok ? r.json() : []),
+                fetch('/api/vessels').then(r => r.ok ? r.json() : []),
             ]);
             if (Array.isArray(s))   setShippers(s);
             if (Array.isArray(c))   setConsignees(c);
@@ -219,9 +233,20 @@ export default function MainPage() {
             if (Array.isArray(ttc)) setTypesTc(ttc);
             if (Array.isArray(pt))  setPackageTypes(pt);
             if (Array.isArray(bls)) setBillOfLadings(bls);
+            if (Array.isArray(vss)) setVessels(vss);
         };
         fetchAll();
     }, []);
+
+    useEffect(() => {
+        if (values.vesselId) {
+            fetch(`/api/voyages?vesselId=${values.vesselId}`)
+                .then(r => r.ok ? r.json() : [])
+                .then(data => setFilteredVoyages(Array.isArray(data) ? data : []));
+        } else {
+            setFilteredVoyages([]);
+        }
+    }, [values.vesselId]);
 
     /* ─── Save Draft ─── */
     const handleSaveDraft = async () => {
@@ -269,10 +294,104 @@ export default function MainPage() {
 
     /* ─── Save Validated ─── */
     const onSubmit = async (data: any) => {
+        // 1. Check if containers are present
         if (containers.length === 0) {
             toast.error("Veuillez ajouter au moins un conteneur.");
             return;
         }
+
+        // 2. Check each partner status and missing fields
+        const partnersToCheck = [
+            { id: data.shipperId, list: shippers, label: "Expéditeur (Shipper)" },
+            { id: data.consigneeId, list: consignees, label: "Destinataire (Consignee)" },
+            { id: data.notifyId, list: notifys, label: "Notify Party" },
+            { id: data.forwarderId, list: forwarders, label: "Forwarder" },
+            { id: data.freightBuyerId, list: freightBuyers, label: "Freight Buyer" },
+            { id: data.alsoNotifyId, list: alsoNotifys, label: "Also Notify Party" }
+        ];
+
+        const draftsErrors: string[] = [];
+
+        // Better way to check missing fields with constants
+        const { countryRequirements, cityRequirements } = await import("@/lib/constants");
+        
+        for (const p of partnersToCheck) {
+            const partner = p.list.find(x => x.id === p.id);
+            if (partner && partner.saveStatus === "DRAFT") {
+                const missing: string[] = [];
+                
+                if (p.label === "Also Notify Party") {
+                    if (!partner.name) missing.push("Nom");
+                    if (!partner.description) missing.push("Adresse/Description");
+                } else {
+                    if (!partner.name) missing.push("Nom");
+                    if (!partner.address) missing.push("Adresse");
+                    if (!partner.country) missing.push("Pays");
+                    if (!partner.city) missing.push("Ville");
+                    if (!partner.phone) missing.push("Téléphone");
+                    if (!partner.email) missing.push("Email");
+                }
+
+                const reqs = [
+                    ...(countryRequirements[partner.country] || []),
+                    ...(cityRequirements[partner.city] || [])
+                ];
+
+                if (reqs.includes("VAT") && !partner.vat) missing.push("N° VAT");
+                if (reqs.includes("EORI") && !partner.eori) missing.push("N° EORI");
+                if (reqs.includes("BIN") && !partner.bin) missing.push("N° BIN");
+                if (reqs.includes("USCI") && !partner.usci) missing.push("N° USCI");
+
+                if (missing.length > 0) {
+                    draftsErrors.push(`${p.label} : Champs manquants (${missing.join(", ")})`);
+                } else {
+                    // Tous les champs sont là, mais c'est un brouillon
+                    draftsErrors.push(`${p.label} : Doit être validé officiellement (Tous les champs sont renseignés)`);
+                }
+            }
+        }
+
+        if (draftsErrors.length > 0) {
+            toast((t) => (
+                <div style={{ textAlign: "left", position: "relative", paddingRight: "1.5rem" }}>
+                    <button 
+                        onClick={() => toast.dismiss(t.id)}
+                        style={{
+                            position: "absolute",
+                            top: "-10px",
+                            right: "-10px",
+                            background: "white",
+                            border: "1px solid #ddd",
+                            borderRadius: "50%",
+                            width: "24px",
+                            height: "24px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "14px",
+                            cursor: "pointer",
+                            color: "#666",
+                            boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+                            zIndex: 1
+                        }}
+                        title="Fermer"
+                    >
+                        &times;
+                    </button>
+                    <p style={{ fontWeight: 800, color: "var(--danger)", marginBottom: "0.5rem", fontSize: "1rem" }}>
+                        Impossible de finaliser : Certains partenaires sont encore en Brouillon.
+                    </p>
+                    <ul style={{ fontSize: "0.9rem", paddingLeft: "1.2rem", color: "#333" }}>
+                        {draftsErrors.map((err, i) => <li key={i} style={{ marginBottom: "0.25rem" }}>{err}</li>)}
+                    </ul>
+                    <p style={{ fontSize: "0.8rem", marginTop: "0.75rem", fontStyle: "italic", color: "#666", borderTop: "1px solid #eee", paddingTop: "0.5rem" }}>
+                        Veuillez modifier ces partenaires pour compléter les informations manquantes.
+                    </p>
+                </div>
+            ), { duration: 15000, position: "top-center", style: { maxWidth: "600px", padding: "1rem" } });
+            return;
+        }
+
         setIsGeneratingPDF(true);
         try {
             const url = currentBlId ? `/api/billoflading/${currentBlId}` : "/api/billoflading";
@@ -296,7 +415,11 @@ export default function MainPage() {
                     alsoNotify: alsoNotifys.find(a => a.id === data.alsoNotifyId) || {},
                     freightBuyer: freightBuyers.find(f => f.id === data.freightBuyerId) || {},
                     forwarder: forwarders.find(f => f.id === data.forwarderId) || {},
-                    goods: goods.find(g => g.id === data.goodsId) || {},
+                    descriptionGoods: data.descriptionGoods || "",
+                    hsCode: data.hsCode || "",
+                    vessel: vessels.find(v => v.id === data.vesselId)?.name || "",
+                    voyage: filteredVoyages.find(v => v.id === data.voyageId)?.number || "",
+                    etd: filteredVoyages.find(v => v.id === data.voyageId)?.etdDate || "",
                     containers,
                 };
                 generateBLPDF(hydratedData, false);
@@ -387,7 +510,7 @@ export default function MainPage() {
                                 Informations générales
                             </p>
 
-                            <div className="grid-2">
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.5rem" }}>
                                 <div>
                                     <label>Booking Number *</label>
                                     <input
@@ -421,6 +544,17 @@ export default function MainPage() {
                                     {errors.bookingNumber && <span className="error-msg">{(errors.bookingNumber as any).message}</span>}
                                 </div>
 
+                                <Combobox
+                                    label="Type Released *"
+                                    items={typesReleased}
+                                    displayKey="name"
+                                    valueKey="id"
+                                    value={values.typeReleasedId}
+                                    onChange={(val) => setValue("typeReleasedId", val)}
+                                    error={errors.typeReleasedId?.message as string}
+                                    disabled={!canWrite}
+                                />
+
                                 <div>
                                     <label>Contract Number *</label>
                                     <input
@@ -434,17 +568,52 @@ export default function MainPage() {
                                 </div>
                             </div>
 
-                            <div className="grid-2" style={{ marginTop: "1.5rem" }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "4fr 2fr 1fr 1fr", gap: "1.5rem", marginTop: "1.5rem" }}>
                                 <Combobox
-                                    label="Type Released *"
-                                    items={typesReleased}
+                                    label="Navire *"
+                                    items={vessels}
                                     displayKey="name"
                                     valueKey="id"
-                                    value={values.typeReleasedId}
-                                    onChange={(val) => setValue("typeReleasedId", val)}
-                                    error={errors.typeReleasedId?.message as string}
+                                    value={values.vesselId}
+                                    onChange={(val) => {
+                                        setValue("vesselId", val);
+                                        setValue("voyageId", ""); // Reset voyage
+                                    }}
+                                    error={errors.vesselId?.message as string}
                                     disabled={!canWrite}
                                 />
+                                <Combobox
+                                    label="Voyage *"
+                                    items={filteredVoyages}
+                                    displayKey="number"
+                                    valueKey="id"
+                                    value={values.voyageId}
+                                    onChange={(val) => setValue("voyageId", val)}
+                                    error={errors.voyageId?.message as string}
+                                    disabled={!canWrite || !values.vesselId}
+                                />
+                                <div style={{ width: '100%', marginBottom: '1rem' }}>
+                                    <label style={{ marginBottom: '0.45rem', fontSize: '0.85rem', fontWeight: 700, visibility: 'hidden', display: 'flex' }}>
+                                        <span>&nbsp;</span>
+                                    </label>
+                                    <div style={{ background: "#f8fafc", padding: "0.4rem 0.8rem", borderRadius: "12px", border: "2px solid #e2e8f0", height: "46px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                                        <p style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", margin: 0 }}>ETA Port</p>
+                                        <p style={{ fontSize: "0.85rem", fontWeight: 800, color: "var(--primary)", margin: "0.2rem 0 0 0" }}>
+                                            {filteredVoyages.find(v => v.id === values.voyageId)?.etaDate ? new Date(filteredVoyages.find(v => v.id === values.voyageId).etaDate).toLocaleDateString() : "—"}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div style={{ width: '100%', marginBottom: '1rem' }}>
+                                    <label style={{ marginBottom: '0.45rem', fontSize: '0.85rem', fontWeight: 700, visibility: 'hidden', display: 'flex' }}>
+                                        <span>&nbsp;</span>
+                                    </label>
+                                    <div style={{ background: "#f8fafc", padding: "0.4rem 0.8rem", borderRadius: "12px", border: "2px solid #e2e8f0", height: "46px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                                        <p style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", margin: 0 }}>ETD Navire</p>
+                                        <p style={{ fontSize: "0.85rem", fontWeight: 800, color: "var(--primary)", margin: "0.2rem 0 0 0" }}>
+                                            {filteredVoyages.find(v => v.id === values.voyageId)?.etdDate ? new Date(filteredVoyages.find(v => v.id === values.voyageId).etdDate).toLocaleDateString() : "—"}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="grid-2" style={{ marginTop: "1.5rem" }}>
@@ -475,6 +644,7 @@ export default function MainPage() {
                                     onAddNew={canEditRefTables ? () => handleAddNew("SHIPPER") : undefined}
                                     onEdit={canEditRefTables ? () => handleEdit("SHIPPER", shippers, values.shipperId) : undefined}
                                     error={errors.shipperId?.message as string}
+                                    isDraft={shippers.find(s => s.id === values.shipperId)?.saveStatus === "DRAFT"}
                                     disabled={!canWrite} />
 
                                 <Combobox label="Consignee *" items={consignees} displayKey="name" valueKey="id"
@@ -482,6 +652,7 @@ export default function MainPage() {
                                     onAddNew={canEditRefTables ? () => handleAddNew("CONSIGNEE") : undefined}
                                     onEdit={canEditRefTables ? () => handleEdit("CONSIGNEE", consignees, values.consigneeId) : undefined}
                                     error={errors.consigneeId?.message as string}
+                                    isDraft={consignees.find(c => c.id === values.consigneeId)?.saveStatus === "DRAFT"}
                                     disabled={!canWrite} />
                             </div>
 
@@ -491,13 +662,15 @@ export default function MainPage() {
                                     onAddNew={canEditRefTables ? () => handleAddNew("NOTIFY") : undefined}
                                     onEdit={canEditRefTables ? () => handleEdit("NOTIFY", notifys, values.notifyId) : undefined}
                                     error={errors.notifyId?.message as string}
+                                    isDraft={notifys.find(n => n.id === values.notifyId)?.saveStatus === "DRAFT"}
                                     disabled={!canWrite} />
 
-                                <Combobox label="Also Notify" items={alsoNotifys} displayKey="description" valueKey="id"
+                                <Combobox label="Also Notify" items={alsoNotifys} displayKey="name" valueKey="id"
                                     value={values.alsoNotifyId || ""} onChange={(val) => setValue("alsoNotifyId", val)}
                                     onAddNew={canEditRefTables ? () => handleAddNew("ALSO_NOTIFY") : undefined}
                                     onEdit={canEditRefTables ? () => handleEdit("ALSO_NOTIFY", alsoNotifys, values.alsoNotifyId || "") : undefined}
                                     error={errors.alsoNotifyId?.message as string}
+                                    isDraft={alsoNotifys.find(a => a.id === values.alsoNotifyId)?.saveStatus === "DRAFT"}
                                     disabled={!canWrite} />
                             </div>
 
@@ -507,6 +680,7 @@ export default function MainPage() {
                                     onAddNew={canEditRefTables ? () => handleAddNew("FREIGHT_BUYER") : undefined}
                                     onEdit={canEditRefTables ? () => handleEdit("FREIGHT_BUYER", freightBuyers, values.freightBuyerId) : undefined}
                                     error={errors.freightBuyerId?.message as string}
+                                    isDraft={freightBuyers.find(f => f.id === values.freightBuyerId)?.saveStatus === "DRAFT"}
                                     disabled={!canWrite} />
 
                                 <Combobox label="Forwarder *" items={forwarders} displayKey="name" valueKey="id"
@@ -514,6 +688,7 @@ export default function MainPage() {
                                     onAddNew={canEditRefTables ? () => handleAddNew("FORWARDER") : undefined}
                                     onEdit={canEditRefTables ? () => handleEdit("FORWARDER", forwarders, values.forwarderId) : undefined}
                                     error={errors.forwarderId?.message as string}
+                                    isDraft={forwarders.find(f => f.id === values.forwarderId)?.saveStatus === "DRAFT"}
                                     disabled={!canWrite} />
                             </div>
                         </section>
@@ -526,13 +701,29 @@ export default function MainPage() {
                                 <Ship size={12} />
                                 Marchandises
                             </p>
-                            <Combobox label="Description of Goods *" items={goods} displayKey="description" valueKey="id"
-                                value={values.goodsId} onChange={(val) => setValue("goodsId", val)}
-                                onAddNew={canEditRefTables ? () => handleAddNew("GOODS") : undefined}
-                                onEdit={canEditRefTables ? () => handleEdit("GOODS", goods, values.goodsId) : undefined}
-                                multiline={true}
-                                error={errors.goodsId?.message as string}
-                                disabled={!canWrite} />
+                            <div style={{ display: "flex", flexDirection: "column" }}>
+                                <Combobox 
+                                    label="Nature de la marchandise *" 
+                                    items={goods} 
+                                    displayKey="description" 
+                                    valueKey="id"
+                                    value={values.goodsId || ""} 
+                                    onChange={(val) => {
+                                        setValue("goodsId", val);
+                                        const selected = goods.find(g => g.id === val);
+                                        if (selected) {
+                                            setValue("descriptionGoods", selected.description);
+                                            setValue("hsCode", selected.hsCode);
+                                        }
+                                    }}
+                                    onAddNew={canEditRefTables ? () => handleAddNew("GOODS") : undefined}
+                                    onEdit={canEditRefTables ? () => handleEdit("GOODS", goods, values.goodsId || "") : undefined}
+                                    error={errors.goodsId?.message as string}
+                                    isDraft={goods.find(g => g.id === values.goodsId)?.saveStatus === "DRAFT"}
+                                    disabled={!canWrite}
+                                    multiline={true}
+                                />
+                            </div>
                         </section>
 
                         {/* ── Conteneurs ── */}
@@ -553,7 +744,7 @@ export default function MainPage() {
                                         Génération du PDF...
                                     </>
                                 ) : (
-                                    "💾 Enregistrer et finaliser le B/L"
+                                    "✨ Enregistrer et finaliser le B/L"
                                 )}
                             </button>
                         </div>
@@ -649,6 +840,7 @@ export default function MainPage() {
                     }
                     setActiveModal(null);
                 }}
+                onDelete={handleDeleteList(setAlsoNotifys, alsoNotifys, "alsoNotifyId")}
                 maxWidth="800px" />
 
             <SmallGenericForm
@@ -731,31 +923,33 @@ export default function MainPage() {
                                     className={`booking-card ${currentBlId === bl.id ? "active" : ""} ${isDraft ? "draft" : "validated"}`}
                                     onClick={() => handleSearchBooking(bl.bookingNumber)}
                                 >
-                                    <span className="booking-card-num">#{bl.bookingNumber}</span>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
+                                        <span className="booking-card-num" style={{ margin: 0, flexShrink: 0 }}>#{bl.bookingNumber}</span>
 
-                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "0.5rem" }}>
-                                        {isDraft
-                                            ? <span className="badge-draft">⏳ En traitement</span>
-                                            : <span className="badge-validated">✓ Terminé</span>}
+                                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                            {isDraft
+                                                ? <span className="badge-draft" title="En traitement" style={{ padding: "0.2rem 0.4rem" }}>⏳</span>
+                                                : <span className="badge-validated" title="Terminé" style={{ padding: "0.2rem 0.4rem" }}>✓</span>}
 
-                                        {canDelete && (
-                                            <button
-                                                type="button"
-                                                title="Supprimer ce BL"
-                                                onClick={(e) => handleDeleteBL(bl.id, bl.bookingNumber, e)}
-                                                style={{
-                                                    background: "none", border: "none",
-                                                    color: "var(--danger)", cursor: "pointer",
-                                                    padding: "0.25rem", borderRadius: "6px",
-                                                    display: "flex", alignItems: "center",
-                                                    transition: "background 0.15s"
-                                                }}
-                                                onMouseEnter={e => (e.currentTarget.style.background = "rgba(239,68,68,0.1)")}
-                                                onMouseLeave={e => (e.currentTarget.style.background = "none")}
-                                            >
-                                                <Trash2 size={13} />
-                                            </button>
-                                         )}
+                                            {canDelete && (
+                                                <button
+                                                    type="button"
+                                                    title="Supprimer ce BL"
+                                                    onClick={(e) => handleDeleteBL(bl.id, bl.bookingNumber, e)}
+                                                    style={{
+                                                        background: "none", border: "none",
+                                                        color: "var(--danger)", cursor: "pointer",
+                                                        padding: "0.25rem", borderRadius: "6px",
+                                                        display: "flex", alignItems: "center",
+                                                        transition: "background 0.15s"
+                                                    }}
+                                                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(239,68,68,0.1)")}
+                                                    onMouseLeave={e => (e.currentTarget.style.background = "none")}
+                                                >
+                                                    <Trash2 size={13} />
+                                                </button>
+                                             )}
+                                        </div>
                                     </div>
                                 </div>
                             );

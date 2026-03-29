@@ -76,7 +76,7 @@ export function GoodsForm({
             const res = await fetch(isEditing ? `/api/goods/${initialData.id}` : "/api/goods", {
                 method: isEditing ? "PUT" : "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
+                body: JSON.stringify({ ...data, saveStatus: "VALIDATED" }),
             });
 
             if (res.ok) {
@@ -107,12 +107,40 @@ export function GoodsForm({
         }
     };
 
+    const handleSaveAsDraft = async () => {
+        const data = watch();
+        if (!data.description) {
+            alert("La description est obligatoire même pour un brouillon.");
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            const isEditing = !!initialData?.id;
+            const res = await fetch(isEditing ? `/api/goods/${initialData.id}` : "/api/goods", {
+                method: isEditing ? "PUT" : "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ...data, saveStatus: "DRAFT" }),
+            });
+
+            if (res.ok) {
+                const savedItem = await res.json();
+                onSuccess(savedItem);
+                onClose();
+            } else {
+                alert("Erreur lors de l'enregistrement du brouillon.");
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
         <ModalForm
             title={title}
             isOpen={isOpen}
             onClose={onClose}
             onSubmit={handleSubmit(handleFormSubmit)}
+            onSaveDraft={handleSaveAsDraft}
             onDelete={initialData && onDelete ? handleDelete : undefined}
             isSubmitting={isSubmitting}
             maxWidth="800px"
@@ -131,7 +159,7 @@ export function GoodsForm({
                             restRegister.onChange(e);
                             autoResize();
                         }}
-                        style={{ overflow: 'hidden', resize: 'none' }}
+                        style={{ overflow: 'hidden', resize: 'none', minHeight: '12cm' }}
                     />
                     {errors.description && <span className="error-msg">{errors.description.message as string}</span>}
                 </div>

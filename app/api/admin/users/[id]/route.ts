@@ -8,50 +8,55 @@ export async function DELETE(
 ) {
     try {
         const session = await auth();
-        console.log("DELETE API SESSION:", session?.user?.email, (session?.user as any)?.role);
-
         if (!session || (session.user as any).role !== "ADMIN") {
-            const details = `Session: ${!!session}, Role: ${(session?.user as any)?.role}`;
-            return NextResponse.json({ error: "Non autorisé", details }, { status: 403 });
+            return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
         }
 
         const { id: userId } = await params;
 
-        // On ne permet pas à l'admin de se supprimer lui-même par erreur ici
+        // On ne peut pas se supprimer soi-même
         if (userId === (session.user as any).id) {
-            return NextResponse.json({ error: "Impossible de supprimer votre propre compte admin" }, { status: 400 });
+            return NextResponse.json({ error: "Impossible de supprimer votre propre compte" }, { status: 400 });
         }
 
-        console.log(`DELETING USER ${userId} with recursive dependencies cleaning`);
+        console.log(`Starting deep cleanup for user: ${userId}`);
 
-        // Clean up all related tables to avoid foreign key constraints errors
-        await prisma.container.deleteMany({ where: { billOfLading: { userId } } });
-        await prisma.billOfLading.deleteMany({ where: { userId } });
-        
-        await prisma.shipper.deleteMany({ where: { userId } });
-        await prisma.consignee.deleteMany({ where: { userId } });
-        await prisma.notify.deleteMany({ where: { userId } });
-        await prisma.alsoNotify.deleteMany({ where: { userId } });
-        await prisma.forwarder.deleteMany({ where: { userId } });
-        await prisma.freightBuyer.deleteMany({ where: { userId } });
-        await prisma.goods.deleteMany({ where: { userId } });
-        await prisma.hSCode.deleteMany({ where: { userId } });
-        await prisma.port.deleteMany({ where: { userId } });
-        await prisma.city.deleteMany({ where: { userId } });
-        
-        await (prisma as any).typeReleased.deleteMany({ where: { userId } });
-        await (prisma as any).typeTc.deleteMany({ where: { userId } });
-        await (prisma as any).packageType.deleteMany({ where: { userId } });
+        // Transaction pour tout supprimer proprement et éviter les erreurs de clé étrangère
+        await prisma.$transaction([
+            // 1. Dépendances de niveau 2 (via d'autres entités)
+            prisma.container.deleteMany({ where: { billOfLading: { userId } } }),
+            prisma.rotationBooking.deleteMany({ where: { voyage: { userId } } }),
+            
+            // 2. Dépendances de niveau 1 (directement liées à l'utilisateur)
+            prisma.billOfLading.deleteMany({ where: { userId } }),
+            prisma.voyage.deleteMany({ where: { userId } }),
+            prisma.vessel.deleteMany({ where: { userId } }),
+            prisma.shipper.deleteMany({ where: { userId } }),
+            prisma.consignee.deleteMany({ where: { userId } }),
+            prisma.notify.deleteMany({ where: { userId } }),
+            prisma.alsoNotify.deleteMany({ where: { userId } }),
+            prisma.forwarder.deleteMany({ where: { userId } }),
+            prisma.freightBuyer.deleteMany({ where: { userId } }),
+            prisma.goods.deleteMany({ where: { userId } }),
+            prisma.hSCode.deleteMany({ where: { userId } }),
+            prisma.port.deleteMany({ where: { userId } }),
+            prisma.city.deleteMany({ where: { userId } }),
+            prisma.typeReleased.deleteMany({ where: { userId } }),
+            prisma.typeTc.deleteMany({ where: { userId } }),
+            prisma.packageType.deleteMany({ where: { userId } }),
+            
+            // 3. Enfin supprimer l'utilisateur
+            prisma.user.delete({ where: { id: userId } })
+        ]);
 
-        await prisma.user.delete({
-            where: { id: userId }
-        });
-
-        console.log("User successfully deleted via Prisma Client");
-        return NextResponse.json({ message: "Utilisateur supprimé avec succès" });
+        console.log(`User ${userId} and all related data deleted successfully.`);
+        return NextResponse.json({ message: "Utilisateur et données associés supprimés" });
     } catch (error: any) {
-        console.error("Delete user error:", error);
-        return NextResponse.json({ error: "Erreur lors de la suppression", details: error.message }, { status: 500 });
+        console.error("Deep delete user error:", error);
+        return NextResponse.json({ 
+            error: "Erreur lors de la suppression profonde", 
+            details: error.message 
+        }, { status: 500 });
     }
 }
 

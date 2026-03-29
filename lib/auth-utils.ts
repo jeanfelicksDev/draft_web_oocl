@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 
 export async function getSession() {
     return await auth();
@@ -12,6 +13,14 @@ export async function getUserId() {
 export async function isAdmin() {
     const session = await getSession();
     return (session?.user as any)?.role === "ADMIN";
+}
+
+export async function getAdminUserId() {
+    const admin = await prisma.user.findFirst({
+        where: { role: "ADMIN" },
+        select: { id: true }
+    });
+    return admin?.id;
 }
 
 /**
