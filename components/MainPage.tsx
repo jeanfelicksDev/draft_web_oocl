@@ -60,7 +60,7 @@ const blSchema = yup.object().shape({
 export default function MainPage() {
     const { user, hasPermission } = useAuth();
     const canWrite = hasPermission("BL_WRITE");
-    const canDelete = hasPermission("BL_DELETE");
+    const canDelete = hasPermission("BL_WRITE"); // Permission de suppression étendue aux clients pour leurs propres drafts
     const canManageUsers = hasPermission("ADMIN_ACCESS");
     const canEditRefTables = hasPermission("BL_WRITE"); // Les clients peuvent aussi gérer leurs partenaires
 

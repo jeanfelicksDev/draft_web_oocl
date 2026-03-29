@@ -136,8 +136,8 @@ export async function DELETE(
         const userId = await getUserId();
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        if (!await hasPermission("BL_DELETE")) {
-            return NextResponse.json({ error: "Permission refusée : BL_DELETE requis" }, { status: 403 });
+        if (!await hasPermission("BL_DELETE") && !await hasPermission("BL_WRITE")) {
+            return NextResponse.json({ error: "Permission refusée : BL_WRITE ou BL_DELETE requis" }, { status: 403 });
         }
 
         const userIsAdmin = await checkAdmin();
