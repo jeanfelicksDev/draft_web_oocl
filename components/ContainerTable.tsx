@@ -14,18 +14,19 @@ const containerSchema = yup.object().shape({
         .required("N° Conteneur requis")
         .length(11, "Doit faire 11 caractères")
         .matches(/^[A-Z]{4}[0-9]{7}$/, "Format: 4 lettres + 7 chiffres (ex: MEDU1234567)"),
-    typeTc: yup.string().required("Type TC requis"),
-    sealNum: yup.string()
-        .required("N° Plomb requis")
-        .max(11, "Max 11 caractères"),
+    typeTc: yup.string().optional().nullable(),
+    sealNum: yup.string().optional().nullable().max(11, "Max 11 caractères"),
     count: yup.number()
-        .typeError("Nombre requis")
-        .required("Nombre requis")
-        .max(9999, "Max 4 chiffres"),
-    packageType: yup.string().required("Package requis"),
+        .typeError("Doit être un nombre")
+        .optional()
+        .nullable()
+        .transform((val, orig) => orig === "" ? null : val),
+    packageType: yup.string().optional().nullable(),
     grossWeight: yup.number()
-        .typeError("Poids requis")
-        .required("Poids brut requis")
+        .typeError("Doit être un nombre")
+        .optional()
+        .nullable()
+        .transform((val, orig) => orig === "" ? null : val)
         .test("max-weight", "Poids max dépassé", function (val) {
             const { typeTc } = this.parent;
             if (!val || !typeTc) return true;

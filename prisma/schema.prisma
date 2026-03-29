@@ -296,13 +296,13 @@ model RotationBooking {
 model Container {
   id             String       @id @default(uuid())
   containerNum   String
-  typeTc         String
-  sealNum        String
-  count          Int
-  packageType    String
-  grossWeight    Float
-  netWeight      Float
-  volume         Float
+  typeTc         String?
+  sealNum        String?
+  count          Int?
+  packageType    String?
+  grossWeight    Float?
+  netWeight      Float?
+  volume         Float?
   billOfLadingId String
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
