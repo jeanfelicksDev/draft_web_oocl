@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserId } from "@/lib/auth-utils";
+import { getUserId, isAdmin } from "@/lib/auth-utils";
 
 export async function GET(request: Request) {
     try {
@@ -12,15 +12,11 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const vesselId = searchParams.get("vesselId");
 
+        // Tout le monde voit les voyages officiels (adminId)
         const voyages = await prisma.voyage.findMany({
             where: { 
                 AND: [
-                    {
-                        OR: [
-                            { userId },
-                            { userId: adminId }
-                        ]
-                    },
+                    { userId: adminId },
                     vesselId ? { vesselId } : {}
                 ]
             },
@@ -36,7 +32,12 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const userId = await getUserId();
-        if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        const userIsAdmin = await isAdmin();
+
+        // SEUL L'ADMIN PEUT CRÉER DES VOYAGES
+        if (!userId || !userIsAdmin) {
+            return NextResponse.json({ error: "Seul l'administrateur peut créer des voyages" }, { status: 403 });
+        }
 
         const data = await request.json();
         if (!data.number || !data.vesselId) {
