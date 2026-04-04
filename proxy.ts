@@ -1,33 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import NextAuth from "next-auth";
+import { authConfig } from "./auth.config";
 
-export async function proxy(req: NextRequest) {
-    const token = await getToken({ 
-        req, 
-        secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET 
-    });
-    const isLoggedIn = !!token;
-    const { pathname } = req.nextUrl;
-
-    // Routes accessibles sans authentification
-    const isPublicRoute =
-        pathname === '/login' ||
-        pathname === '/register' ||
-        pathname === '/forgot-password' ||
-        pathname.startsWith('/reset-password');
-
-    if (isPublicRoute) {
-        if (isLoggedIn) return NextResponse.redirect(new URL('/', req.url));
-        return NextResponse.next();
-    }
-
-    if (!isLoggedIn) {
-        return NextResponse.redirect(new URL('/login', req.url));
-    }
-
-    return NextResponse.next();
-}
+/**
+ * Middleware d'authentification pour Next.js 16+.
+ * Cette version "proxy" remplace l'ancien middleware.ts pour éviter les conflits
+ * et assurer la compatibilité avec l'Edge Runtime.
+ */
+export const proxy = NextAuth(authConfig).auth;
 
 export const config = {
-    matcher: ["/((?!api|_next/static|_next/image|.*\\.png$).*)"],
+    matcher: [
+        "/((?!api|_next/static|_next/image|.*\\.png|.*\\.ico$).*)",
+    ],
 };
