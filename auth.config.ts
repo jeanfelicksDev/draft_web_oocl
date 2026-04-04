@@ -8,7 +8,10 @@ export const authConfig = {
     callbacks: {
         authorized({ auth, request: { nextUrl } }) {
             const isLoggedIn = !!auth?.user;
-            const isAuthRoute = nextUrl.pathname === '/login' || nextUrl.pathname === '/register';
+            const isAuthRoute = nextUrl.pathname === '/login' || 
+                                nextUrl.pathname === '/register' ||
+                                nextUrl.pathname === '/forgot-password' ||
+                                nextUrl.pathname.startsWith('/reset-password');
 
             if (isAuthRoute) {
                 if (isLoggedIn) return Response.redirect(new URL('/', nextUrl));

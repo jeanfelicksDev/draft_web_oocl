@@ -12,7 +12,8 @@ import {
     Package,
     Box,
     MapPin,
-    FileText
+    FileText,
+    Hash
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useAuth } from "./AuthProvider";
@@ -146,6 +147,19 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                             >
                                 <ShieldCheck size={18} style={{ color: "var(--primary)" }} />
                                 <span>Type Connais.</span>
+                            </div>
+                        </Link>
+                        <Link href="/admin/references?tab=hscode" passHref style={{ textDecoration: "none" }}>
+                            <div 
+                                className="nav-item-action" 
+                                style={{ 
+                                    display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.6rem 0.75rem",
+                                    borderRadius: "8px", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600,
+                                    color: "var(--text-main)", transition: "all 0.2s", marginTop: "0.25rem"
+                                }}
+                            >
+                                <Hash size={18} style={{ color: "var(--primary)" }} />
+                                <span>HS Code</span>
                             </div>
                         </Link>
                     </div>

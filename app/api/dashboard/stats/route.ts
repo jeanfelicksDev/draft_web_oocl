@@ -100,7 +100,7 @@ export async function GET(request: Request) {
 
             // Containers
             bl.containers.forEach(cn => {
-                const type = cn.typeTc.toLowerCase();
+                const type = (cn.typeTc ?? "").toLowerCase();
                 let teu = 0;
                 if (type.includes("20")) {
                     teu = 1;

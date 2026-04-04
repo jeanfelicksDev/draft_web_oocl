@@ -8,12 +8,15 @@ export default function ForgotPasswordPage() {
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [devResetLink, setDevResetLink] = useState("");
+    const [copied, setCopied] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setMessage("");
         setError("");
+        setDevResetLink("");
 
         try {
             const res = await fetch("/api/auth/forgot-password", {
@@ -25,6 +28,9 @@ export default function ForgotPasswordPage() {
             const data = await res.json();
             if (res.ok) {
                 setMessage(data.message);
+                if (data.devMode && data.devResetLink) {
+                    setDevResetLink(data.devResetLink);
+                }
             } else {
                 setError(data.error || "Une erreur est survenue");
             }
@@ -33,6 +39,12 @@ export default function ForgotPasswordPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(devResetLink);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     return (
@@ -57,9 +69,53 @@ export default function ForgotPasswordPage() {
 
                 {message ? (
                     <div style={{ textAlign: "center" }}>
-                        <div style={{ padding: "1rem", backgroundColor: "rgba(16, 185, 129, 0.1)", color: "#10b981", borderRadius: "8px", marginBottom: "1.5rem" }}>
+                        <div style={{ padding: "1rem", backgroundColor: "rgba(16, 185, 129, 0.1)", color: "#10b981", borderRadius: "8px", marginBottom: "1rem" }}>
                             {message}
                         </div>
+
+                        {devResetLink && (
+                            <div style={{
+                                marginBottom: "1.5rem",
+                                padding: "1rem",
+                                backgroundColor: "rgba(234, 179, 8, 0.1)",
+                                border: "1px solid rgba(234, 179, 8, 0.3)",
+                                borderRadius: "8px",
+                                textAlign: "left"
+                            }}>
+                                <p style={{ fontSize: "0.78rem", color: "#ca8a04", fontWeight: 700, marginBottom: "0.5rem" }}>
+                                    ⚠️ MODE DÉVELOPPEMENT — Lien de réinitialisation :
+                                </p>
+                                <p style={{
+                                    fontSize: "0.72rem",
+                                    wordBreak: "break-all",
+                                    color: "var(--text-muted)",
+                                    marginBottom: "0.75rem",
+                                    fontFamily: "monospace",
+                                    backgroundColor: "rgba(0,0,0,0.15)",
+                                    padding: "0.5rem",
+                                    borderRadius: "4px"
+                                }}>
+                                    {devResetLink}
+                                </p>
+                                <div style={{ display: "flex", gap: "0.5rem" }}>
+                                    <button
+                                        onClick={handleCopy}
+                                        className="btn-primary"
+                                        style={{ flex: 1, fontSize: "0.8rem", padding: "0.5rem" }}
+                                    >
+                                        {copied ? "✓ Copié !" : "Copier le lien"}
+                                    </button>
+                                    <a
+                                        href={devResetLink}
+                                        className="btn-primary"
+                                        style={{ flex: 1, fontSize: "0.8rem", padding: "0.5rem", textDecoration: "none", textAlign: "center", backgroundColor: "rgba(16, 185, 129, 0.8)" }}
+                                    >
+                                        Ouvrir directement →
+                                    </a>
+                                </div>
+                            </div>
+                        )}
+
                         <Link href="/login" className="btn-primary" style={{ display: "inline-block", textDecoration: "none", width: "100%" }}>
                             retour à la connexion
                         </Link>

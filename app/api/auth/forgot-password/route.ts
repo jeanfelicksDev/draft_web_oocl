@@ -37,20 +37,35 @@ export async function POST(req: Request) {
             },
         });
 
-        // Envoyer l'email
+        // Mode développement : retourner le lien directement si SMTP non configuré
+        const isDevMode = process.env.NODE_ENV !== 'production' || 
+                          !process.env.SMTP_USER || 
+                          process.env.SMTP_USER === 'votre_email@gmail.com';
+
+        if (isDevMode) {
+            const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+            const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
+            console.log(`[DEV MODE] Reset link for ${email}: ${resetLink}`);
+            return NextResponse.json({ 
+                message: `[Mode développement] Lien de réinitialisation généré. Copiez ce lien dans votre navigateur :`,
+                devResetLink: resetLink,
+                devMode: true,
+            });
+        }
+
+        // Envoyer l'email (production)
         try {
             await sendPasswordResetEmail(email, resetToken);
-            console.log(`Email de réinitialisation envoyé avec succès à ${email}`);
         } catch (emailError) {
-            console.error('Erreur d\'envoi d\'email:', emailError);
-            return NextResponse.json({ error: "Une erreur est survenue lors de l'envoi de l'email." }, { status: 500 });
+            console.error('Erreur envoi email:', emailError);
+            return NextResponse.json({ error: "Erreur lors de l'envoi de l'email." }, { status: 500 });
         }
 
         return NextResponse.json({ 
             message: "Si un compte existe, un email de réinitialisation vous a été envoyé."
         });
-    } catch (error) {
-        console.error("Forgot password general error:", error);
+    } catch (error: any) {
+        console.error("Forgot password error:", error?.message || error);
         return NextResponse.json({ error: "Une erreur est survenue" }, { status: 500 });
     }
 }
