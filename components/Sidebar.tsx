@@ -189,7 +189,7 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                     </div>
                 </div>
                 <button 
-                    onClick={() => signOut()} 
+                    onClick={() => signOut({ callbackUrl: "/login" })} 
                     className="btn-outline" 
                     style={{ width: "100%", padding: "0.6rem", fontSize: "0.8rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}
                 >
