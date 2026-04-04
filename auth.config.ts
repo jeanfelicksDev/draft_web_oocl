@@ -19,19 +19,7 @@ export const authConfig = {
     },
     callbacks: {
         authorized({ auth, request: { nextUrl } }) {
-            const isLoggedIn = !!auth?.user;
-            const isAuthRoute = nextUrl.pathname === '/login' || 
-                                nextUrl.pathname === '/register' ||
-                                nextUrl.pathname === '/forgot-password' ||
-                                nextUrl.pathname.startsWith('/reset-password');
-
-            if (isAuthRoute) {
-                if (isLoggedIn) return Response.redirect(new URL('/', nextUrl));
-                return true;
-            }
-
-            if (!isLoggedIn) return false;
-            return true;
+            return true; // Bypass temporaire pour debug
         },
         async jwt({ token, user, trigger, session }) {
             if (user) {
