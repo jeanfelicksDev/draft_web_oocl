@@ -21,8 +21,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const hasPermission = (perm: string) => {
         if ((user as any)?.role === 'ADMIN') return true;
         
-        // Système simplifié : les CLIENTS n'ont que BL_WRITE (écriture SI)
-        if (perm === "BL_WRITE") return true;
+        // On récupère les permissions depuis la session (déjà parsées en tableau par auth.config.ts)
+        const userPermissions = (user as any)?.permissions || [];
+        
+        if (Array.isArray(userPermissions)) {
+            return userPermissions.includes(perm);
+        }
         
         return false;
     };

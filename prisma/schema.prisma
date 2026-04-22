@@ -5,7 +5,6 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -224,7 +223,7 @@ model BillOfLading {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   correctionCount Int           @default(0)
-  originalData    Json?
+  originalData    String?
   userId          String
   portCountryText String?
   portCityText    String?

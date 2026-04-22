@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useAuth } from "./AuthProvider";
+import { PERMISSIONS } from "@/lib/constants/permissions";
 
 interface SidebarProps {
     onNewForm?: () => void;
@@ -27,8 +28,12 @@ interface SidebarProps {
 export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarProps) {
     const pathname = usePathname();
     const { user, hasPermission } = useAuth();
-    const canManageUsers = hasPermission("ADMIN_ACCESS");
-    const canEditRefTables = hasPermission("REF_TABLES_WRITE");
+    
+    // Détermination dynamique des accès selon les permissions granulaires
+    const canManageUsers = hasPermission(PERMISSIONS.MANAGE_USERS);
+    const canManageDrafts = hasPermission(PERMISSIONS.MANAGE_BLS);
+    const canViewDashboard = hasPermission(PERMISSIONS.VIEW_DASHBOARD);
+    const isAdmin = (user as any)?.role === "ADMIN";
 
     return (
         <aside className="sidebar">
@@ -105,7 +110,7 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                 {canManageUsers && (
                     <div style={{ marginTop: "1.5rem", padding: "0 1rem" }}>
                         <p style={{ 
-                            fontSize: "0.7rem", fontWeight: 800, color: "var(--text-muted)", 
+                            fontSize: "0.7rem", fontWeight: 800, color: "var(--text-light)", 
                             textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.75rem" 
                         }}>
                             Actions Rapides
@@ -116,7 +121,7 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                                 style={{ 
                                     display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.6rem 0.75rem",
                                     borderRadius: "8px", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600,
-                                    color: "var(--text-main)", transition: "all 0.2s"
+                                    color: "var(--text)", transition: "all 0.2s"
                                 }}
                             >
                                 <Box size={18} style={{ color: "var(--primary)" }} />
@@ -129,7 +134,7 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                                 style={{ 
                                     display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.6rem 0.75rem",
                                     borderRadius: "8px", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600,
-                                    color: "var(--text-main)", transition: "all 0.2s", marginTop: "0.25rem"
+                                    color: "var(--text)", transition: "all 0.2s", marginTop: "0.25rem"
                                 }}
                             >
                                 <Package size={18} style={{ color: "var(--primary)" }} />
@@ -142,7 +147,7 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                                 style={{ 
                                     display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.6rem 0.75rem",
                                     borderRadius: "8px", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600,
-                                    color: "var(--text-main)", transition: "all 0.2s", marginTop: "0.25rem"
+                                    color: "var(--text)", transition: "all 0.2s", marginTop: "0.25rem"
                                 }}
                             >
                                 <ShieldCheck size={18} style={{ color: "var(--primary)" }} />
@@ -155,7 +160,7 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                                 style={{ 
                                     display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.6rem 0.75rem",
                                     borderRadius: "8px", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600,
-                                    color: "var(--text-main)", transition: "all 0.2s", marginTop: "0.25rem"
+                                    color: "var(--text)", transition: "all 0.2s", marginTop: "0.25rem"
                                 }}
                             >
                                 <Hash size={18} style={{ color: "var(--primary)" }} />
@@ -200,7 +205,8 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
 
             <style jsx>{`
                 .nav-item-action:hover {
-                    background: #f1f5f9;
+                    background: var(--primary-light);
+                    color: var(--primary);
                     transform: translateX(4px);
                 }
             `}</style>

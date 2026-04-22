@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import Link from "next/link";
 import {
     Calendar, Ship, Box, Weight, BarChart3, Globe,
@@ -13,10 +13,13 @@ import {
     LineChart, Line, XAxis, YAxis, CartesianGrid,
     Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
+import { useAuth } from "@/components/AuthProvider";
+import { PERMISSIONS } from "@/lib/constants/permissions";
 
 export default function DashboardPage() {
-    const { data: session, status } = useSession();
-    const sessionIsAdmin = (session?.user as any)?.role === "ADMIN";
+    const { user, status, hasPermission } = useAuth();
+    const canViewDashboard = hasPermission(PERMISSIONS.VIEW_DASHBOARD);
+    const isAdminAccount = (user as any)?.role === "ADMIN";
 
     const [stats, setStats]           = useState<any>(null);
     const [companies, setCompanies]   = useState<any[]>([]);
@@ -54,7 +57,7 @@ export default function DashboardPage() {
                 setStats(data.stats);
                 setCompanies(data.companies || []);
                 setHsCodes(data.stats.hsCodeList || []);
-                setIsAdmin(data.isAdmin || sessionIsAdmin);
+                setIsAdmin(data.isAdmin || isAdminAccount);
             } else {
                 const err = await res.json().catch(() => ({}));
                 setFetchError(err.error || `Erreur ${res.status}`);
@@ -148,7 +151,7 @@ export default function DashboardPage() {
         );
     }
 
-    if (!session) return null;
+    if (!user) return null;
 
     /* ─── Summary Card helper ─── */
     const StatCard = ({
@@ -201,7 +204,7 @@ export default function DashboardPage() {
                     <Link href="/" passHref style={{ textDecoration: "none" }}>
                         <div className="nav-item">
                             <Ship size={19} />
-                            <span>Créer une S.I..</span>
+                            <span>Créer une S.I.</span>
                         </div>
                     </Link>
                     <div className="nav-item active">
@@ -209,7 +212,7 @@ export default function DashboardPage() {
                         <span>Tableau de Bord</span>
                     </div>
 
-                    {sessionIsAdmin && (
+                    {hasPermission(PERMISSIONS.MANAGE_USERS) && (
                         <Link href="/admin/users" passHref style={{ textDecoration: "none" }}>
                             <div className="nav-item">
                                 <User size={19} />
@@ -231,7 +234,7 @@ export default function DashboardPage() {
                         </div>
                         <div style={{ minWidth: 0 }}>
                             <p className="sidebar-user-name">Connecté</p>
-                            <p className="sidebar-user-email">{session?.user?.email}</p>
+                            <p className="sidebar-user-email">{user?.email}</p>
                         </div>
                     </div>
                     <button onClick={() => signOut({ callbackUrl: "/login" })}
@@ -259,7 +262,7 @@ export default function DashboardPage() {
                         </div>
 
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                            {sessionIsAdmin && (
+                            {canViewDashboard && (
                                 <div style={{
                                     background: 'white', border: '2px solid #e2e8f0',
                                     padding: '4px', borderRadius: '12px', display: 'flex'
@@ -342,7 +345,7 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Admin company filter */}
-                        {(isAdmin || sessionIsAdmin) && (
+                        {(isAdmin || isAdminAccount) && (
                             <div style={{ flex: 1, minWidth: 100 }}>
                                 <div style={{ marginBottom: "-1rem" }}>
                                     <Combobox

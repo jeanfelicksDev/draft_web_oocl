@@ -7,6 +7,7 @@ import Link from "next/link";
 import { User, ShieldCheck, ShieldAlert, ArrowLeft, Loader2, Building2, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Sidebar } from "@/components/Sidebar";
+import { PERMISSIONS } from "@/lib/constants/permissions";
 
 interface UserAccount {
     id: string;
@@ -171,6 +172,7 @@ export default function AdminUsersPage() {
                                     <th style={{ padding: "1.25rem", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)" }}>Téléphone</th>
                                     <th style={{ padding: "1.25rem", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)" }}>Email</th>
                                     <th style={{ padding: "1.25rem", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)" }}>Rôle</th>
+                                    <th style={{ padding: "1.25rem", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)" }}>Permissions</th>
                                     <th style={{ padding: "1.25rem", textAlign: "center", fontSize: "0.85rem", color: "var(--text-muted)" }}>Statut</th>
                                     <th style={{ padding: "1.25rem", textAlign: "right", fontSize: "0.85rem", color: "var(--text-muted)" }}>Actions</th>
                                 </tr>
@@ -215,6 +217,43 @@ export default function AdminUsersPage() {
                                                 <option value="CLIENT">CLIENT</option>
                                                 <option value="ADMIN">ADMIN</option>
                                             </select>
+                                        </td>
+                                        <td style={{ padding: "1.25rem" }}>
+                                            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", maxWidth: "400px" }}>
+                                                {Object.entries(PERMISSIONS).map(([key, value]) => {
+                                                    const userPermsArray = (() => {
+                                                        try {
+                                                            return typeof user.permissions === "string" ? JSON.parse(user.permissions) : user.permissions;
+                                                        } catch(e) { return []; }
+                                                    })();
+                                                    const isChecked = Array.isArray(userPermsArray) && userPermsArray.includes(value);
+
+                                                    return (
+                                                        <label key={value} style={{ 
+                                                            display: "inline-flex", alignItems: "center", gap: "0.4rem",
+                                                            fontSize: "0.75rem", padding: "0.2rem 0.5rem", borderRadius: "4px",
+                                                            backgroundColor: isChecked ? "var(--bg-primary)" : "#f1f5f9",
+                                                            color: isChecked ? "var(--primary)" : "var(--text-muted)",
+                                                            cursor: "pointer", border: "1px solid",
+                                                            borderColor: isChecked ? "var(--border)" : "transparent",
+                                                            fontWeight: isChecked ? 700 : 400
+                                                        }}>
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={isChecked}
+                                                                onChange={() => {
+                                                                    const newPerms = isChecked 
+                                                                        ? userPermsArray.filter((p: string) => p !== value)
+                                                                        : [...userPermsArray, value];
+                                                                    updateUserData(user.id, { permissions: newPerms });
+                                                                }}
+                                                                style={{ display: "none" }}
+                                                            />
+                                                            {key.replace(/_/g, ' ')}
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
                                         </td>
                                         <td style={{ padding: "1.25rem", textAlign: "center" }}>
                                             {user.isAuthorized ? (

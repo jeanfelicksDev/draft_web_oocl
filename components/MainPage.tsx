@@ -891,7 +891,11 @@ export default function MainPage() {
                                 outline: "none", 
                                 width: "100%", 
                                 fontSize: "0.85rem",
-                                padding: "0.4rem 0"
+                                padding: "0.4rem 0",
+                                background: "white",
+                                backgroundColor: "white",
+                                color: "#1a1c21",
+                                borderRadius: "0",
                             }} 
                         />
                     </div>

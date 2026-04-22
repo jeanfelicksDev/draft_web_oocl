@@ -36,7 +36,18 @@ export const authConfig = {
         async jwt({ token, user, trigger, session }) {
             if (user) {
                 token.role = (user as any).role;
-                token.permissions = (user as any).permissions;
+                
+                // Préparation des permissions : on parse le JSON si c'est une chaîne
+                let userPermissions = (user as any).permissions;
+                if (typeof userPermissions === "string") {
+                    try {
+                        userPermissions = JSON.parse(userPermissions);
+                    } catch (e) {
+                        userPermissions = [];
+                    }
+                }
+                token.permissions = userPermissions;
+                
                 token.companyName = (user as any).companyName;
                 token.mustChangePassword = (user as any).mustChangePassword;
                 console.log("JWT callback: user.id =", user.id);
@@ -50,7 +61,7 @@ export const authConfig = {
             if (token.sub && session.user) {
                 session.user.id = token.sub;
                 (session.user as any).role = token.role;
-                (session.user as any).permissions = token.permissions;
+                (session.user as any).permissions = token.permissions; // Déjà un tableau grâce au JWT
                 (session.user as any).companyName = token.companyName;
                 (session.user as any).mustChangePassword = token.mustChangePassword;
                 console.log("Session callback: userId set to", session.user.id);
