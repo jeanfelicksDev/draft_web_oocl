@@ -25,7 +25,6 @@ export async function DELETE(
         await prisma.$transaction([
             // 1. Dépendances de niveau 2 (via d'autres entités)
             prisma.container.deleteMany({ where: { billOfLading: { userId } } }),
-            prisma.rotationBooking.deleteMany({ where: { voyage: { userId } } }),
             
             // 2. Dépendances de niveau 1 (directement liées à l'utilisateur)
             prisma.billOfLading.deleteMany({ where: { userId } }),

@@ -15,11 +15,8 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: "voyageId is required" }, { status: 400 });
         }
 
-        // 1. Fetch Expected Bookings
-        const expected = await (prisma as any).rotationBooking.findMany({
-            where: { voyageId },
-            orderBy: { number: 'asc' }
-        });
+        // RotationBooking feature désactivée (table non migrée en production)
+        const expected: any[] = [];
 
         // 2. Fetch Client Drafts (BillOfLading)
         const drafts = await prisma.billOfLading.findMany({
