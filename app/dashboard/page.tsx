@@ -18,8 +18,8 @@ import { PERMISSIONS } from "@/lib/constants/permissions";
 
 export default function DashboardPage() {
     const { user, status, hasPermission } = useAuth();
-    const canViewDashboard = hasPermission(PERMISSIONS.VIEW_DASHBOARD);
     const isAdminAccount = (user as any)?.role === "ADMIN";
+    const canViewDashboard = isAdminAccount;
 
     const [stats, setStats]           = useState<any>(null);
     const [companies, setCompanies]   = useState<any[]>([]);

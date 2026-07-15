@@ -20,14 +20,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const hasPermission = (perm: string) => {
         if ((user as any)?.role === 'ADMIN') return true;
-        
-        // On récupère les permissions depuis la session (déjà parsées en tableau par auth.config.ts)
+
+        const role = (user as any)?.role || 'CLIENT';
+
+        // CLIENT a toujours le droit d'écriture/lecture de ses propres SI
+        // (cohérent avec auth-utils.ts côté serveur)
+        if (role === 'CLIENT') {
+            if (perm === 'BL_WRITE' || perm === 'BL_READ') return true;
+        }
+
+        // Vérification des permissions explicites stockées en session
         const userPermissions = (user as any)?.permissions || [];
-        
         if (Array.isArray(userPermissions)) {
             return userPermissions.includes(perm);
         }
-        
+
         return false;
     };
 

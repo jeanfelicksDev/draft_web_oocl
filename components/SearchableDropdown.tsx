@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Search, X } from "lucide-react";
 
 interface SearchableDropdownProps {
@@ -24,42 +25,170 @@ export function SearchableDropdown({
 }: SearchableDropdownProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState("");
+    const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+    const [mounted, setMounted] = useState(false);
+
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        if (isOpen && inputRef.current) inputRef.current.focus();
-    }, [isOpen]);
+    // Ensure portal target is mounted (client-side only)
+    useEffect(() => { setMounted(true); }, []);
+
+    // Compute fixed position relative to viewport (independent of parent transforms)
+    const computePosition = () => {
+        if (!triggerRef.current) return;
+        const rect = triggerRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+
+        if (spaceBelow >= 200) {
+            setDropdownStyle({
+                position: "fixed",
+                top: rect.bottom + 4,
+                left: rect.left,
+                width: rect.width,
+                zIndex: 99999,
+            });
+        } else {
+            setDropdownStyle({
+                position: "fixed",
+                bottom: window.innerHeight - rect.top + 4,
+                left: rect.left,
+                width: rect.width,
+                zIndex: 99999,
+            });
+        }
+    };
 
     useEffect(() => {
+        if (isOpen) {
+            computePosition();
+            setTimeout(() => inputRef.current?.focus(), 0);
+        }
+    }, [isOpen]);
+
+    // Recompute on scroll / resize
+    useEffect(() => {
+        if (!isOpen) return;
+        const update = () => computePosition();
+        window.addEventListener("scroll", update, true);
+        window.addEventListener("resize", update);
+        return () => {
+            window.removeEventListener("scroll", update, true);
+            window.removeEventListener("resize", update);
+        };
+    }, [isOpen]);
+
+    // Close on outside click
+    useEffect(() => {
+        if (!isOpen) return;
         function handleOutside(e: MouseEvent) {
-            if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+            const target = e.target as Node;
+            const inWrapper = wrapperRef.current?.contains(target);
+            // Also check the portal dropdown container
+            const dropdownEl = document.getElementById("searchable-dropdown-portal");
+            const inPortal = dropdownEl?.contains(target);
+            if (!inWrapper && !inPortal) {
                 setIsOpen(false);
                 setSearch("");
             }
         }
         document.addEventListener("mousedown", handleOutside);
         return () => document.removeEventListener("mousedown", handleOutside);
-    }, []);
+    }, [isOpen]);
 
     const filtered = options.filter(o =>
         o.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const dropdownPanel = (
+        <div
+            id="searchable-dropdown-portal"
+            className="combobox-dropdown"
+            style={dropdownStyle}
+            role="listbox"
+        >
+            {/* Search bar */}
+            <div style={{
+                padding: "0.5rem",
+                borderBottom: "1px solid var(--border-color)",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+            }}>
+                <Search size={16} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+                <input
+                    ref={inputRef}
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Rechercher..."
+                    style={{
+                        border: "none",
+                        padding: "0.4rem",
+                        backgroundColor: "transparent",
+                        width: "100%",
+                        boxShadow: "none",
+                        fontSize: "1rem",
+                        textTransform: "none",
+                        color: "var(--text-main)",
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                />
+            </div>
+
+            {/* Options list */}
+            <div style={{ maxHeight: "240px", overflowY: "auto" }}>
+                {filtered.length === 0 ? (
+                    <div style={{ padding: "1rem", textAlign: "center", color: "var(--text-muted)", fontSize: "0.9rem" }}>
+                        Aucun résultat
+                    </div>
+                ) : (
+                    filtered.map((opt) => (
+                        <div
+                            key={opt}
+                            className="combobox-item"
+                            role="option"
+                            aria-selected={value === opt}
+                            onMouseDown={(e) => {
+                                // Use onMouseDown to fire before the outside-click handler
+                                e.preventDefault();
+                                onSelect(opt);
+                                setIsOpen(false);
+                                setSearch("");
+                            }}
+                            style={{
+                                backgroundColor: value === opt ? "rgba(230, 0, 0, 0.1)" : "transparent",
+                                color: value === opt ? "var(--accent-teal)" : "#0a1f5c",
+                                fontWeight: value === opt ? 800 : 700,
+                                textTransform: "uppercase",
+                                fontSize: "0.95rem",
+                                cursor: "pointer",
+                            }}
+                        >
+                            {opt}
+                        </div>
+                    ))
+                )}
+            </div>
+        </div>
     );
 
     return (
         <div style={{ position: "relative" }} ref={wrapperRef}>
             <label>{label}</label>
 
-            {/* Trigger */}
+            {/* Trigger button */}
             <div
+                ref={triggerRef}
                 role="combobox"
                 aria-expanded={isOpen}
                 aria-haspopup="listbox"
                 tabIndex={disabled ? -1 : 0}
-                onClick={() => !disabled && setIsOpen(!isOpen)}
+                onClick={() => !disabled && setIsOpen(prev => !prev)}
                 onKeyDown={(e) => {
                     if (disabled) return;
-                    if (e.key === "Enter" || e.key === " ") { setIsOpen(!isOpen); e.preventDefault(); }
+                    if (e.key === "Enter" || e.key === " ") { setIsOpen(prev => !prev); e.preventDefault(); }
                     if (e.key === "Escape") setIsOpen(false);
                 }}
                 style={{
@@ -73,14 +202,15 @@ export function SearchableDropdown({
                         : value
                             ? "rgba(16, 185, 129, 0.05)"
                             : "var(--input-bg)",
-                    border: `2px solid ${disabled
-                        ? "var(--secondary)"
-                        : isOpen
-                            ? "var(--border-focus)"
-                            : value
-                                ? "#10b981"
-                                : "var(--border)"
-                        }`,
+                    border: `2px solid ${
+                        disabled
+                            ? "var(--secondary)"
+                            : isOpen
+                                ? "var(--border-focus)"
+                                : value
+                                    ? "#10b981"
+                                    : "var(--border)"
+                    }`,
                     borderRadius: "12px",
                     color: disabled ? "var(--text-muted)" : value ? "#0a1f5c" : "#4b4b4b",
                     fontSize: "0.7rem",
@@ -105,7 +235,11 @@ export function SearchableDropdown({
                 <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
                     {value && !disabled && (
                         <div
-                            onClick={(e) => { e.stopPropagation(); onSelect(""); }}
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onSelect("");
+                            }}
                             title="Effacer"
                             style={{ cursor: "pointer", color: "var(--text-muted)", display: "flex" }}
                         >
@@ -123,76 +257,14 @@ export function SearchableDropdown({
                 </div>
             </div>
 
-            {/* Dropdown */}
-            {isOpen && (
-                <div
-                    className="combobox-dropdown"
-                    style={{ position: "absolute", width: "100%", zIndex: 50, top: "100%" }}
-                    role="listbox"
-                >
-                    {/* Search bar */}
-                    <div style={{
-                        padding: "0.5rem",
-                        borderBottom: "1px solid var(--border-color)",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.5rem"
-                    }}>
-                        <Search size={16} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Rechercher..."
-                            style={{
-                                border: "none",
-                                padding: "0.4rem",
-                                backgroundColor: "transparent",
-                                width: "100%",
-                                boxShadow: "none",
-                                fontSize: "1rem",
-                                textTransform: "none",
-                                color: "var(--text-main)",
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                        />
-                    </div>
+            {/* Portal: render dropdown in <body> to escape all overflow/transform contexts */}
+            {isOpen && mounted && createPortal(dropdownPanel, document.body)}
 
-                    {/* Items */}
-                    <div style={{ maxHeight: "240px", overflowY: "auto" }}>
-                        {filtered.length === 0 ? (
-                            <div style={{ padding: "1rem", textAlign: "center", color: "var(--text-muted)", fontSize: "0.9rem" }}>
-                                Aucun résultat
-                            </div>
-                        ) : (
-                            filtered.map((opt) => (
-                                <div
-                                    key={opt}
-                                    className="combobox-item"
-                                    role="option"
-                                    aria-selected={value === opt}
-                                    onClick={() => {
-                                        onSelect(opt);
-                                        setIsOpen(false);
-                                        setSearch("");
-                                    }}
-                                    style={{
-                                        backgroundColor: value === opt ? "rgba(230, 0, 0, 0.1)" : "transparent",
-                                        color: value === opt ? "var(--accent-teal)" : "#0a1f5c",
-                                        fontWeight: value === opt ? 800 : 700,
-                                        textTransform: "uppercase",
-                                        fontSize: "0.95rem",
-                                    }}
-                                >
-                                    {opt}
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
+            {error && (
+                <span className="error-msg" style={{ marginTop: "0.25rem", display: "block" }}>
+                    {error}
+                </span>
             )}
-            {error && <span className="error-msg" style={{ marginTop: '0.25rem', display: 'block' }}>{error}</span>}
         </div>
     );
 }

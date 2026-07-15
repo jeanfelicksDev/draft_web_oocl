@@ -15,8 +15,8 @@ export async function PUT(
                 description: data.description,
                 hsCode: data.hsCode || null,
                 declNo: data.declNo || null,
+                declDate: data.declDate || null,
                 saveStatus: data.saveStatus || "VALIDATED",
-
             },
         });
 
@@ -26,7 +26,6 @@ export async function PUT(
         return NextResponse.json({ error: "Failed to update goods" }, { status: 500 });
     }
 }
-
 
 export async function DELETE(
     request: Request,

@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserId, isAdmin as checkAdmin, hasPermission } from "@/lib/auth-utils";
 
+// Helper: build Prisma relation connect object
+function connectOrNull(id: string | null | undefined) {
+    return id && id !== "" ? { connect: { id } } : undefined;
+}
 
 export async function PUT(
     request: Request,
@@ -18,7 +22,7 @@ export async function PUT(
         const { id } = await params;
         const data = await request.json();
 
-        // Validate bookingNumber: exactly 10 digits, no letters
+        // Validate bookingNumber
         const bookingNumberValue = data.bookingNumber;
         if (!bookingNumberValue || !/^[0-9]{10}$/.test(bookingNumberValue)) {
             return NextResponse.json(
@@ -27,13 +31,13 @@ export async function PUT(
             );
         }
 
-        const { containers, ...blRawData } = data;
+        const { containers, ...d } = data;
         const safeContainers = Array.isArray(containers) ? containers : [];
 
-        // Fetch existing BL to check status
+        // Fetch existing BL
         const existingBL = await prisma.billOfLading.findUnique({
             where: { id },
-            include: { 
+            include: {
                 containers: true,
                 shipper: true,
                 consignee: true,
@@ -50,22 +54,36 @@ export async function PUT(
             return NextResponse.json({ error: "Bill of Lading not found" }, { status: 404 });
         }
 
-        // Only owner or admin can update
         const userIsAdmin = await checkAdmin();
         if (!userIsAdmin && existingBL.userId !== userId) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
-        // VALID FIELDS for BillOfLading model
-        const validFields = [
-            'bookingNumber', 'contractNumber', 'saveStatus', 
-            'portCountryText', 'portCityText', 'typeReleasedId', 
-            'shipperId', 'consigneeId', 'notifyId', 'alsoNotifyId', 
-            'forwarderId', 'freightBuyerId', 'goodsId',
-            'vesselId', 'voyageId', 'descriptionGoods', 'hsCode'
-        ];
+        // Vérification doublon global sur mise à jour
+        const duplicateCheck = await prisma.billOfLading.findFirst({
+            where: {
+                bookingNumber: bookingNumberValue,
+                id: { not: id }
+            }
+        });
+        if (duplicateCheck) {
+            return NextResponse.json(
+                { error: `Le numéro de booking "${bookingNumberValue}" est déjà utilisé par un autre spécimen. Chaque numéro de booking doit être unique.` },
+                { status: 409 }
+            );
+        }
 
-        let updateData: any = {
+        // CORRECTION LOGIC
+        const isTransitioningToValidated = existingBL.saveStatus !== "VALIDATED" && d.saveStatus === "VALIDATED";
+        const isCorrection = existingBL.saveStatus === "VALIDATED" && d.saveStatus === "VALIDATED";
+
+        // Build update payload using nested connect (works with all Prisma client versions)
+        const updateData: any = {
+            bookingNumber: d.bookingNumber,
+            contractNumber: d.contractNumber || "",
+            saveStatus: d.saveStatus || existingBL.saveStatus,
+            portCountryText: d.portCountryText || null,
+            portCityText: d.portCityText || null,
             containers: {
                 deleteMany: {},
                 create: safeContainers.map((c: any) => ({
@@ -81,37 +99,54 @@ export async function PUT(
             }
         };
 
-        // Filter and add only valid fields
-        for (const key of validFields) {
-            if (blRawData[key] !== undefined) {
-                updateData[key] = blRawData[key] === "" ? null : blRawData[key];
-            }
-        }
-
-        // CORRECTION LOGIC
-        const isTransitioningToValidated = existingBL.saveStatus !== "VALIDATED" && blRawData.saveStatus === "VALIDATED";
-        const isCorrection = existingBL.saveStatus === "VALIDATED" && blRawData.saveStatus === "VALIDATED";
-
-        // Increment count if it's a correction
         if (isCorrection) {
-            updateData.correctionCount = (Number(existingBL?.correctionCount) || 0) + 1;
+            updateData.correctionCount = (Number(existingBL.correctionCount) || 0) + 1;
         }
+
+        // Relations via connect
+        const typeReleasedConn = connectOrNull(d.typeReleasedId);
+        if (typeReleasedConn) updateData.typeReleased = typeReleasedConn;
+
+        const shipperConn = connectOrNull(d.shipperId);
+        if (shipperConn) updateData.shipper = shipperConn;
+
+        const consigneeConn = connectOrNull(d.consigneeId);
+        if (consigneeConn) updateData.consignee = consigneeConn;
+
+        const notifyConn = connectOrNull(d.notifyId);
+        if (notifyConn) updateData.notify = notifyConn;
+
+        const alsoNotifyConn = connectOrNull(d.alsoNotifyId);
+        if (alsoNotifyConn) updateData.alsoNotify = alsoNotifyConn;
+
+        const forwarderConn = connectOrNull(d.forwarderId);
+        if (forwarderConn) updateData.forwarder = forwarderConn;
+
+        const freightBuyerConn = connectOrNull(d.freightBuyerId);
+        if (freightBuyerConn) updateData.freightBuyer = freightBuyerConn;
+
+        const goodsConn = connectOrNull(d.goodsId);
+        if (goodsConn) updateData.goods = goodsConn;
+
+        const vesselConn = connectOrNull(d.vesselId);
+        if (vesselConn) updateData.vessel = vesselConn;
+
+        const voyageConn = connectOrNull(d.voyageId);
+        if (voyageConn) updateData.voyage = voyageConn;
 
         let updatedBL = await prisma.billOfLading.update({
             where: { id },
             data: updateData,
-            include: {
-                containers: true
-            }
+            include: { containers: true }
         });
 
-        // If it was the FIRST validation, take the baseline snapshot NOW
-        if (isTransitioningToValidated || (blRawData.saveStatus === "VALIDATED" && !(existingBL as any).originalData)) {
+        // If first validation, take baseline snapshot
+        if (isTransitioningToValidated || (d.saveStatus === "VALIDATED" && !(existingBL as any).originalData)) {
             const { createBLSnapshot } = await import("@/lib/snapshotUtils");
             const snapshot = await createBLSnapshot(updatedBL.id);
             updatedBL = await prisma.billOfLading.update({
                 where: { id: updatedBL.id },
-                data: { originalData: snapshot as any },
+                data: { originalData: JSON.stringify(snapshot) },
                 include: { containers: true }
             });
         }
@@ -119,10 +154,9 @@ export async function PUT(
         return NextResponse.json(updatedBL);
     } catch (error: any) {
         console.error("DEBUG BL UPDATE ERROR:", error);
-        return NextResponse.json({ 
-            error: "Failed to update Bill of Lading", 
+        return NextResponse.json({
+            error: "Failed to update Bill of Lading",
             details: error.message,
-            stack: error.stack
         }, { status: 500 });
     }
 }
@@ -142,16 +176,13 @@ export async function DELETE(
 
         const userIsAdmin = await checkAdmin();
 
-        // Find the BL first to verify ownership
         const bl = await prisma.billOfLading.findUnique({ where: { id } });
         if (!bl) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-        // Only owner or admin can delete
         if (!userIsAdmin && bl.userId !== userId) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
-        // Containers are deleted automatically via cascade (onDelete: Cascade in schema)
         await prisma.billOfLading.delete({ where: { id } });
 
         return NextResponse.json({ success: true });
@@ -160,4 +191,3 @@ export async function DELETE(
         return NextResponse.json({ error: "Failed to delete Bill of Lading" }, { status: 500 });
     }
 }
-

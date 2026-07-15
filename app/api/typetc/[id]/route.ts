@@ -11,20 +11,30 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         }
 
         const body = await req.json();
-        const { name } = body;
+        const name = (body.name || "").trim();
 
         if (!name) {
             return NextResponse.json({ error: 'Le nom est requis' }, { status: 400 });
         }
 
-        const updated = await prisma.typeTc.update({
+        // Vérification doublon insensible à la casse (exclure l'élément courant)
+        const existing = await prisma.typeTc.findFirst({
             where: {
-                id: id,
                 userId: session.user.id,
+                name: { equals: name, mode: "insensitive" },
+                NOT: { id },
             },
-            data: {
-                name,
-            },
+        });
+        if (existing) {
+            return NextResponse.json(
+                { error: `"${existing.name}" existe déjà. Veuillez choisir un nom différent.` },
+                { status: 409 }
+            );
+        }
+
+        const updated = await prisma.typeTc.update({
+            where: { id, userId: session.user.id },
+            data: { name },
         });
 
         return NextResponse.json(updated);
@@ -34,7 +44,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             return NextResponse.json({ error: 'Élément introuvable ou non autorisé (P2025)' }, { status: 404 });
         }
         if (error.code === 'P2002') {
-            return NextResponse.json({ error: 'Ce nom existe déjà (P2002)' }, { status: 400 });
+            return NextResponse.json({ error: 'Ce nom existe déjà (P2002)' }, { status: 409 });
         }
         return NextResponse.json({ error: 'Erreur interne API: ' + (error.message || 'Error') }, { status: 500 });
     }

@@ -4,7 +4,6 @@ import { getUserId } from "@/lib/auth-utils";
 
 export async function GET(request: Request) {
     try {
-        // Simple auth check (Admin only ideally, but following existing patterns)
         const userId = await getUserId();
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -15,8 +14,10 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: "voyageId is required" }, { status: 400 });
         }
 
-        // RotationBooking feature désactivée (table non migrée en production)
-        const expected: any[] = [];
+        const expected = await prisma.expectedBooking.findMany({
+            where: { voyageId, userId },
+            orderBy: { createdAt: 'desc' }
+        });
 
         // 2. Fetch Client Drafts (BillOfLading)
         const drafts = await prisma.billOfLading.findMany({

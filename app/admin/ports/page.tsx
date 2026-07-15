@@ -51,6 +51,19 @@ export default function AdminPortsPage() {
         }
     };
 
+    const handleDeleteCountry = async () => {
+        if (!selectedCountry) return;
+        if (!window.confirm(`Supprimer le pays "${selectedCountry.name}" ?\nCela supprimera également tous ses ports associés.`)) return;
+        const res = await fetch(`/api/admin/global-countries/${selectedCountry.id}`, { method: "DELETE" });
+        if (res.ok) {
+            setCountries(prev => prev.filter(c => c.id !== selectedCountry.id));
+            setSelectedCountry(null);
+            toast.success("Pays supprimé");
+        } else {
+            toast.error("Erreur lors de la suppression du pays");
+        }
+    };
+
     const handleAddPort = async () => {
         if (!newPortName.trim() || !selectedCountry) return;
         const res = await fetch("/api/admin/global-ports", {
@@ -117,6 +130,21 @@ export default function AdminPortsPage() {
                                 <option key={c.id} value={c.id}>{c.name}</option>
                             ))}
                         </select>
+                        {selectedCountry && (
+                            <button
+                                onClick={handleDeleteCountry}
+                                title={`Supprimer le pays ${selectedCountry.name}`}
+                                style={{
+                                    height: '48px', width: '48px', borderRadius: '10px',
+                                    border: '2px solid #fee2e2', background: '#fef2f2',
+                                    cursor: 'pointer', display: 'flex',
+                                    alignItems: 'center', justifyContent: 'center', color: '#ef4444',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                        )}
                         <button
                             onClick={() => setIsAddingCountry(v => !v)}
                             style={{

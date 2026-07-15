@@ -1,40 +1,23 @@
 /**
- * Définition des permissions granulaires pour EduGestion.
- * Ces permissions permettent de contrôler l'accès aux fonctionnalités
- * indépendamment du rôle global (ADMIN/USER).
+ * Définition des permissions granulaires pour l'application OOCL.
+ * Ces permissions contrôlent l'accès aux fonctionnalités de gestion des Bills of Lading.
  */
 export const PERMISSIONS = {
-    // Tableau de bord et accès de base
-    VIEW_DASHBOARD: "view_dashboard",
-    
-    // Gestion des élèves
-    VIEW_STUDENTS: "view_students",
-    EDIT_STUDENTS: "edit_students",
-    DELETE_STUDENTS: "delete_students",
-    
-    // Notes et Bulletins
-    VIEW_GRADES: "view_grades",
-    EDIT_GRADES: "edit_grades",
-    
-    // Activités
-    MANAGE_ACTIVITIES: "manage_activities",
-    
+    // Bill of Lading
+    BL_WRITE:  "BL_WRITE",
+    BL_READ:   "BL_READ",
+    BL_DELETE: "BL_DELETE",
+
     // Administration
     MANAGE_USERS: "manage_users",
-    VIEW_LOGS: "view_logs",
-    
-    // Documents OOCL (Compatibilité ascendante)
-    MANAGE_BLS: "manage_bls",
-    VIEW_REPORTS: "view_reports",
 } as const;
 
 export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
 
 /**
- * Rôles par défaut et leurs permissions associées.
+ * Permissions par défaut selon le rôle.
  */
 export const ROLE_DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
-    ADMIN: Object.values(PERMISSIONS),
-    CLIENT: [PERMISSIONS.VIEW_STUDENTS, PERMISSIONS.VIEW_GRADES],
-    TEACHER: [PERMISSIONS.VIEW_STUDENTS, PERMISSIONS.EDIT_GRADES, PERMISSIONS.MANAGE_ACTIVITIES],
+    ADMIN:  Object.values(PERMISSIONS),
+    CLIENT: [PERMISSIONS.BL_WRITE, PERMISSIONS.BL_READ],
 };

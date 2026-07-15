@@ -11,12 +11,14 @@ const schema = yup.object().shape({
     description: yup.string().required("La description est requise"),
     hsCode: yup.string().required("Le code HS est requis"),
     declNo: yup.string().required("Le N° de déclaration est requis"),
+    declDate: yup.string().optional(),
 });
 
 const defaultValues = {
     description: "",
     hsCode: "",
     declNo: "",
+    declDate: "",
 };
 
 export function GoodsForm({ 
@@ -65,7 +67,10 @@ export function GoodsForm({
             reset(initialData || defaultValues);
             setTimeout(autoResize, 0);
         }
-    }, [isOpen, initialData, reset]);
+        // NOTE: initialData intentionally excluded — we only reset on open,
+        // not when initialData changes mid-session (e.g. while HSCode sub-modal is open)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen]);
 
     const { ref: registerRef, ...restRegister } = register("description");
 
@@ -164,7 +169,7 @@ export function GoodsForm({
                     {errors.description && <span className="error-msg">{errors.description.message as string}</span>}
                 </div>
 
-                <div className="grid-2">
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.5rem" }}>
                     <div>
                         <Controller
                             name="hsCode"
@@ -192,6 +197,14 @@ export function GoodsForm({
                         <label>DECL N° *</label>
                         <input {...register("declNo")} />
                         {errors.declNo && <span className="error-msg">{errors.declNo.message as string}</span>}
+                    </div>
+                    <div>
+                        <label>Date de la déclaration</label>
+                        <input
+                            type="date"
+                            {...register("declDate")}
+                            style={{ fontFamily: "inherit" }}
+                        />
                     </div>
                 </div>
 

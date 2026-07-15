@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getUserId } from "@/lib/auth-utils";
+import { getSharedPartners, createSharedPartner } from "@/lib/partner-sync";
 
 export async function GET() {
     try {
         const userId = await getUserId();
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const list = await prisma.alsoNotify.findMany({
-            where: { userId },
-            orderBy: { createdAt: 'desc' }
-        });
+        const list = await getSharedPartners(userId);
         return NextResponse.json(list);
     } catch (error) {
         console.error("Error fetching alsoNotify:", error);
@@ -23,24 +20,8 @@ export async function POST(request: Request) {
         const userId = await getUserId();
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const { name, address, country, city, phone, email, vat, eori, bin, usci, saveStatus } = await request.json();
-        
-        const newAlsoNotify = await prisma.alsoNotify.create({
-            data: { 
-                name,
-                address,
-                country,
-                city,
-                phone,
-                email,
-                vat: vat || null,
-                eori: eori || null,
-                bin: bin || null,
-                usci: usci || null,
-                saveStatus: saveStatus || "VALIDATED",
-                userId 
-            },
-        });
+        const data = await request.json();
+        const newAlsoNotify = await createSharedPartner(data, userId);
         return NextResponse.json(newAlsoNotify, { status: 201 });
     } catch (error) {
         console.error("Error creating alsoNotify:", error);

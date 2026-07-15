@@ -30,8 +30,8 @@ export async function createBLSnapshot(blId: string) {
         alsoNotify: bl.alsoNotify || {},
         forwarder: bl.forwarder || {},
         freightBuyer: bl.freightBuyer || {},
-        descriptionGoods: bl.descriptionGoods || bl.goods?.description || "",
-        hsCode: bl.hsCode || bl.goods?.hsCode || "",
+        descriptionGoods: bl.goods?.description || "",
+        hsCode: bl.goods?.hsCode || "",
         containers: bl.containers || []
     };
 }

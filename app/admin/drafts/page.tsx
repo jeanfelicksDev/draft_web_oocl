@@ -49,7 +49,7 @@ export default function AdminDraftsPage() {
             .finally(() => setIsLoading(false));
     }, [selectedVoyage]);
 
-    const handleViewPdf = (draft: any) => {
+    const handleViewPdf = async (draft: any) => {
         if (!draft) return;
         try {
             // Reformat the data to match what generateBLPDF expects (hydration)
@@ -61,7 +61,7 @@ export default function AdminDraftsPage() {
                 etd: draft.voyage?.etdDate || "",
                 // Relations like shipper, consignee, etc. are already handled as objects by the generator
             };
-            generateBLPDF(hydratedData, true);
+            await generateBLPDF(hydratedData, true);
         } catch (e: any) {
             console.error("PDF Preview Error:", e);
             toast.error("Erreur lors de la génération du PDF");

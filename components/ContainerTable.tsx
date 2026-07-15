@@ -1,13 +1,11 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as XLSX from 'xlsx';
 import toast from "react-hot-toast";
-import { FileUp } from "lucide-react";
-
-const TYPE_TC_OPTIONS: string[] = [];
-const PACKAGE_OPTIONS: string[] = [];
+import { FileUp, PlusCircle, Trash2, Edit } from "lucide-react";
 
 const containerSchema = yup.object().shape({
     containerNum: yup.string()
@@ -15,17 +13,18 @@ const containerSchema = yup.object().shape({
         .length(11, "Doit faire 11 caractères")
         .matches(/^[A-Z]{4}[0-9]{7}$/, "Format: 4 lettres + 7 chiffres (ex: MEDU1234567)"),
     typeTc: yup.string().optional().nullable(),
-    sealNum: yup.string().optional().nullable().max(11, "Max 11 caractères"),
+    sealNum: yup.string().required("N° Plomb requis").max(11, "Max 11 caractères"),
     count: yup.number()
         .typeError("Doit être un nombre")
-        .optional()
-        .nullable()
+        .required("Nombre de colis requis")
+        .integer("Doit être un nombre entier")
+        .min(1, "Minimum 1")
         .transform((val, orig) => orig === "" ? null : val),
     packageType: yup.string().optional().nullable(),
     grossWeight: yup.number()
         .typeError("Doit être un nombre")
-        .optional()
-        .nullable()
+        .required("Poids brut requis")
+        .min(1, "Minimum 1")
         .transform((val, orig) => orig === "" ? null : val)
         .test("max-weight", "Poids max dépassé", function (val) {
             const { typeTc } = this.parent;
@@ -52,27 +51,17 @@ const containerSchema = yup.object().shape({
 export function ContainerTable({
     containers,
     setContainers,
-    typesTc,
-    packageTypes,
-    disabled = false
+    disabled = false,
+    globalTypeTc = "",
+    globalPackageType = ""
 }: {
     containers: any[],
     setContainers: React.Dispatch<React.SetStateAction<any[]>>,
-    typesTc?: any[],
-    packageTypes?: any[],
-    disabled?: boolean
+    disabled?: boolean,
+    globalTypeTc?: string,
+    globalPackageType?: string
 }) {
-    const combinedTypeTcOptions = Array.from(new Set([
-        ...TYPE_TC_OPTIONS, 
-        ...(typesTc || []).map(t => t.name)
-    ]));
-
-    const combinedPackageOptions = Array.from(new Set([
-        ...PACKAGE_OPTIONS,
-        ...(packageTypes || []).map(p => p.name)
-    ]));
-
-    const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
+    const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
         mode: "onBlur",
         resolver: yupResolver(containerSchema),
         defaultValues: {
@@ -88,13 +77,13 @@ export function ContainerTable({
     });
 
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const values = watch();
-    const fc = (name: string) => {
-        const val = (values as any)[name];
-        return val && val !== "" ? "input-filled" : "";
-    };
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const handleContainerInput = (e: React.FormEvent<HTMLInputElement>) => {
         let val = e.currentTarget.value.toUpperCase();
@@ -105,20 +94,57 @@ export function ContainerTable({
         setValue("containerNum", final);
     };
 
+    const openAddModal = () => {
+        setEditingId(null);
+        reset({
+            containerNum: "",
+            typeTc: globalTypeTc,
+            sealNum: "",
+            count: undefined,
+            packageType: globalPackageType,
+            grossWeight: undefined,
+            netWeight: undefined,
+            volume: undefined
+        });
+        setIsModalOpen(true);
+    };
+
+    const editContainer = (container: any) => {
+        setEditingId(container.id);
+        reset({
+            containerNum: container.containerNum,
+            typeTc: globalTypeTc || container.typeTc,
+            sealNum: container.sealNum,
+            count: container.count,
+            packageType: globalPackageType || container.packageType,
+            grossWeight: container.grossWeight,
+            netWeight: container.netWeight ?? "",
+            volume: container.volume ?? ""
+        });
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setEditingId(null);
+        reset();
+    };
+
     const onSubmit = (data: any) => {
         const payload = {
             ...data,
+            typeTc: globalTypeTc || data.typeTc || "",
+            packageType: globalPackageType || data.packageType || "",
             netWeight: data.netWeight === null ? undefined : data.netWeight,
             volume: data.volume === null ? undefined : data.volume,
         };
 
         if (editingId) {
             setContainers(containers.map(c => c.id === editingId ? { ...payload, id: editingId } : c));
-            setEditingId(null);
         } else {
             setContainers([...containers, { ...payload, id: crypto.randomUUID() }]);
         }
-        reset();
+        closeModal();
     };
 
     const handleExcelImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,21 +165,38 @@ export function ContainerTable({
                     return;
                 }
 
-                const startRow = (String(data[0][0]).toLowerCase().includes('conteneur')) ? 1 : 0;
+                // Détecter s'il y a un en-tête (s'il contient le mot "conteneur" ou "numéro")
+                const startRow = (String(data[0][0]).toLowerCase().includes('conteneur') || String(data[0][0]).toLowerCase().includes('number')) ? 1 : 0;
                 
+                // Ordre attendu :
+                // 0: Numero de Conteneur*
+                // 1: Plomb*
+                // 2: nombre de colis*
+                // 3: Poids brut*
+                // 4: Poids net
+                // 5: Volume
                 const newContainers = data.slice(startRow)
-                    .filter(row => row.length >= 8 && row[0])
-                    .map(row => ({
-                        id: crypto.randomUUID(),
-                        containerNum: String(row[0] || ""),
-                        typeTc: String(row[1] || ""),
-                        sealNum: String(row[2] || ""),
-                        count: parseFloat(String(row[3] || "0")) || 0,
-                        packageType: String(row[4] || ""),
-                        grossWeight: parseFloat(String(row[5] || "0")) || 0,
-                        netWeight: row[6] ? parseFloat(String(row[6])) : undefined,
-                        volume: row[7] ? parseFloat(String(row[7])) : undefined
-                    }));
+                    .filter(row => row.length >= 4 && row[0])
+                    .map(row => {
+                        const containerNum = String(row[0] || "").trim().toUpperCase();
+                        const sealNum = String(row[1] || "").trim();
+                        const count = parseInt(String(row[2] || "0"), 10) || 0;
+                        const grossWeight = parseFloat(String(row[3] || "0")) || 0;
+                        const netWeight = row[4] !== undefined && row[4] !== null && row[4] !== "" ? parseFloat(String(row[4])) : undefined;
+                        const volume = row[5] !== undefined && row[5] !== null && row[5] !== "" ? parseFloat(String(row[5])) : undefined;
+
+                        return {
+                            id: crypto.randomUUID(),
+                            containerNum,
+                            sealNum,
+                            count,
+                            grossWeight,
+                            netWeight,
+                            volume,
+                            typeTc: globalTypeTc,
+                            packageType: globalPackageType
+                        };
+                    });
 
                 if (newContainers.length === 0) {
                     toast.error("Aucune donnée valide trouvée dans le fichier.");
@@ -170,37 +213,18 @@ export function ContainerTable({
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
-    const editContainer = (container: any) => {
-        setEditingId(container.id);
-        setValue("containerNum", container.containerNum);
-        setValue("typeTc", container.typeTc);
-        setValue("sealNum", container.sealNum);
-        setValue("count", container.count);
-        setValue("packageType", container.packageType);
-        setValue("grossWeight", container.grossWeight);
-        setValue("netWeight", container.netWeight ?? "");
-        setValue("volume", container.volume ?? "");
-    };
-
-    const cancelEdit = () => {
-        setEditingId(null);
-        reset();
-    };
-
     const removeContainer = (id: string) => {
-        if (editingId === id) cancelEdit();
         setContainers(containers.filter(c => c.id !== id));
     };
 
     return (
         <div className="container-list-section">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-                    Liste des Conteneurs
-                    {editingId && <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--primary)', fontStyle: 'italic' }}>(Mode édition actif)</span>}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, fontSize: '1.1rem' }}>
+                    Liste des Conteneurs ({containers.length})
                 </h3>
                 
-                <div>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
                     <input 
                         type="file" 
                         ref={fileInputRef} 
@@ -209,15 +233,26 @@ export function ContainerTable({
                         style={{ display: 'none' }} 
                     />
                     {!disabled && (
-                        <button 
-                            type="button" 
-                            onClick={() => fileInputRef.current?.click()}
-                            className="btn-outline"
-                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: '#22c55e', color: '#16a34a' }}
-                        >
-                            <FileUp size={14} />
-                            Importer Excel
-                        </button>
+                        <>
+                            <button 
+                                type="button"
+                                onClick={openAddModal}
+                                className="btn-outline"
+                                style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', borderColor: 'var(--primary)', color: 'var(--primary)' }}
+                            >
+                                <PlusCircle size={14} style={{ marginRight: '0.25rem' }} />
+                                Ajouter un conteneur
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={() => fileInputRef.current?.click()}
+                                className="btn-outline"
+                                style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', borderColor: '#22c55e', color: '#16a34a' }}
+                            >
+                                <FileUp size={14} style={{ marginRight: '0.25rem' }} />
+                                Importer Excel
+                            </button>
+                        </>
                     )}
                 </div>
             </div>
@@ -225,159 +260,176 @@ export function ContainerTable({
             <div className="table-responsive">
                 <table className="container-table">
                     <colgroup>
-                        <col className="col-conteneur" />
-                        <col style={{ width: '10%' }} />
-                        <col className="col-plomb" />
-                        <col style={{ width: '8%' }} />
+                        <col style={{ width: '20%' }} />
                         <col style={{ width: '12%' }} />
-                        <col style={{ width: '8%' }} />
-                        <col style={{ width: '8%' }} />
-                        <col style={{ width: '8%' }} />
-                        <col style={{ width: '6%' }} />
+                        <col style={{ width: '15%' }} />
+                        <col style={{ width: '10%' }} />
+                        <col style={{ width: '12%' }} />
+                        <col style={{ width: '11%' }} />
+                        <col style={{ width: '10%' }} />
+                        <col style={{ width: '10%' }} />
+                        <col style={{ width: '10%' }} />
                     </colgroup>
                     <thead>
                         <tr>
                             <th>Conteneur</th>
                             <th>Type TC</th>
                             <th>N° Plomb</th>
-                            <th>Nbre</th>
-                            <th>Package</th>
-                            <th>Gross. W</th>
+                            <th>Nbre Colis</th>
+                            <th>Colisage</th>
+                            <th>Poids Brut</th>
                             <th>Poids Net</th>
                             <th>Volume</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {containers.map((c) => (
-                            <React.Fragment key={c.id}>
-                                <tr style={editingId === c.id ? { backgroundColor: 'rgba(230, 0, 18, 0.02)', opacity: 0.8 } : {}}>
-                                    <td>{c.containerNum}</td>
-                                    <td>{c.typeTc}</td>
-                                    <td>{c.sealNum}</td>
-                                    <td>{c.count}</td>
-                                    <td>{c.packageType}</td>
-                                    <td>{c.grossWeight}</td>
-                                    <td>{c.netWeight ?? '-'}</td>
-                                    <td>{c.volume ?? '-'}</td>
-                                    {!disabled && (
-                                        <td style={{ textAlign: 'center' }}>
-                                            <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
-                                                <button 
-                                                    type="button" 
-                                                    className="btn-remove" 
-                                                    title="Modifier"
-                                                    onClick={() => editContainer(c)}
-                                                    style={{ color: 'var(--primary)', opacity: editingId ? 0.3 : 1 }}
-                                                    disabled={!!editingId}
-                                                >
-                                                    ✎
-                                                </button>
-                                                <button 
-                                                    type="button" 
-                                                    className="btn-remove" 
-                                                    title="Supprimer"
-                                                    onClick={() => removeContainer(c.id)}
-                                                    style={{ opacity: editingId ? 0.3 : 1 }}
-                                                    disabled={!!editingId}
-                                                >
-                                                    &times;
-                                                </button>
-                                            </div>
-                                        </td>
-                                    )}
-                                </tr>
-                                
-                                {editingId === c.id && (
-                                    <tr style={{ backgroundColor: 'transparent' }}>
-                                        <td colSpan={9} style={{ padding: '0.5rem 0.875rem', border: 'none' }}>
-                                            <div style={{ 
-                                                display: 'flex', 
-                                                gap: '4px', /* 4px = ~1mm */
-                                                padding: '0.6rem 0.5rem', 
-                                                backgroundColor: '#fff5f5', 
-                                                borderRadius: '12px', 
-                                                border: '1.5px solid #e2e8f0',
-                                                alignItems: 'center',
-                                                animation: 'fadeIn 0.2s ease-out'
-                                            }}>
-                                                <input {...register("containerNum")} onInput={handleContainerInput} style={{ height: '36px', borderRadius: '8px', border: errors.containerNum ? '2px solid var(--danger)' : '2px solid #10b981', flex: 2.2, minWidth: 0, padding: '0.4rem 0.6rem' }} placeholder="AAAA9999999" maxLength={11} />
-                                                
-                                                <select {...register("typeTc")} style={{ height: '36px', borderRadius: '8px', border: errors.typeTc ? '2px solid var(--danger)' : '2px solid #10b981', flex: 1, minWidth: 0, padding: '0.4rem 0.6rem', appearance: 'none' }}>
-                                                    {combinedTypeTcOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                                </select>
-
-                                                <input {...register("sealNum")} style={{ height: '36px', borderRadius: '8px', border: errors.sealNum ? '2px solid var(--danger)' : '2px solid #10b981', flex: 2, minWidth: 0, padding: '0.4rem 0.6rem' }} placeholder="Plomb" maxLength={11} />
-                                                <input {...register("count")} type="number" style={{ height: '36px', borderRadius: '8px', border: errors.count ? '2px solid var(--danger)' : '2px solid #10b981', flex: 0.8, minWidth: 0, padding: '0.4rem 0.6rem' }} placeholder="Qté" onInput={(e) => { if(e.currentTarget.value.length > 4) e.currentTarget.value = e.currentTarget.value.slice(0,4); }} />
-                                                
-                                                <select {...register("packageType")} style={{ height: '36px', borderRadius: '8px', border: errors.packageType ? '2px solid var(--danger)' : '2px solid #10b981', flex: 1.2, minWidth: 0, padding: '0.4rem 0.6rem', appearance: 'none' }}>
-                                                    {combinedPackageOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                                </select>
-
-                                                <input {...register("grossWeight")} type="number" step="0.01" style={{ height: '36px', borderRadius: '8px', border: errors.grossWeight ? '2px solid var(--danger)' : '2px solid #10b981', flex: 1, minWidth: 0, padding: '0.4rem 0.6rem' }} placeholder="Gross" />
-                                                <input {...register("netWeight")} type="number" step="0.01" style={{ height: '36px', borderRadius: '8px', border: '2px solid #94a3b8', flex: 1, minWidth: 0, padding: '0.4rem 0.6rem' }} placeholder="Net" />
-                                                <input {...register("volume")} type="number" step="0.01" style={{ height: '36px', borderRadius: '8px', border: '2px solid #94a3b8', flex: 1, minWidth: 0, padding: '0.4rem 0.6rem' }} placeholder="Vol" />
-                                                
-                                                <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
-                                                    <button type="button" onClick={handleSubmit(onSubmit)} className="btn-success" style={{ borderRadius: '50%', width: '38px', height: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>✓</button>
-                                                    <button type="button" onClick={cancelEdit} className="btn-remove" style={{ borderRadius: '50%', width: '38px', height: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#cbd5e1', borderColor: '#94a3b8', color: '#1e293b', fontSize: '1rem' }}>✕</button>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </React.Fragment>
-                        ))}
-
-                        {!editingId && !disabled && (
-                            <tr className="add-container-row">
-                                <td>
-                                    <input {...register("containerNum")} onInput={handleContainerInput} className={fc("containerNum")} placeholder="AAAA9999999" maxLength={11} />
-                                    {errors.containerNum && <span style={{fontSize:'0.6rem', color:'var(--danger)', display:'block'}}>{errors.containerNum.message}</span>}
-                                </td>
-                                <td>
-                                    <select {...register("typeTc")} className={fc("typeTc")}>
-                                        {combinedTypeTcOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                    </select>
-                                    {errors.typeTc && <span style={{fontSize:'0.6rem', color:'var(--danger)', display:'block'}}>{errors.typeTc.message}</span>}
-                                </td>
-                                <td>
-                                    <input {...register("sealNum")} className={fc("sealNum")} placeholder="Plomb" maxLength={11} />
-                                    {errors.sealNum && <span style={{fontSize:'0.6rem', color:'var(--danger)', display:'block'}}>{errors.sealNum.message}</span>}
-                                </td>
-                                <td>
-                                    <input {...register("count")} type="number" className={fc("count")} placeholder="Qté" onInput={(e) => { if(e.currentTarget.value.length > 4) e.currentTarget.value = e.currentTarget.value.slice(0,4); }} />
-                                    {errors.count && <span style={{fontSize:'0.6rem', color:'var(--danger)', display:'block'}}>{errors.count.message}</span>}
-                                </td>
-                                <td>
-                                    <select {...register("packageType")} className={fc("packageType")}>
-                                        {combinedPackageOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                    </select>
-                                    {errors.packageType && <span style={{fontSize:'0.6rem', color:'var(--danger)', display:'block'}}>{errors.packageType.message}</span>}
-                                </td>
-                                <td>
-                                    <input {...register("grossWeight")} type="number" step="0.01" className={fc("grossWeight")} placeholder="Gross" />
-                                    {errors.grossWeight && <span style={{fontSize:'0.6rem', color:'var(--danger)', display:'block'}}>{errors.grossWeight.message}</span>}
-                                </td>
-                                <td>
-                                    <input {...register("netWeight")} type="number" step="0.01" className={fc("netWeight")} placeholder="Net" />
-                                </td>
-                                <td>
-                                    <input {...register("volume")} type="number" step="0.01" className={fc("volume")} placeholder="Vol" />
-                                </td>
-                                <td style={{ textAlign: 'center' }}>
-                                    <button type="button" onClick={handleSubmit(onSubmit)} className="btn-success" style={{ padding: '0.4rem 0.8rem' }}>+</button>
+                        {containers.length === 0 ? (
+                            <tr>
+                                <td colSpan={9} style={{ textAlign: 'center', color: '#94a3b8', fontStyle: 'italic', padding: '2rem' }}>
+                                    Aucun conteneur ajouté pour le moment.
                                 </td>
                             </tr>
+                        ) : (
+                            containers.map((c) => (
+                                <tr key={c.id}>
+                                    <td style={{ fontWeight: 600 }}>{c.containerNum}</td>
+                                    <td>{c.typeTc || globalTypeTc || '-'}</td>
+                                    <td>{c.sealNum}</td>
+                                    <td>{c.count}</td>
+                                    <td>{c.packageType || globalPackageType || '-'}</td>
+                                    <td>{c.grossWeight} kg</td>
+                                    <td>{c.netWeight ? `${c.netWeight} kg` : '-'}</td>
+                                    <td>{c.volume ? `${c.volume} cbm` : '-'}</td>
+                                    {!disabled ? (
+                                        <td style={{ textAlign: 'center' }}>
+                                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => editContainer(c)}
+                                                    style={{ border: 'none', background: 'none', color: '#3b82f6', cursor: 'pointer', padding: '0.25rem' }}
+                                                    title="Modifier"
+                                                >
+                                                    <Edit size={14} />
+                                                </button>
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => removeContainer(c.id)}
+                                                    style={{ border: 'none', background: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '0.25rem' }}
+                                                    title="Supprimer"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    ) : (
+                                        <td>-</td>
+                                    )}
+                                </tr>
+                            ))
                         )}
                     </tbody>
                 </table>
             </div>
-            {(Object.keys(errors).length > 0 && !editingId) && (
-                <div className="error-msg" style={{ marginTop: '10px' }}>
-                    Veuillez corriger les erreurs dans la ligne d'ajout.
-                </div>
+
+            {/* ════════════════ MODAL POPUP FOR CONTAINER ADD/EDIT ════════════════ */}
+            {isModalOpen && mounted && createPortal(
+                <div className="custom-modal-overlay">
+                    <div className="custom-modal-content">
+                        <div className="custom-modal-header">
+                            <h3 className="custom-modal-title">
+                                {editingId ? "Modifier le conteneur" : "Ajouter un conteneur"}
+                            </h3>
+                            <button type="button" className="custom-modal-close" onClick={closeModal}>✕</button>
+                        </div>
+                        <div className="custom-modal-body">
+                            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                                <div>
+                                    <label style={{ fontWeight: 600, fontSize: "0.85rem", marginBottom: "0.3rem", display: "block" }}>Numéro de Conteneur *</label>
+                                    <input 
+                                        {...register("containerNum")} 
+                                        onInput={handleContainerInput}
+                                        placeholder="ex: MEDU1234567" 
+                                        maxLength={11} 
+                                        style={{ width: "100%", height: "40px", padding: "0.5rem", borderRadius: "8px", border: errors.containerNum ? "1.5px solid var(--danger)" : "1.5px solid #cbd5e1" }}
+                                    />
+                                    {errors.containerNum && <span style={{ fontSize: "0.75rem", color: "var(--danger)", marginTop: "0.25rem", display: "block" }}>{errors.containerNum.message}</span>}
+                                </div>
+
+                                <div>
+                                    <label style={{ fontWeight: 600, fontSize: "0.85rem", marginBottom: "0.3rem", display: "block" }}>N° Plomb *</label>
+                                    <input 
+                                        {...register("sealNum")} 
+                                        placeholder="ex: SEAL987654" 
+                                        maxLength={11} 
+                                        style={{ width: "100%", height: "40px", padding: "0.5rem", borderRadius: "8px", border: errors.sealNum ? "1.5px solid var(--danger)" : "1.5px solid #cbd5e1" }}
+                                    />
+                                    {errors.sealNum && <span style={{ fontSize: "0.75rem", color: "var(--danger)", marginTop: "0.25rem", display: "block" }}>{errors.sealNum.message}</span>}
+                                </div>
+
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                                    <div>
+                                        <label style={{ fontWeight: 600, fontSize: "0.85rem", marginBottom: "0.3rem", display: "block" }}>Nombre de colis *</label>
+                                        <input 
+                                            {...register("count")} 
+                                            type="number"
+                                            placeholder="ex: 150" 
+                                            style={{ width: "100%", height: "40px", padding: "0.5rem", borderRadius: "8px", border: errors.count ? "1.5px solid var(--danger)" : "1.5px solid #cbd5e1" }}
+                                        />
+                                        {errors.count && <span style={{ fontSize: "0.75rem", color: "var(--danger)", marginTop: "0.25rem", display: "block" }}>{errors.count.message}</span>}
+                                    </div>
+
+                                    <div>
+                                        <label style={{ fontWeight: 600, fontSize: "0.85rem", marginBottom: "0.3rem", display: "block" }}>Poids Brut (kg) *</label>
+                                        <input 
+                                            {...register("grossWeight")} 
+                                            type="number"
+                                            step="0.01"
+                                            placeholder="ex: 12500" 
+                                            style={{ width: "100%", height: "40px", padding: "0.5rem", borderRadius: "8px", border: errors.grossWeight ? "1.5px solid var(--danger)" : "1.5px solid #cbd5e1" }}
+                                        />
+                                        {errors.grossWeight && <span style={{ fontSize: "0.75rem", color: "var(--danger)", marginTop: "0.25rem", display: "block" }}>{errors.grossWeight.message}</span>}
+                                    </div>
+                                </div>
+
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                                    <div>
+                                        <label style={{ fontWeight: 600, fontSize: "0.85rem", marginBottom: "0.3rem", display: "block" }}>Poids Net (kg)</label>
+                                        <input 
+                                            {...register("netWeight")} 
+                                            type="number"
+                                            step="0.01"
+                                            placeholder="ex: 12000" 
+                                            style={{ width: "100%", height: "40px", padding: "0.5rem", borderRadius: "8px", border: "1.5px solid #cbd5e1" }}
+                                        />
+                                        {errors.netWeight && <span style={{ fontSize: "0.75rem", color: "var(--danger)", marginTop: "0.25rem", display: "block" }}>{errors.netWeight.message}</span>}
+                                    </div>
+
+                                    <div>
+                                        <label style={{ fontWeight: 600, fontSize: "0.85rem", marginBottom: "0.3rem", display: "block" }}>Volume (cbm)</label>
+                                        <input 
+                                            {...register("volume")} 
+                                            type="number"
+                                            step="0.01"
+                                            placeholder="ex: 32.5" 
+                                            style={{ width: "100%", height: "40px", padding: "0.5rem", borderRadius: "8px", border: "1.5px solid #cbd5e1" }}
+                                        />
+                                        {errors.volume && <span style={{ fontSize: "0.75rem", color: "var(--danger)", marginTop: "0.25rem", display: "block" }}>{errors.volume.message}</span>}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="custom-modal-footer">
+                            <button type="button" className="btn-outline" onClick={closeModal} style={{ height: "38px" }}>Annuler</button>
+                            <button type="button" className="btn-success" onClick={handleSubmit(onSubmit)} style={{ height: "38px", color: "#ffffff", padding: "0 1.5rem" }}>
+                                {editingId ? "Enregistrer" : "Ajouter"}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
             )}
         </div>
     );
 }
+

@@ -39,6 +39,7 @@ model User {
   typesTc            TypeTc[]
   vessels            Vessel[]
   voyages            Voyage[]
+  expectedBookings   ExpectedBooking[]
 }
 
 model HSCode {
@@ -178,6 +179,7 @@ model Goods {
   description   String
   hsCode        String
   declNo        String
+  declDate      String?
   saveStatus    String         @default("VALIDATED")
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -251,6 +253,8 @@ model BillOfLading {
   vessel          Vessel?       @relation(fields: [vesselId], references: [id])
   voyage          Voyage?       @relation(fields: [voyageId], references: [id])
   containers      Container[]
+
+  @@unique([bookingNumber, userId])
 }
 
 model Vessel {
@@ -276,8 +280,22 @@ model Voyage {
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   billsOfLading    BillOfLading[]
+  expectedBookings ExpectedBooking[]
   user             User              @relation(fields: [userId], references: [id])
   vessel           Vessel            @relation(fields: [vesselId], references: [id], onDelete: Cascade)
+}
+
+model ExpectedBooking {
+  id        String   @id @default(uuid())
+  number    String
+  voyageId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  voyage    Voyage   @relation(fields: [voyageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([number, voyageId])
 }
 
 

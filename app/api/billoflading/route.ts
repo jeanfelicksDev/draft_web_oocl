@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserId, isAdmin, hasPermission } from "@/lib/auth-utils";
 
+// Helper: build Prisma relation connect/disconnect object
+function connectOrNull(id: string | null | undefined) {
+    return id && id !== "" ? { connect: { id } } : undefined;
+}
+
 export async function GET(request: Request) {
     const userId = await getUserId();
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -10,7 +15,6 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const bookingNumber = searchParams.get("bookingNumber");
-    const filterUserId = searchParams.get("userId");
 
     if (!bookingNumber) {
         try {
@@ -26,23 +30,29 @@ export async function GET(request: Request) {
         }
     }
 
-
     try {
         const bl = await prisma.billOfLading.findFirst({
-            where: userIsAdmin ? { bookingNumber } : { bookingNumber, userId },
-            include: {
-                containers: true,
-            },
-            orderBy: {
-                createdAt: 'desc'
-            }
+            where: { bookingNumber },
+            include: { containers: true },
+            orderBy: { createdAt: 'desc' }
         });
 
         if (!bl) {
             return NextResponse.json({ error: "Not found" }, { status: 404 });
         }
 
-        return NextResponse.json(bl);
+        if (userIsAdmin || bl.userId === userId) {
+            return NextResponse.json(bl);
+        }
+
+        // Safe minimal payload to indicate existence without leaking data
+        return NextResponse.json({
+            id: bl.id,
+            bookingNumber: bl.bookingNumber,
+            userId: bl.userId,
+            saveStatus: bl.saveStatus,
+            isDuplicateOfOtherUser: true
+        });
     } catch (error) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
@@ -59,7 +69,7 @@ export async function POST(request: Request) {
 
         const data = await request.json();
 
-        // Validate bookingNumber: exactly 10 digits, no letters
+        // Validate bookingNumber: exactly 10 digits
         const bookingNumberValue = data.bookingNumber;
         if (!bookingNumberValue || !/^[0-9]{10}$/.test(bookingNumberValue)) {
             return NextResponse.json(
@@ -68,55 +78,85 @@ export async function POST(request: Request) {
             );
         }
 
-        const { containers, ...blRawData } = data;
-        const safeContainers = Array.isArray(containers) ? containers : [];
-
-        // VALID FIELDS for BillOfLading model
-        const validFields = [
-            'bookingNumber', 'contractNumber', 'saveStatus', 
-            'portCountryText', 'portCityText', 'typeReleasedId', 
-            'shipperId', 'consigneeId', 'notifyId', 'alsoNotifyId', 
-            'forwarderId', 'freightBuyerId', 'goodsId',
-            'vesselId', 'voyageId', 'descriptionGoods', 'hsCode'
-        ];
-
-        // Convert empty strings to null AND filter out unknown fields
-        const blData: any = {};
-        for (const key of validFields) {
-            if (blRawData[key] !== undefined) {
-                blData[key] = blRawData[key] === "" ? null : blRawData[key];
-            }
+        // Vérification doublon global : le numéro de booking doit être unique toutes comptes confondus
+        const existing = await prisma.billOfLading.findFirst({
+            where: { bookingNumber: bookingNumberValue }
+        });
+        if (existing) {
+            return NextResponse.json(
+                { error: `Le numéro de booking "${bookingNumberValue}" est déjà utilisé. Chaque numéro de booking doit être unique.` },
+                { status: 409 }
+            );
         }
 
-        let newBL = await prisma.billOfLading.create({
-            data: {
-                ...(blData as any),
-                userId,
-                containers: {
-                    create: safeContainers.map((c: any) => ({
-                        containerNum: c.containerNum,
-                        typeTc: c.typeTc,
-                        sealNum: c.sealNum,
-                        count: Number(c.count) || 0,
-                        packageType: c.packageType,
-                        grossWeight: Number(c.grossWeight) || 0,
-                        netWeight: Number(c.netWeight) || 0,
-                        volume: Number(c.volume) || 0,
-                    })),
-                }
-            },
-            include: {
-                containers: true
+        const { containers, ...d } = data;
+        const safeContainers = Array.isArray(containers) ? containers : [];
+
+        // Build Prisma create payload using nested connect (works with all Prisma client versions)
+        const createData: any = {
+            bookingNumber: d.bookingNumber,
+            contractNumber: d.contractNumber || "",
+            saveStatus: d.saveStatus || "DRAFT",
+            portCountryText: d.portCountryText || null,
+            portCityText: d.portCityText || null,
+            user: { connect: { id: userId } },
+            containers: {
+                create: safeContainers.map((c: any) => ({
+                    containerNum: c.containerNum,
+                    typeTc: c.typeTc,
+                    sealNum: c.sealNum,
+                    count: Number(c.count) || 0,
+                    packageType: c.packageType,
+                    grossWeight: Number(c.grossWeight) || 0,
+                    netWeight: Number(c.netWeight) || 0,
+                    volume: Number(c.volume) || 0,
+                })),
             }
+        };
+
+        // Relations via connect (avoids scalar FK issues with cached Prisma client)
+        const typeReleasedConn = connectOrNull(d.typeReleasedId);
+        if (typeReleasedConn) createData.typeReleased = typeReleasedConn;
+
+        const shipperConn = connectOrNull(d.shipperId);
+        if (shipperConn) createData.shipper = shipperConn;
+
+        const consigneeConn = connectOrNull(d.consigneeId);
+        if (consigneeConn) createData.consignee = consigneeConn;
+
+        const notifyConn = connectOrNull(d.notifyId);
+        if (notifyConn) createData.notify = notifyConn;
+
+        const alsoNotifyConn = connectOrNull(d.alsoNotifyId);
+        if (alsoNotifyConn) createData.alsoNotify = alsoNotifyConn;
+
+        const forwarderConn = connectOrNull(d.forwarderId);
+        if (forwarderConn) createData.forwarder = forwarderConn;
+
+        const freightBuyerConn = connectOrNull(d.freightBuyerId);
+        if (freightBuyerConn) createData.freightBuyer = freightBuyerConn;
+
+        const goodsConn = connectOrNull(d.goodsId);
+        if (goodsConn) createData.goods = goodsConn;
+
+        const vesselConn = connectOrNull(d.vesselId);
+        if (vesselConn) createData.vessel = vesselConn;
+
+        const voyageConn = connectOrNull(d.voyageId);
+        if (voyageConn) createData.voyage = voyageConn;
+
+        let newBL = await prisma.billOfLading.create({
+            data: createData,
+            include: { containers: true }
         });
 
-        // If validated on creation, snapshot immediately as draft 0
+        // If validated on creation, snapshot immediately
         if (newBL.saveStatus === "VALIDATED") {
             const { createBLSnapshot } = await import("@/lib/snapshotUtils");
             const snapshot = await createBLSnapshot(newBL.id);
             newBL = await prisma.billOfLading.update({
                 where: { id: newBL.id },
-                data: { originalData: snapshot as any },
+                data: { originalData: JSON.stringify(snapshot) },
                 include: { containers: true }
             });
         }
@@ -124,10 +164,15 @@ export async function POST(request: Request) {
         return NextResponse.json(newBL, { status: 201 });
     } catch (error: any) {
         console.error("Error creating Bill of Lading:", error);
-        return NextResponse.json({ 
-            error: "Failed to create Bill of Lading", 
+        if (error.code === "P2002") {
+            return NextResponse.json(
+                { error: "Un spécimen avec ce numéro de booking existe déjà." },
+                { status: 409 }
+            );
+        }
+        return NextResponse.json({
+            error: "Failed to create Bill of Lading",
             details: error.message,
-            stack: error.stack 
         }, { status: 500 });
     }
 }

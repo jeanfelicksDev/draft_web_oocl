@@ -12,11 +12,30 @@ export async function PUT(
 
         const { id } = await params;
         const data = await request.json();
+        const name = (data.name || "").trim();
 
-        // Ensure user owns this item
+        if (!name) {
+            return NextResponse.json({ error: "Le nom est requis" }, { status: 400 });
+        }
+
+        // Vérification doublon insensible à la casse (exclure l'élément courant)
+        const existing = await prisma.typeReleased.findFirst({
+            where: {
+                userId,
+                name: { equals: name, mode: "insensitive" },
+                NOT: { id },
+            },
+        });
+        if (existing) {
+            return NextResponse.json(
+                { error: `"${existing.name}" existe déjà. Veuillez choisir un nom différent.` },
+                { status: 409 }
+            );
+        }
+
         const updated = await prisma.typeReleased.update({
             where: { id, userId },
-            data: { name: data.name },
+            data: { name },
         });
 
         return NextResponse.json(updated, { status: 200 });

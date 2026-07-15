@@ -1,6 +1,5 @@
-"use client";
-
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Trash2 } from "lucide-react";
 
 interface ModalFormProps {
@@ -25,9 +24,16 @@ export function ModalForm({
     children,
     maxWidth,
 }: ModalFormProps & { onSaveDraft?: () => void }) {
-    if (!isOpen) return null;
+    const [mounted, setMounted] = useState(false);
+    
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
-    return (
+    if (!isOpen) return null;
+    if (!mounted) return null;
+
+    return createPortal(
         <div
             className="modal-overlay"
             onClick={onClose}
@@ -38,7 +44,7 @@ export function ModalForm({
                 width: '100%',
                 height: '100%',
                 backgroundColor: 'rgba(0,0,0,0.5)',
-                zIndex: 1000,
+                zIndex: 99999,
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center'
@@ -116,32 +122,6 @@ export function ModalForm({
                             </div>
                         )}
 
-                        {onSaveDraft && (
-                            <button
-                                type="button"
-                                onClick={onSaveDraft}
-                                disabled={isSubmitting}
-                                style={{
-                                    padding: '0.75rem 1.5rem',
-                                    borderRadius: '10px',
-                                    border: '2px solid #d97706',
-                                    background: 'transparent',
-                                    color: '#d97706',
-                                    fontWeight: 700,
-                                    fontSize: '0.95rem',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = '#fffbeb';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = 'transparent';
-                                }}
-                            >
-                                Brouillon
-                            </button>
-                        )}
 
                         <button
                             type="submit"
@@ -172,6 +152,7 @@ export function ModalForm({
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

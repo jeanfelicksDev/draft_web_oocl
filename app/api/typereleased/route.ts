@@ -10,9 +10,14 @@ export async function GET() {
         const { getAdminUserId } = await import("@/lib/auth-utils");
         const adminId = await getAdminUserId();
 
-        // Tout le monde voit la liste officielle de l'admin
+        // Tout le monde voit la liste officielle de l'admin ou créés par l'utilisateur connecté
         const list = await prisma.typeReleased.findMany({
-            where: { userId: adminId },
+            where: {
+                OR: [
+                    { userId: adminId || "" },
+                    { userId: userId }
+                ]
+            },
             orderBy: { name: "asc" },
         });
         return NextResponse.json(list);
@@ -26,15 +31,32 @@ export async function POST(request: Request) {
     try {
         const userId = await getUserId();
         const userIsAdmin = await isAdmin();
-        
+
         // SEUL L'ADMIN PEUT CRÉER DES TYPES DE RELEASE
         if (!userId || !userIsAdmin) {
             return NextResponse.json({ error: "Seul l'administrateur peut créer des types de release" }, { status: 403 });
         }
 
         const data = await request.json();
+        const name = (data.name || "").trim();
+
+        if (!name) {
+            return NextResponse.json({ error: "Le nom est requis" }, { status: 400 });
+        }
+
+        // Vérification doublon insensible à la casse
+        const existing = await prisma.typeReleased.findFirst({
+            where: { userId, name: { equals: name, mode: "insensitive" } },
+        });
+        if (existing) {
+            return NextResponse.json(
+                { error: `"${existing.name}" existe déjà. Veuillez choisir un nom différent.` },
+                { status: 409 }
+            );
+        }
+
         const newItem = await prisma.typeReleased.create({
-            data: { name: data.name, userId },
+            data: { name, userId },
         });
         return NextResponse.json(newItem, { status: 201 });
     } catch (error) {

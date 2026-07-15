@@ -9,9 +9,14 @@ export async function GET(req: Request) {
 
         const adminId = await getAdminUserId();
         
-        // Liste globale admin
+        // Liste globale admin ou créés par l'utilisateur connecté
         const items = await prisma.typeTc.findMany({
-            where: { userId: adminId },
+            where: {
+                OR: [
+                    { userId: adminId || "" },
+                    { userId: userId }
+                ]
+            },
             orderBy: { name: 'asc' },
         });
 
@@ -26,30 +31,38 @@ export async function POST(req: Request) {
     try {
         const userId = await getUserId();
         const userIsAdmin = await isAdmin();
-        
+
         if (!userId || !userIsAdmin) {
             return NextResponse.json({ error: 'Seul l\'administrateur peut créer des types TC' }, { status: 403 });
         }
 
         const body = await req.json();
-        const { name } = body;
+        const name = (body.name || "").trim();
 
         if (!name) {
             return NextResponse.json({ error: 'Le nom est requis' }, { status: 400 });
         }
 
+        // Vérification doublon insensible à la casse
+        const existing = await prisma.typeTc.findFirst({
+            where: { userId, name: { equals: name, mode: "insensitive" } },
+        });
+        if (existing) {
+            return NextResponse.json(
+                { error: `"${existing.name}" existe déjà. Veuillez choisir un nom différent.` },
+                { status: 409 }
+            );
+        }
+
         const item = await prisma.typeTc.create({
-            data: {
-                name,
-                userId: userId,
-            },
+            data: { name, userId },
         });
 
         return NextResponse.json(item, { status: 201 });
     } catch (error: any) {
         console.error('Erreur POST TypeTc:', error);
         if (error.code === 'P2002') {
-            return NextResponse.json({ error: 'Ce nom existe déjà' }, { status: 400 });
+            return NextResponse.json({ error: 'Ce nom existe déjà' }, { status: 409 });
         }
         return NextResponse.json({ error: 'Erreur interne' }, { status: 500 });
     }

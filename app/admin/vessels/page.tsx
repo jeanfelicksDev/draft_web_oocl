@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Sidebar } from "@/components/Sidebar";
-import { Ship, Plus, Trash2, Calendar, Anchor } from "lucide-react";
+import { Ship, Plus, Trash2, Calendar, Anchor, FileUp } from "lucide-react";
 import toast from "react-hot-toast";
+import * as XLSX from "xlsx";
 
 export default function AdminVesselsPage() {
     const [vessels, setVessels] = useState<any[]>([]);
@@ -167,6 +168,88 @@ export default function AdminVesselsPage() {
             if (selectedVessel?.id === id) setSelectedVessel(null);
             toast.success("Navire supprimé");
         }
+    };
+
+    const excelInputRef = useRef<HTMLInputElement>(null);
+
+    const handleExcelImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !selectedVoyage) return;
+
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            try {
+                const bstr = evt.target?.result;
+                const wb = XLSX.read(bstr, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const data = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+
+                if (data.length === 0) {
+                    toast.error("Le fichier Excel semble vide.");
+                    return;
+                }
+
+                // Look for the "N°Booking" column index (case-insensitive and removing spaces/special characters)
+                const headerRow = data[0].map(h => String(h || "").trim().toLowerCase());
+                let bookingColIndex = headerRow.findIndex(h => 
+                    h.includes("booking") || h.includes("n°booking") || h.includes("n° booking") || h.includes("numero")
+                );
+
+                // If not found, default to first column (0)
+                if (bookingColIndex === -1) {
+                    bookingColIndex = 0;
+                }
+
+                // Extract booking numbers
+                const importedNumbers = data.slice(1)
+                    .map(row => String(row[bookingColIndex] || "").trim())
+                    .filter(val => val !== "" && val !== "undefined" && val.length >= 5);
+
+                if (importedNumbers.length === 0) {
+                    toast.error("Aucun numéro de booking valide trouvé dans la colonne.");
+                    return;
+                }
+
+                setIsBookingLoading(true);
+                let successCount = 0;
+                const newBookings: any[] = [];
+
+                for (const bookingNum of importedNumbers) {
+                    try {
+                        const res = await fetch("/api/expected-bookings", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ 
+                                number: bookingNum.toUpperCase(), 
+                                voyageId: selectedVoyage.id 
+                            })
+                        });
+                        if (res.ok) {
+                            const saved = await res.json();
+                            newBookings.push(saved);
+                            successCount++;
+                        }
+                    } catch (err) {
+                        console.error("Error importing booking number:", bookingNum, err);
+                    }
+                }
+
+                if (successCount > 0) {
+                    setExpectedBookings(prev => [...newBookings, ...prev]);
+                    toast.success(`${successCount} bookings importés avec succès !`);
+                } else {
+                    toast.error("Échec de l'importation des bookings.");
+                }
+            } catch (err) {
+                console.error(err);
+                toast.error("Erreur lors de la lecture du fichier Excel.");
+            } finally {
+                setIsBookingLoading(false);
+                if (excelInputRef.current) excelInputRef.current.value = "";
+            }
+        };
+        reader.readAsBinaryString(file);
     };
 
     const handleAddBooking = async () => {
@@ -540,7 +623,7 @@ export default function AdminVesselsPage() {
 
                         {selectedVoyage ? (
                             <>
-                                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+                                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center' }}>
                                     <input
                                         type="text"
                                         placeholder="Numéro de Booking (ex: 1234567890)"
@@ -554,6 +637,37 @@ export default function AdminVesselsPage() {
                                         style={{ height: '42px', padding: '0 1.5rem', borderRadius: '10px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer' }}
                                     >
                                         Ajouter
+                                    </button>
+
+                                    <input 
+                                        type="file" 
+                                        ref={excelInputRef} 
+                                        onChange={handleExcelImport} 
+                                        accept=".xlsx, .xls" 
+                                        style={{ display: 'none' }} 
+                                    />
+                                    <button 
+                                        type="button"
+                                        onClick={() => excelInputRef.current?.click()}
+                                        style={{ 
+                                            height: '42px', 
+                                            padding: '0 1.25rem', 
+                                            borderRadius: '10px', 
+                                            background: 'white', 
+                                            color: '#16a34a', 
+                                            border: '2px solid #22c55e', 
+                                            fontWeight: 700, 
+                                            cursor: 'pointer', 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            gap: '0.5rem',
+                                            transition: 'all 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.background = '#f0fdf4'; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.background = 'white'; }}
+                                    >
+                                        <FileUp size={16} />
+                                        Importer Excel
                                     </button>
                                 </div>
 

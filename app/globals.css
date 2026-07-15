@@ -1,7 +1,7 @@
 /* Base OOCL SI Design System */
 
-/* ─── Google Font : Inter ─── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+/* ─── Google Fonts : Inter + Plus Jakarta Sans + DM Sans ─── */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 /* ════════════════════════════════════════════
    DESIGN TOKENS — OOCL RED EDITION
@@ -56,7 +56,7 @@ html {
 }
 
 body {
-  font-family: 'Inter', var(--font-inter), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-inter, 'Inter'), -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.6;
@@ -65,6 +65,36 @@ body {
   -moz-osx-font-smoothing: grayscale;
   font-weight: 400;
   overflow-x: hidden;
+}
+
+/* ─── DM Sans : Titres h1 / h2 ─── */
+h1, h2 {
+  font-family: var(--font-dm, 'DM Sans'), sans-serif;
+  letter-spacing: -0.025em;
+}
+
+/* ─── Plus Jakarta Sans : h3 + nav + labels + badges ─── */
+h3, h4, h5, h6,
+label,
+.nav-item,
+.sidebar-user-name,
+.sidebar-user-email,
+.form-section-title,
+.badge-draft,
+.badge-validated,
+.booking-sidebar h3,
+.booking-card-num,
+.step-label,
+.recap-card-title,
+.recap-label,
+.combobox-add-new,
+.btn-primary,
+.btn-outline,
+.btn-remove,
+.btn-finalize,
+.btn-success,
+.btn-delete-modal {
+  font-family: var(--font-jakarta, 'Plus Jakarta Sans'), sans-serif;
 }
 
 /* ════════════════════════════════════════════
@@ -540,9 +570,7 @@ textarea::placeholder {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: var(--bg-overlay);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(15, 23, 42, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -552,8 +580,8 @@ textarea::placeholder {
 }
 
 .modal-content {
-  background: var(--bg-card);
-  border: 1px solid rgba(255,255,255,0.9);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   padding: 2.5rem;
   border-radius: var(--radius-xl);
   width: 100%;
@@ -561,7 +589,7 @@ textarea::placeholder {
   max-height: 95vh;
   overflow-y: auto;
   animation: scaleIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-  box-shadow: none;
+  box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.2);
   position: relative;
 }
 
@@ -1040,4 +1068,338 @@ tr:hover td {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ════════════════════════════════════════════
+   STEPPER & WIZARD STYLES
+   ════════════════════════════════════════════ */
+.stepper-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 800px;
+  margin: 1.5rem auto 2.5rem auto;
+  position: relative;
+  background: #ffffff;
+  padding: 1.25rem 2rem;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.stepper-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.step-circle {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: 2px solid #cbd5e1;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.step-label {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  transition: color 0.3s ease;
+}
+
+.stepper-line {
+  position: absolute;
+  top: 2.35rem;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: #e2e8f0;
+  z-index: 1;
+}
+
+.stepper-line-fill {
+  height: 100%;
+  background: var(--primary);
+  width: 0%;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Stepper States */
+.stepper-step.active .step-circle {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(230, 0, 18, 0.15);
+  transform: scale(1.05);
+}
+
+.stepper-step.active .step-label {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.stepper-step.completed .step-circle {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+.stepper-step.completed .step-label {
+  color: var(--text);
+}
+
+/* Sub-step indicator */
+.substep-indicator-bar {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.substep-dot {
+  width: 2rem;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 99px;
+  transition: background-color 0.3s ease;
+}
+
+.substep-dot.active {
+  background: var(--primary);
+}
+
+.substep-dot.completed {
+  background: #fca5a5;
+}
+
+.form-nav-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ════════════════════════════════════════════
+   RECAPITULATIF (ETAPE 4)
+   ════════════════════════════════════════════ */
+.recap-grid-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.recap-card {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.015);
+}
+
+.recap-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.recap-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--oocl-blue);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-edit-recap {
+  background: transparent;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.btn-edit-recap:hover {
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+.recap-field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.recap-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.recap-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.recap-value {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.recap-value.empty {
+  color: #cbd5e1;
+  font-style: italic;
+}
+
+/* ════════════════════════════════════════════
+   MODAL POPUP SYSTEM
+   ════════════════════════════════════════════ */
+.custom-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.custom-modal-content {
+  background: #ffffff;
+  border-radius: var(--radius-xl);
+  width: 90%;
+  max-width: 550px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  animation: scaleIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.custom-modal-header {
+  padding: 1.25rem 1.5rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.custom-modal-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--oocl-blue);
+  margin: 0;
+}
+
+.custom-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  line-height: 1;
+}
+
+.custom-modal-close:hover {
+  background: #f1f5f9;
+  color: var(--primary);
+}
+
+.custom-modal-body {
+  padding: 1.5rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.custom-modal-footer {
+  padding: 1rem 1.5rem;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+/* ════════════════════════════════════════════
+   STEPPER NAVIGATION BUTTONS
+   ════════════════════════════════════════════ */
+.form-nav-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+/* Bouton Valider & Générer le PDF */
+.btn-finalize {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  padding: 0.72rem 2rem;
+  border-radius: var(--radius);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 4px 18px rgba(230, 0, 18, 0.25);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  letter-spacing: 0.01em;
+}
+
+.btn-finalize:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(230, 0, 18, 0.35);
+  filter: brightness(1.06);
+}
+
+.btn-finalize:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(230, 0, 18, 0.25);
+}
+
+.btn-finalize:disabled {
+  background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+  color: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }

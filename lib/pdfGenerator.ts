@@ -1,7 +1,30 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-export function generateBLPDF(data: any, preview: boolean = true) {
+// Pre-load an image from a URL and return its base64 data URL
+async function loadImageAsBase64(url: string): Promise<string | null> {
+    try {
+        return await new Promise<string | null>((resolve) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                const ctx = canvas.getContext("2d");
+                if (!ctx) { resolve(null); return; }
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL("image/png"));
+            };
+            img.onerror = () => resolve(null);
+            img.src = url;
+        });
+    } catch {
+        return null;
+    }
+}
+
+export async function generateBLPDF(data: any, preview: boolean = true) {
     const doc = new jsPDF();
 
     // Helper to draw section
@@ -82,27 +105,45 @@ export function generateBLPDF(data: any, preview: boolean = true) {
         return finalH;
     };
 
+    // --- Pre-load logos asynchronously ---
+    const [ooclLogoBase64, aglLogoBase64] = await Promise.all([
+        loadImageAsBase64("/logo-oocl.png"),
+        loadImageAsBase64("/logo-agl.png"),
+    ]);
+
     // --- Header Section ---
     // Logos
-    try {
-        // OOCL Logo (Left) - Square 1:1
-        doc.addImage("/logo-oocl.png", "PNG", 10, 5, 20, 20);
-    } catch (e) {
+    if (ooclLogoBase64) {
+        try {
+            doc.addImage(ooclLogoBase64, "PNG", 10, 5, 20, 20);
+        } catch (e) {
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.setTextColor(230, 0, 18);
+            doc.text("OOCL", 10, 12);
+        }
+    } else {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
         doc.setTextColor(230, 0, 18);
         doc.text("OOCL", 10, 12);
     }
 
-    try {
-        // AGL Logo (Right) - Ratio 129:80 ~ 1.61
-        const aglW = 25;
-        const aglH = (aglW * 80) / 129;
-        doc.addImage("/logo-agl.png", "PNG", 175, 5, aglW, aglH);
-    } catch (e) {
+    if (aglLogoBase64) {
+        try {
+            const aglW = 25;
+            const aglH = (aglW * 80) / 129;
+            doc.addImage(aglLogoBase64, "PNG", 175, 5, aglW, aglH);
+        } catch (e) {
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.setTextColor(0, 68, 170);
+            doc.text("AGL", 195, 12, { align: "right" });
+        }
+    } else {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
-        doc.setTextColor(0, 68, 170); // #0044aa
+        doc.setTextColor(0, 68, 170);
         doc.text("AGL", 195, 12, { align: "right" });
     }
 
@@ -165,13 +206,15 @@ export function generateBLPDF(data: any, preview: boolean = true) {
     // Description Goods Box (Dynamic Right)
     const descX = 110;
     const descY = rightY;
-    const descriptionGoods = data.goods?.description || "";
+    // Support both data.goods?.description and data.descriptionGoods
+    const descriptionGoods = data.goods?.description || data.descriptionGoods || "";
     
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
     const gLines = doc.splitTextToSize(descriptionGoods, boxWidth - 4);
     const textH = gLines.length * 4;
-    const hs = data.goods?.hsCode || "";
+    // Support both data.goods?.hsCode and data.hsCode
+    const hs = data.goods?.hsCode || data.hsCode || "";
     const decl = data.goods?.declNo || data.declNo || "";
     const codeH = (hs || decl) ? 10 : 0;
     const hGoods = Math.max(45, textH + codeH + 12);

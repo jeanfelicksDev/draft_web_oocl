@@ -31,8 +31,7 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
     
     // Détermination dynamique des accès selon les permissions granulaires
     const canManageUsers = hasPermission(PERMISSIONS.MANAGE_USERS);
-    const canManageDrafts = hasPermission(PERMISSIONS.MANAGE_BLS);
-    const canViewDashboard = hasPermission(PERMISSIONS.VIEW_DASHBOARD);
+    const canManageDrafts = hasPermission(PERMISSIONS.BL_WRITE);
     const isAdmin = (user as any)?.role === "ADMIN";
 
     return (
