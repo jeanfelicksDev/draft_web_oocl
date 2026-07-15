@@ -12,6 +12,9 @@ export async function GET() {
         const packageTypes = await prisma.packageType.findMany();
         const typesReleased = await prisma.typeReleased.findMany();
 
+        const dbUrl = process.env.DATABASE_URL || "NOT SET";
+        const maskedDbUrl = dbUrl.replace(/:[^:@\n]+@/, ':****@');
+
         return NextResponse.json({
             users,
             adminId,
@@ -20,9 +23,16 @@ export async function GET() {
             packageTypesCount: packageTypes.length,
             packageTypes,
             typesReleasedCount: typesReleased.length,
-            typesReleased
+            typesReleased,
+            databaseUrlUsedByVercel: maskedDbUrl
         });
     } catch (error: any) {
-        return NextResponse.json({ error: error.message, stack: error.stack }, { status: 500 });
+        const dbUrl = process.env.DATABASE_URL || "NOT SET";
+        const maskedDbUrl = dbUrl.replace(/:[^:@\n]+@/, ':****@');
+        return NextResponse.json({ 
+            error: error.message, 
+            stack: error.stack,
+            databaseUrlUsedByVercel: maskedDbUrl
+        }, { status: 500 });
     }
 }
