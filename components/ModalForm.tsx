@@ -36,7 +36,6 @@ export function ModalForm({
     return createPortal(
         <div
             className="modal-overlay"
-            onClick={onClose}
             style={{
                 position: 'fixed',
                 top: 0,
