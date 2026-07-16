@@ -39,6 +39,10 @@
   --radius-xl:      1.75rem;
 
   --input-bg:       rgba(255, 255, 255, 0.5);
+
+  /* Success and Danger status colors */
+  --success:        #10b981;
+  --danger:         #ef4444;
 }
 
 /* ════════════════════════════════════════════
