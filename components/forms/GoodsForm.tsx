@@ -11,7 +11,7 @@ const schema = yup.object().shape({
     description: yup.string().required("La description est requise"),
     hsCode: yup.string().required("Le code HS est requis"),
     declNo: yup.string().required("Le N° de déclaration est requis"),
-    declDate: yup.string().optional(),
+    declDate: yup.string().required("La date de la déclaration est requise"),
 });
 
 const defaultValues = {
@@ -199,12 +199,13 @@ export function GoodsForm({
                         {errors.declNo && <span className="error-msg">{errors.declNo.message as string}</span>}
                     </div>
                     <div>
-                        <label>Date de la déclaration</label>
+                        <label>Date de la déclaration *</label>
                         <input
                             type="date"
                             {...register("declDate")}
                             style={{ fontFamily: "inherit" }}
                         />
+                        {errors.declDate && <span className="error-msg">{errors.declDate.message as string}</span>}
                     </div>
                 </div>
 
