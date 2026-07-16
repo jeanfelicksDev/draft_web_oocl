@@ -881,6 +881,23 @@ export default function MainPage() {
                             <span className="recap-value">{values.hsCode || <span className="empty">Non renseigné</span>}</span>
                         </div>
                         <div className="recap-field">
+                            <span className="recap-label">N° Déclaration</span>
+                            <span className="recap-value">
+                                {goods.find(g => g.id === values.goodsId)?.declNo || <span className="empty">Non renseigné</span>}
+                            </span>
+                        </div>
+                        <div className="recap-field">
+                            <span className="recap-label">Date Déclaration</span>
+                            <span className="recap-value">
+                                {(() => {
+                                    const dDate = goods.find(g => g.id === values.goodsId)?.declDate;
+                                    if (!dDate) return <span className="empty">Non renseigné</span>;
+                                    const parts = dDate.split("-");
+                                    return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dDate;
+                                })()}
+                            </span>
+                        </div>
+                        <div className="recap-field">
                             <span className="recap-label">Type Conteneur Global</span>
                             <span className="recap-value">{values.globalTypeTc || <span className="empty">Non renseigné</span>}</span>
                         </div>
