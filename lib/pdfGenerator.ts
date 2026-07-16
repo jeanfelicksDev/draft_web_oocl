@@ -207,7 +207,7 @@ export async function generateBLPDF(data: any, preview: boolean = true) {
     const descX = 110;
     const descY = rightY;
     // Support both data.goods?.description and data.descriptionGoods
-    const descriptionGoods = data.goods?.description || data.descriptionGoods || "";
+    const descriptionGoods = (data.goods?.description || data.descriptionGoods || "").trim();
     
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
@@ -216,8 +216,7 @@ export async function generateBLPDF(data: any, preview: boolean = true) {
     // Support both data.goods?.hsCode and data.hsCode
     const hs = data.goods?.hsCode || data.hsCode || "";
     const decl = data.goods?.declNo || data.declNo || "";
-    const codeH = (hs || decl) ? 10 : 0;
-    const hGoods = Math.max(45, textH + codeH + 12);
+    const hGoods = Math.max(45, textH + (hs || decl ? 20 + (decl ? 8 : 4) : 12));
     
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
