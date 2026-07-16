@@ -216,7 +216,14 @@ export async function generateBLPDF(data: any, preview: boolean = true) {
     // Support both data.goods?.hsCode and data.hsCode
     const hs = data.goods?.hsCode || data.hsCode || "";
     const decl = data.goods?.declNo || data.declNo || "";
-    const hGoods = Math.max(45, textH + (hs || decl ? 20 + (decl ? 8 : 4) : 12));
+    const declDate = data.goods?.declDate || data.declDate || "";
+
+    let codeLinesCount = 0;
+    if (hs) codeLinesCount++;
+    if (decl) codeLinesCount++;
+    if (declDate) codeLinesCount++;
+
+    const hGoods = Math.max(45, textH + (codeLinesCount > 0 ? 20 + codeLinesCount * 4 : 12));
     
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
@@ -234,12 +241,28 @@ export async function generateBLPDF(data: any, preview: boolean = true) {
     doc.setTextColor(0);
     doc.text(gLines, descX + 2, descY + 10);
     
-    if (hs || decl) {
+    if (codeLinesCount > 0) {
         doc.setFont("helvetica", "normal");
-        const codeY = descY + hGoods - (decl ? 8 : 4);
+        const codeY = descY + hGoods - (codeLinesCount * 4);
         doc.setTextColor(0);
-        if (hs) doc.text(`HS CODE : ${hs}`, descX + 2, codeY);
-        if (decl) doc.text(`DECL N° : ${decl}`, descX + 2, codeY + 4);
+        
+        let currentCodeY = codeY;
+        if (hs) {
+            doc.text(`HS CODE : ${hs}`, descX + 2, currentCodeY);
+            currentCodeY += 4;
+        }
+        if (decl) {
+            doc.text(`DECL N° : ${decl}`, descX + 2, currentCodeY);
+            currentCodeY += 4;
+        }
+        if (declDate) {
+            let displayDate = declDate;
+            const parts = declDate.split("-");
+            if (parts.length === 3) {
+                displayDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+            doc.text(`DECL DATE : ${displayDate}`, descX + 2, currentCodeY);
+        }
     }
     
     leftY += hNotify + gap;
