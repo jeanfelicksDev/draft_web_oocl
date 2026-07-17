@@ -22,6 +22,8 @@ export async function PUT(
                 eori: data.eori || null,
                 bin: data.bin || null,
                 usci: data.usci || null,
+                paymentPlace: data.paymentPlace || null,
+                paymentCurrency: data.paymentCurrency || null,
                 saveStatus: data.saveStatus || "VALIDATED",
             },
         });

@@ -11,30 +11,30 @@ import { SearchableDropdown } from "../SearchableDropdown";
 import { MARITIME_COUNTRIES, WORLD_PORTS_BY_COUNTRY } from "../../lib/world-ports-data";
 
 const schema = yup.object().shape({
-    name: yup.string().required("Le nom est requis"),
-    address: yup.string().required("L'adresse est requise"),
-    country: yup.string().required("Le pays est requis"),
-    city: yup.string().required("La ville est requise"),
-    phone: yup.string().required("Le téléphone est requis"),
-    email: yup.string().email("Email invalide").required("L'email est requis"),
+    name: yup.string().required("Name is required"),
+    address: yup.string().required("Address is required"),
+    country: yup.string().required("Country is required"),
+    city: yup.string().required("City is required"),
+    phone: yup.string().required("Phone is required"),
+    email: yup.string().email("Invalid email").required("Email is required"),
     vat: yup.string().nullable().when(["country", "city"], {
         is: (country: string, city: string) => countryRequirements[country]?.includes("VAT") || cityRequirements[city]?.includes("VAT"),
-        then: (s: any) => s.required("Le N°VAT est requis pour cette destination."),
+        then: (s: any) => s.required("VAT No is required for this destination."),
         otherwise: (s: any) => s.nullable(),
     }),
     eori: yup.string().nullable().when(["country", "city"], {
         is: (country: string, city: string) => countryRequirements[country]?.includes("EORI") || cityRequirements[city]?.includes("EORI"),
-        then: (s: any) => s.required("Le N°EORI est requis pour cette destination."),
+        then: (s: any) => s.required("EORI No is required for this destination."),
         otherwise: (s: any) => s.nullable(),
     }),
     bin: yup.string().nullable().when(["country", "city"], {
         is: (country: string, city: string) => countryRequirements[country]?.includes("BIN") || cityRequirements[city]?.includes("BIN"),
-        then: (s: any) => s.required("Le BIN est requis pour cette destination."),
+        then: (s: any) => s.required("BIN is required for this destination."),
         otherwise: (s: any) => s.nullable(),
     }),
     usci: yup.string().nullable().when(["country", "city"], {
         is: (country: string, city: string) => countryRequirements[country]?.includes("USCI") || cityRequirements[city]?.includes("USCI"),
-        then: (s: any) => s.required("L'USCI est requis pour cette destination."),
+        then: (s: any) => s.required("USCI is required for this destination."),
         otherwise: (s: any) => s.nullable(),
     }),
 });
@@ -71,7 +71,7 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
     }, [country, city, setValue]);
 
     // Helper to ensure uppercase and sync with react-hook-form
-    const handleUpper = (fieldName: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleUpper = (fieldName: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const val = e.target.value.toUpperCase();
         setValue(fieldName, val);
     };
@@ -79,7 +79,7 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div>
-                <label>Nom du Shipper *</label>
+                <label>Shipper Name *</label>
                 <input 
                     {...register("name")} 
                     onChange={handleUpper("name")} 
@@ -89,32 +89,37 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
             </div>
 
             <div>
-                <label>Adresse *</label>
-                <textarea {...register("address")} rows={3} />
+                <label>Address *</label>
+                <textarea 
+                    {...register("address")} 
+                    rows={3} 
+                    onChange={handleUpper("address")}
+                    style={{ textTransform: 'uppercase' }}
+                />
                 {errors.address && <span className="error-msg">{errors.address.message}</span>}
             </div>
 
             <div className="grid-2">
                 <div>
                     <SearchableDropdown
-                        label="Pays *"
+                        label="Country *"
                         options={MARITIME_COUNTRIES}
                         value={country}
                         onSelect={(val) => {
                             setValue("country", val);
                             setValue("city", "");
                         }}
-                        placeholder="Sélectionner un pays..."
+                        placeholder="Select a country..."
                         error={errors.country?.message}
                     />
                 </div>
                 <div>
                     <SearchableDropdown
-                        label="Ville *"
+                        label="City *"
                         options={availablePorts}
                         value={city}
                         onSelect={(val) => setValue("city", val)}
-                        placeholder={country ? "Sélectionner une ville..." : "⬅ Choisir d'abord un pays"}
+                        placeholder={country ? "Select a city..." : "⬅ Select a country first"}
                         disabled={!country}
                         error={errors.city?.message}
                     />
@@ -123,7 +128,7 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
 
             <div className="grid-2">
                 <div>
-                    <label>Téléphone *</label>
+                    <label>Phone *</label>
                     <input 
                         {...register("phone")} 
                         type="tel" 
@@ -134,7 +139,12 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
                 </div>
                 <div>
                     <label>Email *</label>
-                    <input {...register("email")} type="email" />
+                    <input 
+                        {...register("email")} 
+                        type="email" 
+                        onChange={handleUpper("email")}
+                        style={{ textTransform: 'uppercase' }}
+                    />
                     {errors.email && <span className="error-msg">{errors.email.message}</span>}
                 </div>
             </div>
@@ -146,7 +156,7 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
                     <div className="grid-2">
                         {isNeeded("VAT") && (
                             <div>
-                                <label>N°VAT *</label>
+                                <label>VAT No *</label>
                                 <input 
                                     {...register("vat")} 
                                     onChange={handleUpper("vat")} 
@@ -157,7 +167,7 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
                         )}
                         {isNeeded("EORI") && (
                             <div>
-                                <label>N°EORI *</label>
+                                <label>EORI No *</label>
                                 <input 
                                     {...register("eori")} 
                                     onChange={handleUpper("eori")} 
@@ -226,7 +236,7 @@ export function ShipperForm({ title = "", isOpen, onClose, onSuccess, onDelete, 
                 onSuccess(savedShipper);
                 onClose();
             } else {
-                alert("Erreur lors de l'enregistrement.")
+                alert("Error during save.")
             }
         } finally {
             setIsSubmitting(false);
@@ -236,7 +246,7 @@ export function ShipperForm({ title = "", isOpen, onClose, onSuccess, onDelete, 
     const handleSaveAsDraft = async () => {
         const data = watch();
         if (!data.name) {
-            alert("Le nom est obligatoire même pour un brouillon.");
+            alert("Name is required even for a draft.");
             return;
         }
         setIsSubmitting(true);
@@ -253,7 +263,7 @@ export function ShipperForm({ title = "", isOpen, onClose, onSuccess, onDelete, 
                 onSuccess(savedShipper);
                 onClose();
             } else {
-                alert("Erreur lors de l'enregistrement du brouillon.")
+                alert("Error during draft save.")
             }
         } finally {
             setIsSubmitting(false);
@@ -269,7 +279,7 @@ export function ShipperForm({ title = "", isOpen, onClose, onSuccess, onDelete, 
                 onDelete(initialData.id);
                 onClose();
             } else {
-                alert("Erreur lors de la suppression.");
+                alert("Error during deletion.");
             }
         } finally {
             setIsSubmitting(false);

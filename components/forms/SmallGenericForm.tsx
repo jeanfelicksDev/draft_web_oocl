@@ -38,10 +38,10 @@ export function SmallGenericForm({
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
     const schema = yup.object().shape({
-        [fieldName]: yup.string().required(`Le champ ${fieldName} est requis`),
+        [fieldName]: yup.string().required(`${entityName} is required`),
     });
 
-    const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
         resolver: yupResolver(schema),
         defaultValues: initialData || { [fieldName]: "" },
     });
@@ -72,7 +72,7 @@ export function SmallGenericForm({
                 }
                 onClose();
             } else {
-                alert("Erreur lors de l'enregistrement.");
+                alert("Error during save.");
             }
         } finally {
             setIsSubmitting(false);
@@ -88,11 +88,16 @@ export function SmallGenericForm({
                 setEntities(entities.filter(e => e.id !== initialData.id));
                 onClose();
             } else {
-                alert("Erreur lors de la suppression.");
+                alert("Error during deletion.");
             }
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleUpper = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const val = e.target.value.toUpperCase();
+        setValue(fieldName as any, val);
     };
 
     return (
@@ -108,9 +113,18 @@ export function SmallGenericForm({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <label style={{ textTransform: 'capitalize' }}>{entityName} *</label>
                 {isTextArea ? (
-                    <textarea {...register(fieldName as any)} rows={4} />
+                    <textarea 
+                        {...register(fieldName as any)} 
+                        rows={4} 
+                        onChange={handleUpper}
+                        style={{ textTransform: 'uppercase' }}
+                    />
                 ) : (
-                    <input {...register(fieldName as any)} />
+                    <input 
+                        {...register(fieldName as any)} 
+                        onChange={handleUpper}
+                        style={{ textTransform: 'uppercase' }}
+                    />
                 )}
                 {errors[fieldName] && <span className="error-msg">{errors[fieldName]?.message as string}</span>}
             </div>

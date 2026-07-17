@@ -7,8 +7,8 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 
 const schema = yup.object().shape({
-    code: yup.string().required("Le code HS est requis"),
-    description: yup.string().required("La nature de la marchandise est requise"),
+    code: yup.string().required("HS Code is required"),
+    description: yup.string().required("Commodity nature is required"),
 });
 
 const defaultValues = {
@@ -19,7 +19,7 @@ const defaultValues = {
 export function HSCodeForm({ title = "", isOpen, onClose, onSuccess, onDelete, initialData }: { title?: string, isOpen: boolean, onClose: () => void, onSuccess: (hscode: any) => void, onDelete?: (id: string) => void, initialData?: any }) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
         resolver: yupResolver(schema),
         defaultValues: initialData || defaultValues,
     });
@@ -46,7 +46,7 @@ export function HSCodeForm({ title = "", isOpen, onClose, onSuccess, onDelete, i
                 onClose();
             } else {
                 const err = await res.json();
-                alert(err.error || "Erreur lors de l'enregistrement.");
+                alert(err.error || "Error during save.");
             }
         } finally {
             setIsSubmitting(false);
@@ -62,11 +62,17 @@ export function HSCodeForm({ title = "", isOpen, onClose, onSuccess, onDelete, i
                 onDelete(initialData.id);
                 onClose();
             } else {
-                alert("Erreur lors de la suppression.");
+                alert("Error during deletion.");
             }
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    // Helper to ensure uppercase and sync with react-hook-form
+    const handleUpper = (fieldName: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value.toUpperCase();
+        setValue(fieldName, val);
     };
 
     return (
@@ -81,14 +87,24 @@ export function HSCodeForm({ title = "", isOpen, onClose, onSuccess, onDelete, i
         >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div>
-                    <label>HS CODE *</label>
-                    <input {...register("code")} placeholder="Ex: 8703" />
+                    <label>HS Code *</label>
+                    <input 
+                        {...register("code")} 
+                        placeholder="e.g. 8703" 
+                        onChange={handleUpper("code")}
+                        style={{ textTransform: 'uppercase' }}
+                    />
                     {errors.code && <span className="error-msg">{errors.code.message as string}</span>}
                 </div>
 
                 <div>
-                    <label>Nature de la marchandise *</label>
-                    <input {...register("description")} placeholder="Désignation courte" />
+                    <label>Commodity Nature *</label>
+                    <input 
+                        {...register("description")} 
+                        placeholder="Short description" 
+                        onChange={handleUpper("description")}
+                        style={{ textTransform: 'uppercase' }}
+                    />
                     {errors.description && <span className="error-msg">{errors.description.message as string}</span>}
                 </div>
             </div>

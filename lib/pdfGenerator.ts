@@ -29,7 +29,7 @@ export async function generateBLPDF(data: any, preview: boolean = true) {
 
     // Helper to draw section
     const drawSectionBox = (title: string, x: number, y: number, w: number, details: any, minH: number = 25) => {
-        const { name, address, country, city, phone, email, vat, eori, bin, usci } = details || {};
+        const { name, address, country, city, phone, email, vat, eori, bin, usci, paymentPlace, paymentCurrency } = details || {};
 
         doc.setFont("helvetica", "bold");
         doc.setFontSize(8);
@@ -76,6 +76,15 @@ export async function generateBLPDF(data: any, preview: boolean = true) {
         if (email) {
             doc.setTextColor(0);
             doc.text(`EMAIL: ${email}`, x + 2, currentY);
+            currentY += 4;
+        }
+
+        if (paymentPlace || paymentCurrency) {
+            doc.setTextColor(0);
+            const pParts = [];
+            if (paymentPlace) pParts.push(`PLACE OF PAYMENT: ${paymentPlace}`);
+            if (paymentCurrency) pParts.push(`CURRENCY: ${paymentCurrency}`);
+            doc.text(pParts.join(" | "), x + 2, currentY);
             currentY += 4;
         }
 
@@ -268,8 +277,8 @@ export async function generateBLPDF(data: any, preview: boolean = true) {
     leftY += hNotify + gap;
     rightY += hGoods + gap;
 
-    // Freight Buyer (Left)
-    const hFreight = drawSectionBox("FREIGHT BUYER", 10, leftY, boxWidth, data.freightBuyer);
+    // Freight Payer (Left)
+    const hFreight = drawSectionBox("FREIGHT PAYER", 10, leftY, boxWidth, data.freightBuyer);
     leftY += hFreight + gap;
 
     // Port & Place (Same line)

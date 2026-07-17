@@ -105,7 +105,7 @@ export function LinkedPortSelector({
                     options={countries}
                     value={portCountryValue}
                     onSelect={handleCountrySelect}
-                    placeholder="Sélectionner un pays..."
+                    placeholder="Select a country..."
                     error={portCountryError}
                     disabled={disabled}
                 />
@@ -117,7 +117,7 @@ export function LinkedPortSelector({
                     options={ports}
                     value={portCityValue}
                     onSelect={handlePortSelect}
-                    placeholder={isLoading ? "Chargement..." : (portCountryValue ? "Sélectionner un port..." : "⬅ Choisir d'abord un pays")}
+                    placeholder={isLoading ? "Loading..." : (portCountryValue ? "Select a port..." : "⬅ Select a country first")}
                     disabled={disabled || !portCountryValue || isLoading}
                     error={portCityError}
                 />

@@ -36,22 +36,22 @@ import { LinkedPortSelector } from "./LinkedPortSelector";
    MAIN PAGE WITH STEPPER WIZARD
    ════════════════════════════════════════════ */
 const blSchema = yup.object().shape({
-    bookingNumber: yup.string().required("Booking Number requis"),
-    contractNumber: yup.string().required("Contract Number requis"),
-    typeReleasedId: yup.string().required("Type Released requis"),
-    portCountryText: yup.string().required("Pays requis"),
-    portCityText: yup.string().required("Ville requise"),
-    shipperId: yup.string().required("Shipper requis"),
-    consigneeId: yup.string().required("Consignee requis"),
-    notifyId: yup.string().required("Notify requis"),
+    bookingNumber: yup.string().required("Booking Number is required"),
+    contractNumber: yup.string().required("Contract Number is required"),
+    typeReleasedId: yup.string().required("Type Released is required"),
+    portCountryText: yup.string().required("Country is required"),
+    portCityText: yup.string().required("City is required"),
+    shipperId: yup.string().required("Shipper is required"),
+    consigneeId: yup.string().required("Consignee is required"),
+    notifyId: yup.string().required("Notify is required"),
     alsoNotifyId: yup.string().nullable(),
-    forwarderId: yup.string().required("Forwarder requis"),
-    freightBuyerId: yup.string().required("Freight Buyer requis"),
-    goodsId: yup.string().required("Nature des marchandises requise"),
-    vesselId: yup.string().required("Navire requis"),
+    forwarderId: yup.string().required("Forwarder is required"),
+    freightBuyerId: yup.string().required("Freight Payer is required"),
+    goodsId: yup.string().required("Nature of Goods is required"),
+    vesselId: yup.string().required("Vessel is required"),
     voyageId: yup.string().optional().nullable(),
-    globalTypeTc: yup.string().required("Type de conteneur global requis"),
-    globalPackageType: yup.string().required("Type de colisage global requis"),
+    globalTypeTc: yup.string().required("Global Container Type is required"),
+    globalPackageType: yup.string().required("Global Packaging Type is required"),
     hsCode: yup.string().optional().nullable(),
 });
 
@@ -200,7 +200,7 @@ export default function MainPage() {
             const res = await fetch(`/api/billoflading?bookingNumber=${bookingNumber}`);
             if (res.ok) {
                 // BL found → duplicate
-                setBookingDuplicateError(`Le numéro de booking "${bookingNumber}" existe déjà.`);
+                setBookingDuplicateError(`Booking number "${bookingNumber}" already exists.`);
                 return true;
             } else {
                 setBookingDuplicateError(null);
@@ -229,7 +229,7 @@ export default function MainPage() {
             if (!currentBlId) {
                 const isDuplicate = await checkBookingDuplicate(getValues("bookingNumber"));
                 if (isDuplicate) {
-                    toast.error(`Le numéro de booking "${getValues("bookingNumber")}" existe déjà. Veuillez en choisir un autre ou charger le BL existant.`, { duration: 5000 });
+                    toast.error(`Booking number "${getValues("bookingNumber")}" already exists. Please choose another or load the existing BL.`, { duration: 5000 });
                     return false;
                 }
             }
@@ -249,13 +249,13 @@ export default function MainPage() {
             }
             if (activeSubStep === 2) {
                 if (containers.length === 0) {
-                    toast.error("Veuillez ajouter au moins un conteneur.");
+                    toast.error("Please add at least one container.");
                     return false;
                 }
                 // Verify all containers have data (normally verified in form, but check anyway)
                 const invalid = containers.some(c => !c.containerNum || !c.sealNum || !c.count || !c.grossWeight);
                 if (invalid) {
-                    toast.error("Certains conteneurs dans la liste sont incomplets.");
+                    toast.error("Some containers in the list are incomplete.");
                     return false;
                 }
                 return true;
@@ -351,13 +351,13 @@ export default function MainPage() {
                 setActiveStep(1);
                 setActiveSubStep(1);
 
-                if (!bookingNumArg) toast.success("Données du booking chargées !");
+                if (!bookingNumArg) toast.success("Booking data loaded!");
             } else if (res.status === 404) {
-                if (!bookingNumArg) toast.error("Booking Number non trouvé.");
+                if (!bookingNumArg) toast.error("Booking Number not found.");
             } else {
-                if (!bookingNumArg) toast.error("Erreur lors de la recherche.");
+                if (!bookingNumArg) toast.error("Error during search.");
             }
-        } catch { if (!bookingNumArg) toast.error("Erreur de connexion."); }
+        } catch { if (!bookingNumArg) toast.error("Connection error."); }
     };
 
     /* ─── Initial fetch ─── */
@@ -418,7 +418,7 @@ export default function MainPage() {
         const isSilent = silent === true;
         const data = getValues();
         if (!data.bookingNumber || !/^[0-9]{10}$/.test(data.bookingNumber)) {
-            if (!isSilent) toast.error("Le numéro de booking est requis (10 chiffres).");
+            if (!isSilent) toast.error("Booking number is required (10 digits).");
             return;
         }
 
@@ -441,22 +441,22 @@ export default function MainPage() {
                 if (!currentBlId) setCurrentBlId(saved.id);
                 const bls = await fetch('/api/billoflading').then(r => r.json());
                 setBillOfLadings(Array.isArray(bls) ? bls : []);
-                if (!isSilent) toast.success("Brouillon sauvegardé !");
+                if (!isSilent) toast.success("Draft saved!");
             } else {
                 if (!isSilent) {
                     const err = await res.json().catch(() => ({}));
-                    toast.error(`${err.error || "Erreur"} ${err.details ? ": " + err.details : ""}`);
+                    toast.error(`${err.error || "Error"} ${err.details ? ": " + err.details : ""}`);
                 }
             }
         } catch { 
-            if (!isSilent) toast.error("Erreur de connexion."); 
+            if (!isSilent) toast.error("Connection error."); 
         }
     };
 
     /* ─── Delete BL ─── */
     const handleDeleteBL = async (blId: string, bookingNumber: string, e?: React.MouseEvent) => {
         e?.stopPropagation();
-        if (!confirm(`Supprimer définitivement le BL #${bookingNumber} ?\nCette action est irréversible.`)) return;
+        if (!confirm(`Permanently delete BL #${bookingNumber}?\nThis action is irreversible.`)) return;
         try {
             const res = await fetch(`/api/billoflading/${blId}`, { method: "DELETE" });
             if (res.ok) {
@@ -465,15 +465,15 @@ export default function MainPage() {
                 setBillOfLadings(Array.isArray(bls) ? bls : []);
             } else {
                 const err = await res.json().catch(() => ({}));
-                toast.error(err.error || "Erreur lors de la suppression.");
+                toast.error(err.error || "Error during deletion.");
             }
-        } catch { toast.error("Erreur de connexion."); }
+        } catch { toast.error("Connection error."); }
     };
 
     /* ─── Save Validated (Submit) ─── */
     const onSubmit = async (data: any) => {
         if (containers.length === 0) {
-            toast.error("Veuillez ajouter au moins un conteneur avant de finaliser.");
+            toast.error("Please add at least one container before finalizing.");
             return;
         }
 
@@ -486,11 +486,11 @@ export default function MainPage() {
 
         // Check if partners are valid (not drafts)
         const partnersToCheck = [
-            { id: data.shipperId, list: shippers, label: "Expéditeur (Shipper)" },
-            { id: data.consigneeId, list: consignees, label: "Destinataire (Consignee)" },
+            { id: data.shipperId, list: shippers, label: "Shipper" },
+            { id: data.consigneeId, list: consignees, label: "Consignee" },
             { id: data.notifyId, list: notifys, label: "Notify Party" },
             { id: data.forwarderId, list: forwarders, label: "Forwarder" },
-            { id: data.freightBuyerId, list: freightBuyers, label: "Freight Buyer" },
+            { id: data.freightBuyerId, list: freightBuyers, label: "Freight Payer" },
             { id: data.alsoNotifyId, list: alsoNotifys, label: "Also Notify Party" }
         ];
 
@@ -504,14 +504,14 @@ export default function MainPage() {
                 const missing: string[] = [];
                 
                 if (p.label === "Also Notify Party") {
-                    if (!partner.name) missing.push("Nom");
-                    if (!partner.description) missing.push("Adresse/Description");
+                    if (!partner.name) missing.push("Name");
+                    if (!partner.description) missing.push("Address/Description");
                 } else {
-                    if (!partner.name) missing.push("Nom");
-                    if (!partner.address) missing.push("Adresse");
-                    if (!partner.country) missing.push("Pays");
-                    if (!partner.city) missing.push("Ville");
-                    if (!partner.phone) missing.push("Téléphone");
+                    if (!partner.name) missing.push("Name");
+                    if (!partner.address) missing.push("Address");
+                    if (!partner.country) missing.push("Country");
+                    if (!partner.city) missing.push("City");
+                    if (!partner.phone) missing.push("Phone");
                     if (!partner.email) missing.push("Email");
                 }
 
@@ -520,15 +520,15 @@ export default function MainPage() {
                     ...(cityRequirements[partner.city] || [])
                 ];
 
-                if (reqs.includes("VAT") && !partner.vat) missing.push("N° VAT");
-                if (reqs.includes("EORI") && !partner.eori) missing.push("N° EORI");
-                if (reqs.includes("BIN") && !partner.bin) missing.push("N° BIN");
-                if (reqs.includes("USCI") && !partner.usci) missing.push("N° USCI");
+                if (reqs.includes("VAT") && !partner.vat) missing.push("VAT No");
+                if (reqs.includes("EORI") && !partner.eori) missing.push("EORI No");
+                if (reqs.includes("BIN") && !partner.bin) missing.push("BIN No");
+                if (reqs.includes("USCI") && !partner.usci) missing.push("USCI No");
 
                 if (missing.length > 0) {
-                    draftsErrors.push(`${p.label} : Champs manquants (${missing.join(", ")})`);
+                    draftsErrors.push(`${p.label}: Missing fields (${missing.join(", ")})`);
                 } else {
-                    draftsErrors.push(`${p.label} : Doit être validé officiellement`);
+                    draftsErrors.push(`${p.label}: Must be officially validated`);
                 }
             }
         }
@@ -561,13 +561,13 @@ export default function MainPage() {
                         &times;
                     </button>
                     <p style={{ fontWeight: 800, color: "var(--danger)", marginBottom: "0.5rem", fontSize: "1rem" }}>
-                        Impossible de finaliser : Certains partenaires sont encore en Brouillon.
+                        Cannot finalize: Some partners are still in Draft.
                     </p>
                     <ul style={{ fontSize: "0.9rem", paddingLeft: "1.2rem", color: "#333" }}>
                         {draftsErrors.map((err, i) => <li key={i} style={{ marginBottom: "0.25rem" }}>{err}</li>)}
                     </ul>
                     <p style={{ fontSize: "0.8rem", marginTop: "0.75rem", fontStyle: "italic", color: "#666", borderTop: "1px solid #eee", paddingTop: "0.5rem" }}>
-                        Veuillez modifier ces partenaires pour compléter les informations manquantes.
+                        Please edit these partners to complete the missing information.
                     </p>
                 </div>
             ), { duration: 15000, position: "top-center", style: { maxWidth: "600px", padding: "1rem" } });
@@ -583,7 +583,7 @@ export default function MainPage() {
                 body: JSON.stringify({ ...data, containers: updatedContainers, saveStatus: "VALIDATED" })
             });
             if (res.ok) {
-                toast.success("Bill of Lading enregistré avec succès !");
+                toast.success("Bill of Lading successfully saved!");
 
                 const hydratedData = {
                     bookingNumber: data.bookingNumber,
@@ -615,10 +615,10 @@ export default function MainPage() {
                 handleNewForm();
             } else {
                 const err = await res.json().catch(() => ({}));
-                toast.error(`${err.error || "Erreur"} ${err.details ? ": " + err.details : ""}`);
+                toast.error(`${err.error || "Error"} ${err.details ? ": " + err.details : ""}`);
             }
         } catch { 
-            toast.error("Erreur de connexion."); 
+            toast.error("Connection error."); 
         } finally {
             setIsGeneratingPDF(false);
         }
@@ -628,8 +628,8 @@ export default function MainPage() {
     const renderStepper = () => {
         const steps = [
             { num: 1, label: "Voyage" },
-            { num: 2, label: "Acteurs" },
-            { num: 3, label: "Conteneurs" },
+            { num: 2, label: "Parties" },
+            { num: 3, label: "Containers" },
             { num: 4, label: "Validation" }
         ];
 
@@ -690,13 +690,13 @@ export default function MainPage() {
                 { id: 2, label: "Consignee" },
                 { id: 3, label: "Notify" },
                 { id: 4, label: "Also Notify" },
-                { id: 5, label: "Freight Buyer" },
+                { id: 5, label: "Freight Payer" },
                 { id: 6, label: "Forwarder" }
             ];
             return (
                 <div style={{ marginBottom: "2rem", textAlign: "center" }}>
                     <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "var(--oocl-blue)", marginBottom: "0.75rem" }}>
-                        Acteurs — {subSteps[activeSubStep - 1].label} ({activeSubStep}/6)
+                        Parties — {subSteps[activeSubStep - 1].label} ({activeSubStep}/6)
                     </h3>
                     <div className="substep-indicator-bar">
                         {subSteps.map(ss => (
@@ -721,8 +721,8 @@ export default function MainPage() {
         }
         if (activeStep === 3) {
             const subSteps = [
-                { id: 1, label: "Marchandises & Colisage" },
-                { id: 2, label: "Liste des Conteneurs" }
+                { id: 1, label: "Goods & Packaging" },
+                { id: 2, label: "Container List" }
             ];
             return (
                 <div style={{ marginBottom: "2rem", textAlign: "center" }}>
@@ -771,32 +771,32 @@ export default function MainPage() {
                     <div className="recap-card-header">
                         <h3 className="recap-card-title">
                             <BookOpen size={16} />
-                            1. Références & Voyage
+                            1. References & Voyage
                         </h3>
-                        <button type="button" className="btn-edit-recap" onClick={() => editSection(1, 1)} title="Modifier cette section">
+                        <button type="button" className="btn-edit-recap" onClick={() => editSection(1, 1)} title="Edit this section">
                             <Edit size={14} />
                         </button>
                     </div>
                     <div className="recap-field-grid">
                         <div className="recap-field">
                             <span className="recap-label">Booking Number</span>
-                            <span className="recap-value">{values.bookingNumber || <span className="empty">Non renseigné</span>}</span>
+                            <span className="recap-value">{values.bookingNumber || <span className="empty">Not specified</span>}</span>
                         </div>
                         <div className="recap-field">
                             <span className="recap-label">Type Released</span>
-                            <span className="recap-value">{typesReleased.find(t => t.id === values.typeReleasedId)?.name || <span className="empty">Non renseigné</span>}</span>
+                            <span className="recap-value">{typesReleased.find(t => t.id === values.typeReleasedId)?.name || <span className="empty">Not specified</span>}</span>
                         </div>
                         <div className="recap-field">
                             <span className="recap-label">Contract Number</span>
-                            <span className="recap-value">{values.contractNumber || <span className="empty">Non renseigné</span>}</span>
+                            <span className="recap-value">{values.contractNumber || <span className="empty">Not specified</span>}</span>
                         </div>
                         <div className="recap-field">
-                            <span className="recap-label">Navire</span>
-                            <span className="recap-value">{vessels.find(v => v.id === values.vesselId)?.name || <span className="empty">Non renseigné</span>}</span>
+                            <span className="recap-label">Vessel</span>
+                            <span className="recap-value">{vessels.find(v => v.id === values.vesselId)?.name || <span className="empty">Not specified</span>}</span>
                         </div>
                         <div className="recap-field">
                             <span className="recap-label">Port of Discharge</span>
-                            <span className="recap-value">{values.portCountryText ? `${values.portCityText}, ${values.portCountryText}` : <span className="empty">Non renseigné</span>}</span>
+                            <span className="recap-value">{values.portCountryText ? `${values.portCityText}, ${values.portCountryText}` : <span className="empty">Not specified</span>}</span>
                         </div>
                     </div>
                 </div>
@@ -805,9 +805,9 @@ export default function MainPage() {
                     <div className="recap-card-header">
                         <h3 className="recap-card-title">
                             <User size={16} />
-                            2. Acteurs (Parties)
+                            2. Parties
                         </h3>
-                        <button type="button" className="btn-edit-recap" onClick={() => editSection(2, 1)} title="Modifier cette section">
+                        <button type="button" className="btn-edit-recap" onClick={() => editSection(2, 1)} title="Edit this section">
                             <Edit size={14} />
                         </button>
                     </div>
@@ -817,42 +817,42 @@ export default function MainPage() {
                                 Shipper * 
                                 <button type="button" className="btn-edit-recap" onClick={() => editSection(2, 1)} style={{ padding: 0 }}><Edit size={10} /></button>
                             </span>
-                            <span className="recap-value">{getPartnerName(values.shipperId, shippers) || <span className="empty">Non renseigné</span>}</span>
+                            <span className="recap-value">{getPartnerName(values.shipperId, shippers) || <span className="empty">Not specified</span>}</span>
                         </div>
                         <div className="recap-field">
                             <span className="recap-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 Consignee * 
                                 <button type="button" className="btn-edit-recap" onClick={() => editSection(2, 2)} style={{ padding: 0 }}><Edit size={10} /></button>
                             </span>
-                            <span className="recap-value">{getPartnerName(values.consigneeId, consignees) || <span className="empty">Non renseigné</span>}</span>
+                            <span className="recap-value">{getPartnerName(values.consigneeId, consignees) || <span className="empty">Not specified</span>}</span>
                         </div>
                         <div className="recap-field">
                             <span className="recap-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 Notify * 
                                 <button type="button" className="btn-edit-recap" onClick={() => editSection(2, 3)} style={{ padding: 0 }}><Edit size={10} /></button>
                             </span>
-                            <span className="recap-value">{getPartnerName(values.notifyId, notifys) || <span className="empty">Non renseigné</span>}</span>
+                            <span className="recap-value">{getPartnerName(values.notifyId, notifys) || <span className="empty">Not specified</span>}</span>
                         </div>
                         <div className="recap-field">
                             <span className="recap-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 Also Notify 
                                 <button type="button" className="btn-edit-recap" onClick={() => editSection(2, 4)} style={{ padding: 0 }}><Edit size={10} /></button>
                             </span>
-                            <span className="recap-value">{getPartnerName(values.alsoNotifyId || "", alsoNotifys) || <span className="empty">Aucun</span>}</span>
+                            <span className="recap-value">{getPartnerName(values.alsoNotifyId || "", alsoNotifys) || <span className="empty">None</span>}</span>
                         </div>
                         <div className="recap-field">
                             <span className="recap-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                Freight Buyer * 
+                                Freight Payer * 
                                 <button type="button" className="btn-edit-recap" onClick={() => editSection(2, 5)} style={{ padding: 0 }}><Edit size={10} /></button>
                             </span>
-                            <span className="recap-value">{getPartnerName(values.freightBuyerId, freightBuyers) || <span className="empty">Non renseigné</span>}</span>
+                            <span className="recap-value">{getPartnerName(values.freightBuyerId, freightBuyers) || <span className="empty">Not specified</span>}</span>
                         </div>
                         <div className="recap-field">
                             <span className="recap-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 Forwarder * 
                                 <button type="button" className="btn-edit-recap" onClick={() => editSection(2, 6)} style={{ padding: 0 }}><Edit size={10} /></button>
                             </span>
-                            <span className="recap-value">{getPartnerName(values.forwarderId, forwarders) || <span className="empty">Non renseigné</span>}</span>
+                            <span className="recap-value">{getPartnerName(values.forwarderId, forwarders) || <span className="empty">Not specified</span>}</span>
                         </div>
                     </div>
                 </div>
@@ -861,49 +861,49 @@ export default function MainPage() {
                     <div className="recap-card-header">
                         <h3 className="recap-card-title">
                             <Ship size={16} />
-                            3. Marchandises & Colisage
+                            3. Goods & Packaging
                         </h3>
-                        <button type="button" className="btn-edit-recap" onClick={() => editSection(3, 1)} title="Modifier cette section">
+                        <button type="button" className="btn-edit-recap" onClick={() => editSection(3, 1)} title="Edit this section">
                             <Edit size={14} />
                         </button>
                     </div>
                     <div className="recap-field-grid" style={{ gridTemplateColumns: "1fr" }}>
                         <div className="recap-field">
-                            <span className="recap-label">Nature / Description des marchandises</span>
+                            <span className="recap-label">Nature / Description of Goods</span>
                             <span className="recap-value" style={{ whiteSpace: "pre-wrap" }}>
-                                {goods.find(g => g.id === values.goodsId)?.description || <span className="empty">Non renseigné</span>}
+                                {goods.find(g => g.id === values.goodsId)?.description || <span className="empty">Not specified</span>}
                             </span>
                         </div>
                     </div>
                     <div className="recap-field-grid" style={{ marginTop: "1rem" }}>
                         <div className="recap-field">
                             <span className="recap-label">HS Code</span>
-                            <span className="recap-value">{values.hsCode || <span className="empty">Non renseigné</span>}</span>
+                            <span className="recap-value">{values.hsCode || <span className="empty">Not specified</span>}</span>
                         </div>
                         <div className="recap-field">
-                            <span className="recap-label">N° Déclaration</span>
+                            <span className="recap-label">Declaration No</span>
                             <span className="recap-value">
-                                {goods.find(g => g.id === values.goodsId)?.declNo || <span className="empty">Non renseigné</span>}
+                                {goods.find(g => g.id === values.goodsId)?.declNo || <span className="empty">Not specified</span>}
                             </span>
                         </div>
                         <div className="recap-field">
-                            <span className="recap-label">Date Déclaration</span>
+                            <span className="recap-label">Declaration Date</span>
                             <span className="recap-value">
                                 {(() => {
                                     const dDate = goods.find(g => g.id === values.goodsId)?.declDate;
-                                    if (!dDate) return <span className="empty">Non renseigné</span>;
+                                    if (!dDate) return <span className="empty">Not specified</span>;
                                     const parts = dDate.split("-");
                                     return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dDate;
                                 })()}
                             </span>
                         </div>
                         <div className="recap-field">
-                            <span className="recap-label">Type Conteneur Global</span>
-                            <span className="recap-value">{values.globalTypeTc || <span className="empty">Non renseigné</span>}</span>
+                            <span className="recap-label">Global Container Type</span>
+                            <span className="recap-value">{values.globalTypeTc || <span className="empty">Not specified</span>}</span>
                         </div>
                         <div className="recap-field">
-                            <span className="recap-label">Colisage Global (Contenant)</span>
-                            <span className="recap-value">{values.globalPackageType || <span className="empty">Non renseigné</span>}</span>
+                            <span className="recap-label">Global Package Type</span>
+                            <span className="recap-value">{values.globalPackageType || <span className="empty">Not specified</span>}</span>
                         </div>
                     </div>
                 </div>
@@ -912,9 +912,9 @@ export default function MainPage() {
                     <div className="recap-card-header">
                         <h3 className="recap-card-title">
                             <PlusCircle size={16} />
-                            4. Liste des Conteneurs ({containers.length})
+                            4. Container List ({containers.length})
                         </h3>
-                        <button type="button" className="btn-edit-recap" onClick={() => editSection(3, 2)} title="Modifier cette section">
+                        <button type="button" className="btn-edit-recap" onClick={() => editSection(3, 2)} title="Edit this section">
                             <Edit size={14} />
                         </button>
                     </div>
@@ -922,11 +922,11 @@ export default function MainPage() {
                         <table className="container-table" style={{ width: "100%", fontSize: "0.85rem" }}>
                             <thead>
                                 <tr>
-                                    <th>Conteneur</th>
-                                    <th>N° Plomb</th>
-                                    <th>Nbre Colis</th>
-                                    <th>Poids Brut</th>
-                                    <th>Poids Net</th>
+                                    <th>Container</th>
+                                    <th>Seal No</th>
+                                    <th>Package Qty</th>
+                                    <th>Gross Weight</th>
+                                    <th>Net Weight</th>
                                     <th>Volume</th>
                                 </tr>
                             </thead>
@@ -969,7 +969,7 @@ export default function MainPage() {
                                     Shipping Instructions
                                 </span>
                             </div>
-                            <h1>{currentBlId ? "Modification du spécimen" : "Nouveau spécimen"}</h1>
+                            <h1>{currentBlId ? "Edit Shipping Instructions" : "New Shipping Instructions"}</h1>
                         </div>
 
                         <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
@@ -981,7 +981,7 @@ export default function MainPage() {
                                     style={{ borderColor: "#d97706", color: "#d97706" }}
                                 >
                                     <Save size={14} />
-                                    Enregistrer
+                                    Save Draft
                                 </button>
                             )}
 
@@ -990,7 +990,7 @@ export default function MainPage() {
                                     {canWrite && (
                                         <button type="button" onClick={handleNewForm} className="btn-outline">
                                             <PlusCircle size={14} />
-                                            Nouveau
+                                            New
                                         </button>
                                     )}
                                     {canDelete && (
@@ -1001,7 +1001,7 @@ export default function MainPage() {
                                             style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
                                         >
                                             <Trash2 size={14} />
-                                            Supprimer
+                                            Delete
                                         </button>
                                     )}
                                 </>
@@ -1020,7 +1020,7 @@ export default function MainPage() {
                             <section className="fade-in">
                                 <p className="form-section-title">
                                     <BookOpen size={12} />
-                                    Références & Voyage
+                                    References & Voyage
                                 </p>
 
                                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.5rem" }}>
@@ -1034,7 +1034,7 @@ export default function MainPage() {
                                             }}
                                             inputMode="numeric"
                                             maxLength={10}
-                                            placeholder="ex: 1234567890"
+                                            placeholder="e.g. 1234567890"
                                             className={fc(values.bookingNumber)}
                                             disabled={!canWrite}
                                             onPaste={(e) => {
@@ -1082,9 +1082,14 @@ export default function MainPage() {
                                         <input
                                             {...register("contractNumber")}
                                             maxLength={10}
-                                            placeholder="ex: CNTR1234"
+                                            placeholder="e.g. CNTR1234"
                                             className={fc(values.contractNumber)}
                                             disabled={!canWrite}
+                                            onChange={(e) => {
+                                                const val = e.target.value.toUpperCase();
+                                                setValue("contractNumber", val);
+                                            }}
+                                            style={{ textTransform: 'uppercase' }}
                                         />
                                         {errors.contractNumber && <span className="error-msg">{(errors.contractNumber as any).message}</span>}
                                     </div>
@@ -1092,7 +1097,7 @@ export default function MainPage() {
 
                                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginTop: "1.5rem" }}>
                                     <Combobox
-                                        label="Navire *"
+                                        label="Vessel *"
                                         items={vessels}
                                         displayKey="name"
                                         valueKey="id"
@@ -1111,7 +1116,7 @@ export default function MainPage() {
                                         value={values.voyageId ?? ""}
                                         onChange={(val) => setValue("voyageId", val)}
                                         disabled={!canWrite || filteredVoyages.length === 0}
-                                        placeholder={values.vesselId ? "Sélectionner un voyage..." : "— Choisir d'abord un navire"}
+                                        placeholder={values.vesselId ? "Select a voyage..." : "— Select a vessel first"}
                                     />
                                 </div>
 
@@ -1134,7 +1139,7 @@ export default function MainPage() {
                             <section className="fade-in">
                                 <p className="form-section-title">
                                     <User size={12} />
-                                    Parties impliquées
+                                    Parties Involved
                                 </p>
                                 {renderSubStepIndicator()}
 
@@ -1188,7 +1193,7 @@ export default function MainPage() {
 
                                 {activeSubStep === 5 && (
                                     <div className="fade-in">
-                                        <Combobox label="Freight Buyer *" items={freightBuyers} displayKey="name" valueKey="id"
+                                        <Combobox label="Freight Payer *" items={freightBuyers} displayKey="name" valueKey="id"
                                             value={values.freightBuyerId} onChange={(val) => setValue("freightBuyerId", val)}
                                             onAddNew={canEditRefTables ? () => handleAddNew("FREIGHT_BUYER") : undefined}
                                             onEdit={canEditRefTables ? () => handleEdit("FREIGHT_BUYER", freightBuyers, values.freightBuyerId) : undefined}
@@ -1219,7 +1224,7 @@ export default function MainPage() {
 
                                 {activeSubStep === 1 && (
                                     <div className="fade-in" style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-                                        <Combobox label="Nature des marchandises *" items={goods} displayKey="description" valueKey="id"
+                                        <Combobox label="Nature of Goods *" items={goods} displayKey="description" valueKey="id"
                                             value={values.goodsId} onChange={(val) => {
                                                 setValue("goodsId", val);
                                                 const selected = goods.find(g => g.id === val);
@@ -1234,7 +1239,7 @@ export default function MainPage() {
 
                                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
                                             <Combobox 
-                                                label="Type conteneur global *" 
+                                                label="Global Container Type *" 
                                                 items={typesTc} 
                                                 displayKey="name" 
                                                 valueKey="name" 
@@ -1245,7 +1250,7 @@ export default function MainPage() {
                                             />
 
                                             <Combobox 
-                                                label="Colisage global (Contenant) *" 
+                                                label="Global Package Type *" 
                                                 items={packageTypes} 
                                                 displayKey="name" 
                                                 valueKey="name" 
@@ -1277,7 +1282,7 @@ export default function MainPage() {
                             <section className="fade-in">
                                 <p className="form-section-title">
                                     <Eye size={12} />
-                                    Récapitulatif & Soumission
+                                    Summary & Submission
                                 </p>
                                 {renderRecapStep()}
                             </section>
@@ -1290,7 +1295,7 @@ export default function MainPage() {
                     <div className="form-nav-buttons">
                         {activeStep > 1 ? (
                             <button type="button" className="btn-outline" onClick={handleBack}>
-                                ← Précédent
+                                ← Previous
                             </button>
                         ) : (
                             <div />
@@ -1317,7 +1322,7 @@ export default function MainPage() {
                                     transition: "all 0.2s",
                                 }}
                             >
-                                Suivant →
+                                Next →
                             </button>
                         ) : (
                             <button
@@ -1329,10 +1334,10 @@ export default function MainPage() {
                                 {isGeneratingPDF ? (
                                     <>
                                         <div className="spinner" style={{ marginRight: "0.5rem" }} />
-                                        Génération du PDF...
+                                        Generating PDF...
                                     </>
                                 ) : (
-                                    "✨ Valider & Générer le PDF"
+                                    "✨ Validate & Generate PDF"
                                 )}
                             </button>
                         )}
@@ -1361,7 +1366,7 @@ export default function MainPage() {
                 onSuccess={handleSaveList(setNotifys, notifys, "notifyId")}
                 onDelete={handleDeleteList(setNotifys, notifys, "notifyId")} />
 
-            <ConsigneeForm title="Freight Buyer" endpoint="/api/freightbuyers"
+            <ConsigneeForm title="Freight Payer" endpoint="/api/freightbuyers"
                 isOpen={activeModal === "FREIGHT_BUYER"} onClose={() => setActiveModal(null)}
                 initialData={editingEntity}
                 onSuccess={handleSaveList(setFreightBuyers, freightBuyers, "freightBuyerId")}
@@ -1431,7 +1436,7 @@ export default function MainPage() {
             <SmallGenericForm
                 title=""
                 isOpen={activeModal === "TYPE_TC"} onClose={() => setActiveModal(null)}
-                endpoint="/api/typetc" entityName="Type de Conteneur"
+                endpoint="/api/typetc" entityName="Container Type"
                 idField="typeTcId" entities={typesTc} setEntities={setTypesTc}
                 initialData={editingEntity} />
 
@@ -1457,7 +1462,7 @@ export default function MainPage() {
             <SmallGenericForm
                 title=""
                 isOpen={activeModal === "PACKAGE_TYPE"} onClose={() => setActiveModal(null)}
-                endpoint="/api/packagetypes" entityName="Type de Package"
+                endpoint="/api/packagetypes" entityName="Package Type"
                 idField="packageTypeId" entities={packageTypes} setEntities={setPackageTypes}
                 initialData={editingEntity} />
 

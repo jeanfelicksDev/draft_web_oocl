@@ -155,23 +155,25 @@ model Forwarder {
 }
 
 model FreightBuyer {
-  id            String         @id @default(uuid())
-  name          String
-  address       String
-  country       String
-  city          String
-  phone         String
-  email         String
-  vat           String?
-  eori          String?
-  bin           String?
-  usci          String?
-  saveStatus    String         @default("VALIDATED")
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  userId        String
-  billsOfLading BillOfLading[]
-  user          User           @relation(fields: [userId], references: [id])
+  id              String         @id @default(uuid())
+  name            String
+  address         String
+  country         String
+  city            String
+  phone           String
+  email           String
+  vat             String?
+  eori            String?
+  bin             String?
+  usci            String?
+  paymentPlace    String?
+  paymentCurrency String?
+  saveStatus      String         @default("VALIDATED")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  userId          String
+  billsOfLading   BillOfLading[]
+  user            User           @relation(fields: [userId], references: [id])
 }
 
 model Goods {

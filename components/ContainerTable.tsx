@@ -9,41 +9,41 @@ import { FileUp, PlusCircle, Trash2, Edit } from "lucide-react";
 
 const containerSchema = yup.object().shape({
     containerNum: yup.string()
-        .required("N° Conteneur requis")
-        .length(11, "Doit faire 11 caractères")
-        .matches(/^[A-Z]{4}[0-9]{7}$/, "Format: 4 lettres + 7 chiffres (ex: MEDU1234567)"),
+        .required("Container Number is required")
+        .length(11, "Must be 11 characters")
+        .matches(/^[A-Z]{4}[0-9]{7}$/, "Format: 4 letters + 7 digits (e.g. MEDU1234567)"),
     typeTc: yup.string().optional().nullable(),
-    sealNum: yup.string().required("N° Plomb requis").max(11, "Max 11 caractères"),
+    sealNum: yup.string().required("Seal Number is required").max(11, "Max 11 characters"),
     count: yup.number()
-        .typeError("Doit être un nombre")
-        .required("Nombre de colis requis")
-        .integer("Doit être un nombre entier")
+        .typeError("Must be a number")
+        .required("Package Qty is required")
+        .integer("Must be an integer")
         .min(1, "Minimum 1")
         .transform((val, orig) => orig === "" ? null : val),
     packageType: yup.string().optional().nullable(),
     grossWeight: yup.number()
-        .typeError("Doit être un nombre")
-        .required("Poids brut requis")
+        .typeError("Must be a number")
+        .required("Gross Weight is required")
         .min(1, "Minimum 1")
         .transform((val, orig) => orig === "" ? null : val)
-        .test("max-weight", "Poids max dépassé", function (val) {
+        .test("max-weight", "Max weight exceeded", function (val) {
             const { typeTc } = this.parent;
             if (!val || !typeTc) return true;
             if (typeTc.startsWith("20") && val > 28000) return false;
             if (typeTc.startsWith("40") && val > 37000) return false;
             return true;
         })
-        .test("gross-gt-net", "Brut < Net", function (val) {
+        .test("gross-gt-net", "Gross < Net", function (val) {
             const { netWeight } = this.parent;
             if (!val || netWeight === undefined || netWeight === null) return true;
             return val > netWeight;
         }),
     netWeight: yup.number()
-        .typeError("Doit être un nombre")
+        .typeError("Must be a number")
         .nullable()
         .transform((value, originalValue) => (originalValue === "" ? null : value)),
     volume: yup.number()
-        .typeError("Doit être un nombre")
+        .typeError("Must be a number")
         .nullable()
         .transform((value, originalValue) => (originalValue === "" ? null : value)),
 });
@@ -161,7 +161,7 @@ export function ContainerTable({
                 const data = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
 
                 if (data.length < 2) {
-                    toast.error("Le fichier Excel semble vide ou mal formé.");
+                    toast.error("The Excel file seems empty or malformed.");
                     return;
                 }
 
@@ -179,7 +179,7 @@ export function ContainerTable({
                     .filter(row => row.length >= 4 && row[0])
                     .map(row => {
                         const containerNum = String(row[0] || "").trim().toUpperCase();
-                        const sealNum = String(row[1] || "").trim();
+                        const sealNum = String(row[1] || "").trim().toUpperCase();
                         const count = parseInt(String(row[2] || "0"), 10) || 0;
                         const grossWeight = parseFloat(String(row[3] || "0")) || 0;
                         const netWeight = row[4] !== undefined && row[4] !== null && row[4] !== "" ? parseFloat(String(row[4])) : undefined;
@@ -199,14 +199,14 @@ export function ContainerTable({
                     });
 
                 if (newContainers.length === 0) {
-                    toast.error("Aucune donnée valide trouvée dans le fichier.");
+                    toast.error("No valid data found in the file.");
                 } else {
                     setContainers([...containers, ...newContainers]);
-                    toast.success(`${newContainers.length} conteneurs importés.`);
+                    toast.success(`${newContainers.length} containers imported.`);
                 }
             } catch (err) {
                 console.error(err);
-                toast.error("Erreur lors de la lecture du fichier Excel.");
+                toast.error("Error reading the Excel file.");
             }
         };
         reader.readAsBinaryString(file);
@@ -221,7 +221,7 @@ export function ContainerTable({
         <div className="container-list-section">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, fontSize: '1.1rem' }}>
-                    Liste des Conteneurs ({containers.length})
+                    Container List ({containers.length})
                 </h3>
                 
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -241,7 +241,7 @@ export function ContainerTable({
                                 style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', borderColor: 'var(--primary)', color: 'var(--primary)' }}
                             >
                                 <PlusCircle size={14} style={{ marginRight: '0.25rem' }} />
-                                Ajouter un conteneur
+                                Add Container
                             </button>
                             <button 
                                 type="button" 
@@ -250,7 +250,7 @@ export function ContainerTable({
                                 style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', borderColor: '#22c55e', color: '#16a34a' }}
                             >
                                 <FileUp size={14} style={{ marginRight: '0.25rem' }} />
-                                Importer Excel
+                                Import Excel
                             </button>
                         </>
                     )}
@@ -272,13 +272,13 @@ export function ContainerTable({
                     </colgroup>
                     <thead>
                         <tr>
-                            <th>Conteneur</th>
-                            <th>Type TC</th>
-                            <th>N° Plomb</th>
-                            <th>Nbre Colis</th>
-                            <th>Colisage</th>
-                            <th>Poids Brut</th>
-                            <th>Poids Net</th>
+                            <th>Container</th>
+                            <th>Container Type</th>
+                            <th>Seal No</th>
+                            <th>Package Qty</th>
+                            <th>Packaging</th>
+                            <th>Gross Weight</th>
+                            <th>Net Weight</th>
                             <th>Volume</th>
                             <th>Actions</th>
                         </tr>
@@ -287,7 +287,7 @@ export function ContainerTable({
                         {containers.length === 0 ? (
                             <tr>
                                 <td colSpan={9} style={{ textAlign: 'center', color: '#94a3b8', fontStyle: 'italic', padding: '2rem' }}>
-                                    Aucun conteneur ajouté pour le moment.
+                                    No containers added yet.
                                 </td>
                             </tr>
                         ) : (
@@ -338,38 +338,42 @@ export function ContainerTable({
                     <div className="custom-modal-content">
                         <div className="custom-modal-header">
                             <h3 className="custom-modal-title">
-                                {editingId ? "Modifier le conteneur" : "Ajouter un conteneur"}
+                                {editingId ? "Edit Container" : "Add Container"}
                             </h3>
                             <button type="button" className="custom-modal-close" onClick={closeModal}>✕</button>
                         </div>
                         <div className="custom-modal-body">
                             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                                 <div>
-                                    <label style={{ fontWeight: 600, fontSize: "0.85rem", marginBottom: "0.3rem", display: "block" }}>Numéro de Conteneur *</label>
+                                    <label style={{ fontWeight: 600, fontSize: "0.85rem", marginBottom: "0.3rem", display: "block" }}>Container Number *</label>
                                     <input 
                                         {...register("containerNum")} 
                                         onInput={handleContainerInput}
                                         placeholder="ex: MEDU1234567" 
                                         maxLength={11} 
-                                        style={{ width: "100%", height: "40px", padding: "0.5rem", borderRadius: "8px", border: errors.containerNum ? "1.5px solid var(--danger)" : "1.5px solid #cbd5e1" }}
+                                        style={{ width: "100%", height: "40px", padding: "0.5rem", borderRadius: "8px", border: errors.containerNum ? "1.5px solid var(--danger)" : "1.5px solid #cbd5e1", textTransform: 'uppercase' }}
                                     />
                                     {errors.containerNum && <span style={{ fontSize: "0.75rem", color: "var(--danger)", marginTop: "0.25rem", display: "block" }}>{errors.containerNum.message}</span>}
                                 </div>
 
                                 <div>
-                                    <label style={{ fontWeight: 600, fontSize: "0.85rem", marginBottom: "0.3rem", display: "block" }}>N° Plomb *</label>
+                                    <label style={{ fontWeight: 600, fontSize: "0.85rem", marginBottom: "0.3rem", display: "block" }}>Seal Number *</label>
                                     <input 
                                         {...register("sealNum")} 
                                         placeholder="ex: SEAL987654" 
                                         maxLength={11} 
-                                        style={{ width: "100%", height: "40px", padding: "0.5rem", borderRadius: "8px", border: errors.sealNum ? "1.5px solid var(--danger)" : "1.5px solid #cbd5e1" }}
+                                        onChange={(e) => {
+                                            const val = e.target.value.toUpperCase();
+                                            setValue("sealNum", val);
+                                        }}
+                                        style={{ width: "100%", height: "40px", padding: "0.5rem", borderRadius: "8px", border: errors.sealNum ? "1.5px solid var(--danger)" : "1.5px solid #cbd5e1", textTransform: 'uppercase' }}
                                     />
                                     {errors.sealNum && <span style={{ fontSize: "0.75rem", color: "var(--danger)", marginTop: "0.25rem", display: "block" }}>{errors.sealNum.message}</span>}
                                 </div>
 
                                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                                     <div>
-                                        <label style={{ fontWeight: 600, fontSize: "0.85rem", marginBottom: "0.3rem", display: "block" }}>Nombre de colis *</label>
+                                        <label style={{ fontWeight: 600, fontSize: "0.85rem", marginBottom: "0.3rem", display: "block" }}>Package Count *</label>
                                         <input 
                                             {...register("count")} 
                                             type="number"
@@ -380,7 +384,7 @@ export function ContainerTable({
                                     </div>
 
                                     <div>
-                                        <label style={{ fontWeight: 600, fontSize: "0.85rem", marginBottom: "0.3rem", display: "block" }}>Poids Brut (kg) *</label>
+                                        <label style={{ fontWeight: 600, fontSize: "0.85rem", marginBottom: "0.3rem", display: "block" }}>Gross Weight (kg) *</label>
                                         <input 
                                             {...register("grossWeight")} 
                                             type="number"
@@ -394,7 +398,7 @@ export function ContainerTable({
 
                                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                                     <div>
-                                        <label style={{ fontWeight: 600, fontSize: "0.85rem", marginBottom: "0.3rem", display: "block" }}>Poids Net (kg)</label>
+                                        <label style={{ fontWeight: 600, fontSize: "0.85rem", marginBottom: "0.3rem", display: "block" }}>Net Weight (kg)</label>
                                         <input 
                                             {...register("netWeight")} 
                                             type="number"
@@ -420,9 +424,9 @@ export function ContainerTable({
                             </div>
                         </div>
                         <div className="custom-modal-footer">
-                            <button type="button" className="btn-outline" onClick={closeModal} style={{ height: "38px" }}>Annuler</button>
+                            <button type="button" className="btn-outline" onClick={closeModal} style={{ height: "38px" }}>Cancel</button>
                             <button type="button" className="btn-success" onClick={handleSubmit(onSubmit)} style={{ height: "38px", color: "#ffffff", padding: "0 1.5rem" }}>
-                                {editingId ? "Enregistrer" : "Ajouter"}
+                                {editingId ? "Save" : "Add"}
                             </button>
                         </div>
                     </div>

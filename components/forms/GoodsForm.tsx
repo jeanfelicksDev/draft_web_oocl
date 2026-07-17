@@ -8,10 +8,10 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { Combobox } from "../Combobox";
 
 const schema = yup.object().shape({
-    description: yup.string().required("La description est requise"),
-    hsCode: yup.string().required("Le code HS est requis"),
-    declNo: yup.string().required("Le N° de déclaration est requis"),
-    declDate: yup.string().required("La date de la déclaration est requise"),
+    description: yup.string().required("Description is required"),
+    hsCode: yup.string().required("HS Code is required"),
+    declNo: yup.string().required("Declaration No is required"),
+    declDate: yup.string().required("Declaration Date is required"),
 });
 
 const defaultValues = {
@@ -44,7 +44,7 @@ export function GoodsForm({
 }) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    const { register, handleSubmit, reset, control, watch, formState: { errors } } = useForm({
+    const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm({
         resolver: yupResolver(schema),
         defaultValues: initialData || defaultValues,
     });
@@ -89,7 +89,7 @@ export function GoodsForm({
                 onSuccess(savedItem);
                 onClose();
             } else {
-                alert("Erreur lors de l'enregistrement.");
+                alert("Error during save.");
             }
         } finally {
             setIsSubmitting(false);
@@ -105,7 +105,7 @@ export function GoodsForm({
                 onDelete(initialData.id);
                 onClose();
             } else {
-                alert("Erreur lors de la suppression.");
+                alert("Error during deletion.");
             }
         } finally {
             setIsSubmitting(false);
@@ -115,7 +115,7 @@ export function GoodsForm({
     const handleSaveAsDraft = async () => {
         const data = watch();
         if (!data.description) {
-            alert("La description est obligatoire même pour un brouillon.");
+            alert("Description is required even for a draft.");
             return;
         }
         setIsSubmitting(true);
@@ -132,7 +132,7 @@ export function GoodsForm({
                 onSuccess(savedItem);
                 onClose();
             } else {
-                alert("Erreur lors de l'enregistrement du brouillon.");
+                alert("Error during draft save.");
             }
         } finally {
             setIsSubmitting(false);
@@ -152,7 +152,7 @@ export function GoodsForm({
         >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div>
-                    <label>Description Goods *</label>
+                    <label>Description of Goods *</label>
                     <textarea 
                         {...restRegister}
                         ref={(e: HTMLTextAreaElement | null) => {
@@ -161,10 +161,11 @@ export function GoodsForm({
                         }}
                         rows={4} 
                         onChange={(e) => {
-                            restRegister.onChange(e);
+                            const val = e.target.value.toUpperCase();
+                            setValue("description", val);
                             autoResize();
                         }}
-                        style={{ overflow: 'hidden', resize: 'none', minHeight: '12cm' }}
+                        style={{ overflow: 'hidden', resize: 'none', minHeight: '12cm', textTransform: 'uppercase' }}
                     />
                     {errors.description && <span className="error-msg">{errors.description.message as string}</span>}
                 </div>
@@ -176,7 +177,7 @@ export function GoodsForm({
                             control={control}
                             render={({ field }) => (
                                 <Combobox
-                                    label="HS CODE *"
+                                    label="HS Code *"
                                     items={hscodes}
                                     displayKey="code"
                                     valueKey="code"
@@ -188,18 +189,25 @@ export function GoodsForm({
                                         if (h) onEditHSCode(h.id);
                                     } : undefined}
                                     error={errors.hsCode?.message as string}
-                                    placeholder="Sélectionner..."
+                                    placeholder="Select..."
                                 />
                             )}
                         />
                     </div>
                     <div>
-                        <label>DECL N° *</label>
-                        <input {...register("declNo")} />
+                        <label>Decl No *</label>
+                        <input 
+                            {...register("declNo")} 
+                            onChange={(e) => {
+                                const val = e.target.value.toUpperCase();
+                                setValue("declNo", val);
+                            }}
+                            style={{ textTransform: 'uppercase' }}
+                        />
                         {errors.declNo && <span className="error-msg">{errors.declNo.message as string}</span>}
                     </div>
                     <div>
-                        <label>Date de la déclaration *</label>
+                        <label>Declaration Date *</label>
                         <input
                             type="date"
                             {...register("declDate")}

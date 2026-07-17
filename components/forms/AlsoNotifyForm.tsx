@@ -11,30 +11,30 @@ import { SearchableDropdown } from "../SearchableDropdown";
 import { MARITIME_COUNTRIES, WORLD_PORTS_BY_COUNTRY } from "../../lib/world-ports-data";
 
 const schema = yup.object().shape({
-    name: yup.string().required("Le nom est requis"),
-    address: yup.string().required("L'adresse est requise"),
-    country: yup.string().required("Le pays est requis"),
-    city: yup.string().required("La ville est requise"),
-    phone: yup.string().required("Le téléphone est requis"),
-    email: yup.string().email("Email invalide").required("L'email est requis"),
+    name: yup.string().required("Name is required"),
+    address: yup.string().required("Address is required"),
+    country: yup.string().required("Country is required"),
+    city: yup.string().required("City is required"),
+    phone: yup.string().required("Phone is required"),
+    email: yup.string().email("Invalid email").required("Email is required"),
     vat: yup.string().nullable().when(["country", "city"], {
         is: (country: string, city: string) => countryRequirements[country]?.includes("VAT") || cityRequirements[city]?.includes("VAT"),
-        then: (s: any) => s.required("Le N°VAT est requis pour cette destination."),
+        then: (s: any) => s.required("VAT No is required for this destination."),
         otherwise: (s: any) => s.nullable(),
     }),
     eori: yup.string().nullable().when(["country", "city"], {
         is: (country: string, city: string) => countryRequirements[country]?.includes("EORI") || cityRequirements[city]?.includes("EORI"),
-        then: (s: any) => s.required("Le N°EORI est requis pour cette destination."),
+        then: (s: any) => s.required("EORI No is required for this destination."),
         otherwise: (s: any) => s.nullable(),
     }),
     bin: yup.string().nullable().when(["country", "city"], {
         is: (country: string, city: string) => countryRequirements[country]?.includes("BIN") || cityRequirements[city]?.includes("BIN"),
-        then: (s: any) => s.required("Le BIN est requis pour cette destination."),
+        then: (s: any) => s.required("BIN is required for this destination."),
         otherwise: (s: any) => s.nullable(),
     }),
     usci: yup.string().nullable().when(["country", "city"], {
         is: (country: string, city: string) => countryRequirements[country]?.includes("USCI") || cityRequirements[city]?.includes("USCI"),
-        then: (s: any) => s.required("L'USCI est requis pour cette destination."),
+        then: (s: any) => s.required("USCI is required for this destination."),
         otherwise: (s: any) => s.nullable(),
     }),
 });
@@ -114,7 +114,7 @@ export function AlsoNotifyForm({
                 onSuccess(saved);
                 onClose();
             } else {
-                alert("Erreur lors de l'enregistrement.");
+                alert("Error during save.");
             }
         } finally {
             setIsSubmitting(false);
@@ -124,7 +124,7 @@ export function AlsoNotifyForm({
     const handleSaveAsDraft = async () => {
         const data = watch();
         if (!data.name) {
-            alert("Le nom est obligatoire même pour un brouillon.");
+            alert("Name is required even for a draft.");
             return;
         }
         setIsSubmitting(true);
@@ -142,7 +142,7 @@ export function AlsoNotifyForm({
                 onSuccess(saved);
                 onClose();
             } else {
-                alert("Erreur lors de l'enregistrement du brouillon.");
+                alert("Error during draft save.");
             }
         } finally {
             setIsSubmitting(false);
@@ -159,16 +159,22 @@ export function AlsoNotifyForm({
                 onDelete(initialData.id);
                 onClose();
             } else {
-                alert("Erreur lors de la suppression.");
+                alert("Error during deletion.");
             }
         } finally {
             setIsSubmitting(false);
         }
     };
 
+    // Helper to ensure uppercase and sync with react-hook-form
+    const handleUpper = (fieldName: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const val = e.target.value.toUpperCase();
+        setValue(fieldName, val);
+    };
+
     return (
         <ModalForm
-            title={initialData ? `Modifier Also Notify` : title}
+            title={initialData ? `Edit Also Notify` : title}
             isOpen={isOpen}
             onClose={onClose}
             onSubmit={handleSubmit(handleFormSubmit)}
@@ -180,37 +186,48 @@ export function AlsoNotifyForm({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div>
                     <label>Also Notify *</label>
-                    <input {...register("name")} placeholder="Nom du tiers..." />
+                    <input 
+                        {...register("name")} 
+                        placeholder="Third party name..." 
+                        onChange={handleUpper("name")}
+                        style={{ textTransform: 'uppercase' }}
+                    />
                     {errors.name && <span className="error-msg">{errors.name.message as string}</span>}
                 </div>
 
                 <div>
-                    <label>Adresse *</label>
-                    <textarea {...register("address")} rows={3} placeholder="Adresse complète..." />
+                    <label>Address *</label>
+                    <textarea 
+                        {...register("address")} 
+                        rows={3} 
+                        placeholder="Full address..." 
+                        onChange={handleUpper("address")}
+                        style={{ textTransform: 'uppercase' }}
+                    />
                     {errors.address && <span className="error-msg">{errors.address.message as string}</span>}
                 </div>
 
                 <div className="grid-2">
                     <div>
                         <SearchableDropdown
-                            label="Pays *"
+                            label="Country *"
                             options={MARITIME_COUNTRIES}
                             value={country}
                             onSelect={(val) => {
                                 setValue("country", val);
                                 setValue("city", "");
                             }}
-                            placeholder="Sélectionner un pays..."
+                            placeholder="Select a country..."
                             error={errors.country?.message as string}
                         />
                     </div>
                     <div>
                         <SearchableDropdown
-                            label="Ville *"
+                            label="City *"
                             options={availablePorts}
                             value={city}
                             onSelect={(val) => setValue("city", val)}
-                            placeholder={country ? "Sélectionner une ville..." : "⬅ Choisir d'abord un pays"}
+                            placeholder={country ? "Select a city..." : "⬅ Select a country first"}
                             disabled={!country}
                             error={errors.city?.message as string}
                         />
@@ -219,13 +236,25 @@ export function AlsoNotifyForm({
 
                 <div className="grid-2">
                     <div>
-                        <label>Téléphone *</label>
-                        <input {...register("phone")} type="tel" placeholder="+225..." />
+                        <label>Phone *</label>
+                        <input 
+                            {...register("phone")} 
+                            type="tel" 
+                            placeholder="+225..." 
+                            onChange={handleUpper("phone")}
+                            style={{ textTransform: 'uppercase' }}
+                        />
                         {errors.phone && <span className="error-msg">{errors.phone.message as string}</span>}
                     </div>
                     <div>
                         <label>Email *</label>
-                        <input {...register("email")} type="email" placeholder="email@exemple.com" />
+                        <input 
+                            {...register("email")} 
+                            type="email" 
+                            placeholder="email@example.com" 
+                            onChange={handleUpper("email")}
+                            style={{ textTransform: 'uppercase' }}
+                        />
                         {errors.email && <span className="error-msg">{errors.email.message as string}</span>}
                     </div>
                 </div>
@@ -233,19 +262,27 @@ export function AlsoNotifyForm({
                 {(isNeeded("VAT") || isNeeded("EORI") || isNeeded("BIN") || isNeeded("USCI")) && (
                     <>
                         <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
-                        <h4 style={{ color: 'var(--text-muted)' }}>Informations spécifiques à la destination</h4>
+                        <h4 style={{ color: 'var(--text-muted)' }}>Destination Specific Information</h4>
                         <div className="grid-2">
                             {isNeeded("VAT") && (
                                 <div>
-                                    <label>N°VAT *</label>
-                                    <input {...register("vat")} />
+                                    <label>VAT No *</label>
+                                    <input 
+                                        {...register("vat")} 
+                                        onChange={handleUpper("vat")}
+                                        style={{ textTransform: 'uppercase' }}
+                                    />
                                     {errors.vat && <span className="error-msg">{errors.vat.message as string}</span>}
                                 </div>
                             )}
                             {isNeeded("EORI") && (
                                 <div>
-                                    <label>N°EORI *</label>
-                                    <input {...register("eori")} />
+                                    <label>EORI No *</label>
+                                    <input 
+                                        {...register("eori")} 
+                                        onChange={handleUpper("eori")}
+                                        style={{ textTransform: 'uppercase' }}
+                                    />
                                     {errors.eori && <span className="error-msg">{errors.eori.message as string}</span>}
                                 </div>
                             )}
@@ -254,14 +291,22 @@ export function AlsoNotifyForm({
                             {isNeeded("BIN") && (
                                 <div>
                                     <label>BIN *</label>
-                                    <input {...register("bin")} />
+                                    <input 
+                                        {...register("bin")} 
+                                        onChange={handleUpper("bin")}
+                                        style={{ textTransform: 'uppercase' }}
+                                    />
                                     {errors.bin && <span className="error-msg">{errors.bin.message as string}</span>}
                                 </div>
                             )}
                             {isNeeded("USCI") && (
                                 <div>
                                     <label>USCI *</label>
-                                    <input {...register("usci")} />
+                                    <input 
+                                        {...register("usci")} 
+                                        onChange={handleUpper("usci")}
+                                        style={{ textTransform: 'uppercase' }}
+                                    />
                                     {errors.usci && <span className="error-msg">{errors.usci.message as string}</span>}
                                 </div>
                             )}
