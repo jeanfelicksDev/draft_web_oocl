@@ -21,6 +21,7 @@ export function HSCodeForm({ title = "", isOpen, onClose, onSuccess, onDelete, i
 
     const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
         resolver: yupResolver(schema),
+        mode: "onChange",
         defaultValues: initialData || defaultValues,
     });
 
@@ -72,7 +73,7 @@ export function HSCodeForm({ title = "", isOpen, onClose, onSuccess, onDelete, i
     // Helper to ensure uppercase and sync with react-hook-form
     const handleUpper = (fieldName: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value.toUpperCase();
-        setValue(fieldName, val);
+        setValue(fieldName, val, { shouldValidate: true });
     };
 
     return (

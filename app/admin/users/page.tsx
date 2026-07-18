@@ -43,10 +43,10 @@ export default function AdminUsersPage() {
                 setUsers(data);
             } else {
                 const d = await res.json().catch(() => ({}));
-                toast.error(`Erreur: ${d.details || "Inconnue"}`);
+                toast.error(`Error: ${d.details || "Unknown"}`);
             }
         } catch (error) {
-            toast.error("Erreur de connexion");
+            toast.error("Connection error");
         } finally {
             setLoading(false);
         }
@@ -71,15 +71,15 @@ export default function AdminUsersPage() {
                 const updated = await res.json();
                 console.log("Update success:", updated);
                 setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updated } : u));
-                toast.success("Mise à jour réussie");
+                toast.success("Successfully updated");
             } else {
                 const error = await res.json().catch(() => ({}));
                 console.error("Update failed:", error);
-                toast.error(`Erreur: ${error.details || "Inconnue"}`);
+                toast.error(`Error: ${error.details || "Unknown"}`);
             }
         } catch (error) {
             console.error("Update connection error:", error);
-            toast.error("Erreur de connexion");
+            toast.error("Connection error");
         }
     };
 
@@ -97,21 +97,21 @@ export default function AdminUsersPage() {
             if (res.ok) {
                 const updated = await res.json();
                 console.log("Toggle success:", updated);
-                toast.success(currentStatus ? "Accès révoqué" : "Accès autorisé");
+                toast.success(currentStatus ? "Access revoked" : "Access authorized");
                 setUsers(prev => prev.map(u => u.id === userId ? { ...u, isAuthorized: !currentStatus } : u));
             } else {
                 const error = await res.json().catch(() => ({}));
                 console.error("Toggle failed:", error);
-                toast.error(`Erreur: ${error.details || "Inconnue"}`);
+                toast.error(`Error: ${error.details || "Unknown"}`);
             }
         } catch (error) {
             console.error("Toggle connection error:", error);
-            toast.error("Erreur de connexion");
+            toast.error("Connection error");
         }
     };
 
     const handleDeleteUser = async (userId: string, userEmail: string) => {
-        if (!confirm(`Voulez-vous vraiment supprimer définitivement le compte ${userEmail} ? Cette action est irréversible.`)) return;
+        if (!confirm(`Are you sure you want to permanently delete account ${userEmail}? This action cannot be undone.`)) return;
 
         console.log("Deleting user:", userId);
         try {
@@ -121,16 +121,16 @@ export default function AdminUsersPage() {
 
             if (res.ok) {
                 console.log("Delete success");
-                toast.success("Utilisateur supprimé");
+                toast.success("User deleted");
                 setUsers(prev => prev.filter(u => u.id !== userId));
             } else {
                 const error = await res.json().catch(() => ({}));
                 console.error("Delete failed:", error);
-                toast.error(`Erreur: ${error.details || "Inconnue"}`);
+                toast.error(`Error: ${error.details || "Unknown"}`);
             }
         } catch (error) {
             console.error("Delete connection error:", error);
-            toast.error("Erreur de connexion");
+            toast.error("Connection error");
         }
     };
 
@@ -156,10 +156,10 @@ export default function AdminUsersPage() {
                             <Link href="/" style={{ color: "var(--text-muted)" }}>
                                 <ArrowLeft size={24} />
                             </Link>
-                            <h1 style={{ fontWeight: 800 }}>Gestion des Comptes</h1>
+                            <h1 style={{ fontWeight: 800 }}>Account Management</h1>
                         </div>
                         <div className="badge-validated" style={{ fontSize: "0.9rem", padding: "0.5rem 1rem" }}>
-                            Mode Administrateur
+                            Administrator Mode
                         </div>
                     </div>
 
@@ -167,11 +167,11 @@ export default function AdminUsersPage() {
                         <table style={{ width: "100%", borderCollapse: "collapse" }}>
                             <thead>
                                 <tr style={{ backgroundColor: "#f8fafc", borderBottom: "1px solid var(--border)" }}>
-                                    <th style={{ padding: "1.25rem", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)" }}>Entreprise</th>
-                                    <th style={{ padding: "1.25rem", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)" }}>Téléphone</th>
+                                    <th style={{ padding: "1.25rem", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)" }}>Company</th>
+                                    <th style={{ padding: "1.25rem", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)" }}>Phone</th>
                                     <th style={{ padding: "1.25rem", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)" }}>Email</th>
-                                    <th style={{ padding: "1.25rem", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)" }}>Rôle</th>
-                                    <th style={{ padding: "1.25rem", textAlign: "center", fontSize: "0.85rem", color: "var(--text-muted)" }}>Statut</th>
+                                    <th style={{ padding: "1.25rem", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)" }}>Role</th>
+                                    <th style={{ padding: "1.25rem", textAlign: "center", fontSize: "0.85rem", color: "var(--text-muted)" }}>Status</th>
                                     <th style={{ padding: "1.25rem", textAlign: "right", fontSize: "0.85rem", color: "var(--text-muted)" }}>Actions</th>
                                 </tr>
                             </thead>
@@ -218,9 +218,9 @@ export default function AdminUsersPage() {
                                         </td>
                                         <td style={{ padding: "1.25rem", textAlign: "center" }}>
                                             {user.isAuthorized ? (
-                                                <span className="badge-validated" style={{ fontSize: "0.75rem" }}>AUTORISÉ</span>
+                                                <span className="badge-validated" style={{ fontSize: "0.75rem" }}>AUTHORIZED</span>
                                             ) : (
-                                                <span className="badge-draft" style={{ fontSize: "0.75rem", backgroundColor: "#fee2e2", color: "#ef4444" }}>RÉVOQUÉ</span>
+                                                <span className="badge-draft" style={{ fontSize: "0.75rem", backgroundColor: "#fee2e2", color: "#ef4444" }}>REVOKED</span>
                                             )}
                                         </td>
                                         <td style={{ padding: "1.25rem", textAlign: "right" }}>
@@ -244,9 +244,9 @@ export default function AdminUsersPage() {
                                                         }}
                                                     >
                                                         {user.isAuthorized ? (
-                                                            <><ShieldAlert size={14} /> Révoquer</>
+                                                            <><ShieldAlert size={14} /> Revoke</>
                                                         ) : (
-                                                            <><ShieldCheck size={14} /> Autoriser</>
+                                                            <><ShieldCheck size={14} /> Authorize</>
                                                         )}
                                                     </button>
                                                     <button 
@@ -261,7 +261,7 @@ export default function AdminUsersPage() {
                                                             alignItems: "center",
                                                             transition: "opacity 0.2s"
                                                         }}
-                                                        title="Supprimer définitivement"
+                                                        title="Permanently Delete"
                                                     >
                                                         <Trash2 size={18} />
                                                     </button>

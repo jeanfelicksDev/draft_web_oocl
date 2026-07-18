@@ -13,7 +13,8 @@ import {
     Box,
     MapPin,
     FileText,
-    Hash
+    Hash,
+    Coins
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useAuth } from "./AuthProvider";
@@ -50,14 +51,14 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                         style={{ cursor: "pointer" }}
                     >
                         <Ship size={19} />
-                        <span>Créer une S.I.</span>
+                        <span>Create S.I.</span>
                     </div>
                 </Link>
 
                 <Link href="/dashboard" passHref style={{ textDecoration: "none" }}>
                     <div className={`nav-item ${pathname === '/dashboard' ? 'active' : ''}`}>
                         <LayoutDashboard size={19} />
-                        <span>Tableau de Bord</span>
+                        <span>Dashboard</span>
                     </div>
                 </Link>
 
@@ -69,37 +70,37 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                                 marginTop: "1.5rem",
                                 borderTop: "1px solid var(--border)",
                                 paddingTop: "1rem",
-                                color: pathname === '/admin/users' ? "white" : "var(--primary)"
+                                color: pathname === '/admin/users' ? "white" : "#000000"
                             }}>
                                 <ShieldCheck size={19} strokeWidth={2.5} />
-                                <span style={{ fontWeight: 600 }}>Accès Utilisateurs</span>
+                                <span style={{ fontWeight: 600 }}>User Access</span>
                             </div>
                         </Link>
                         <Link href="/admin/ports" passHref style={{ textDecoration: "none" }}>
                             <div className={`nav-item admin-nav-item ${pathname === '/admin/ports' ? 'active' : ''}`} style={{ 
                                 marginTop: "0.25rem",
-                                color: pathname === '/admin/ports' ? "white" : "var(--primary)"
+                                color: pathname === '/admin/ports' ? "white" : "#000000"
                             }}>
                                 <MapPin size={19} strokeWidth={2.5} />
-                                <span style={{ fontWeight: 600 }}>Gérer Ports & Pays</span>
+                                <span style={{ fontWeight: 600 }}>Manage Ports & Countries</span>
                             </div>
                         </Link>
                         <Link href="/admin/vessels" passHref style={{ textDecoration: "none" }}>
                             <div className={`nav-item admin-nav-item ${pathname === '/admin/vessels' ? 'active' : ''}`} style={{ 
                                 marginTop: "0.25rem",
-                                color: pathname === '/admin/vessels' ? "white" : "var(--primary)"
+                                color: pathname === '/admin/vessels' ? "white" : "#000000"
                             }}>
                                 <Ship size={19} strokeWidth={2.5} />
-                                <span style={{ fontWeight: 600 }}>Gérer Navires & Voyages</span>
+                                <span style={{ fontWeight: 600 }}>Manage Vessels & Voyages</span>
                             </div>
                         </Link>
                         <Link href="/admin/drafts" passHref style={{ textDecoration: "none" }}>
                             <div className={`nav-item admin-nav-item ${pathname === '/admin/drafts' ? 'active' : ''}`} style={{ 
                                 marginTop: "0.25rem",
-                                color: pathname === '/admin/drafts' ? "white" : "var(--primary)"
+                                color: pathname === '/admin/drafts' ? "white" : "#000000"
                             }}>
                                 <FileText size={19} strokeWidth={2.5} />
-                                <span style={{ fontWeight: 600 }}>Suivi des Drafts Clients</span>
+                                <span style={{ fontWeight: 600 }}>Client Drafts Tracking</span>
                             </div>
                         </Link>
                     </>
@@ -109,10 +110,10 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                 {canManageUsers && (
                     <div style={{ marginTop: "1.5rem", padding: "0 1rem" }}>
                         <p style={{ 
-                            fontSize: "0.7rem", fontWeight: 800, color: "var(--text-light)", 
+                            fontSize: "0.7rem", fontWeight: 800, color: "#000000", 
                             textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.75rem" 
                         }}>
-                            Actions Rapides
+                            Quick Actions
                         </p>
                         <Link href="/admin/references?tab=tc" passHref style={{ textDecoration: "none" }}>
                             <div 
@@ -120,11 +121,11 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                                 style={{ 
                                     display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.6rem 0.75rem",
                                     borderRadius: "8px", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600,
-                                    color: "var(--text)", transition: "all 0.2s"
+                                    color: "#000000", transition: "all 0.2s"
                                 }}
                             >
                                 <Box size={18} style={{ color: "var(--primary)" }} />
-                                <span>Ajouter Type TC</span>
+                                <span>Add Container Type</span>
                             </div>
                         </Link>
                         <Link href="/admin/references?tab=package" passHref style={{ textDecoration: "none" }}>
@@ -133,11 +134,11 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                                 style={{ 
                                     display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.6rem 0.75rem",
                                     borderRadius: "8px", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600,
-                                    color: "var(--text)", transition: "all 0.2s", marginTop: "0.25rem"
+                                    color: "#000000", transition: "all 0.2s", marginTop: "0.25rem"
                                 }}
                             >
                                 <Package size={18} style={{ color: "var(--primary)" }} />
-                                <span>Ajouter Type Package</span>
+                                <span>Add Package Type</span>
                             </div>
                         </Link>
                         <Link href="/admin/references?tab=released" passHref style={{ textDecoration: "none" }}>
@@ -146,11 +147,11 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                                 style={{ 
                                     display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.6rem 0.75rem",
                                     borderRadius: "8px", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600,
-                                    color: "var(--text)", transition: "all 0.2s", marginTop: "0.25rem"
+                                    color: "#000000", transition: "all 0.2s", marginTop: "0.25rem"
                                 }}
                             >
                                 <ShieldCheck size={18} style={{ color: "var(--primary)" }} />
-                                <span>Type Connais.</span>
+                                <span>BL Type</span>
                             </div>
                         </Link>
                         <Link href="/admin/references?tab=hscode" passHref style={{ textDecoration: "none" }}>
@@ -159,17 +160,30 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                                 style={{ 
                                     display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.6rem 0.75rem",
                                     borderRadius: "8px", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600,
-                                    color: "var(--text)", transition: "all 0.2s", marginTop: "0.25rem"
+                                    color: "#000000", transition: "all 0.2s", marginTop: "0.25rem"
                                 }}
                             >
                                 <Hash size={18} style={{ color: "var(--primary)" }} />
                                 <span>HS Code</span>
                             </div>
                         </Link>
+                        <Link href="/admin/references?tab=currency" passHref style={{ textDecoration: "none" }}>
+                            <div 
+                                className="nav-item-action" 
+                                style={{ 
+                                    display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.6rem 0.75rem",
+                                    borderRadius: "8px", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600,
+                                    color: "#000000", transition: "all 0.2s", marginTop: "0.25rem"
+                                }}
+                            >
+                                <Coins size={18} style={{ color: "var(--primary)" }} />
+                                <span>Currencies</span>
+                            </div>
+                        </Link>
                     </div>
                 )}
             </nav>
-
+ 
             {/* Session info + logout */}
             <div className="sidebar-footer">
                 <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1rem" }}>
@@ -182,11 +196,11 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                         <User size={18} />
                     </div>
                     <div style={{ overflow: "hidden" }}>
-                        <p style={{ fontSize: "0.75rem", fontWeight: 700, margin: 0, color: "var(--text-muted)" }}>Connected as</p>
+                        <p style={{ fontSize: "0.75rem", fontWeight: 700, margin: 0, color: "#000000" }}>Connected as</p>
                         <p style={{ 
                             fontSize: "0.85rem", fontWeight: 800, margin: 0, 
                             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                            color: "var(--primary)"
+                            color: "#000000"
                         }}>
                             {user?.email || "User"}
                         </p>
@@ -198,14 +212,14 @@ export function Sidebar({ onNewForm, onAddTypeTc, onAddPackageType }: SidebarPro
                     style={{ width: "100%", padding: "0.6rem", fontSize: "0.8rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}
                 >
                     <LogOut size={16} />
-                    Se deconnecter
+                    Log out
                 </button>
             </div>
-
+ 
             <style jsx>{`
                 .nav-item-action:hover {
                     background: var(--primary-light);
-                    color: var(--primary);
+                    color: #000000;
                     transform: translateX(4px);
                 }
             `}</style>

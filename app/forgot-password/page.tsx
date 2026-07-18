@@ -32,10 +32,10 @@ export default function ForgotPasswordPage() {
                     setDevResetLink(data.devResetLink);
                 }
             } else {
-                setError(data.error || "Une erreur est survenue");
+                setError(data.error || "An error occurred");
             }
         } catch (err) {
-            setError("Erreur de connexion");
+            setError("Connection error");
         } finally {
             setLoading(false);
         }
@@ -62,9 +62,9 @@ export default function ForgotPasswordPage() {
             </div>
 
             <div className="form-container" style={{ width: "100%", maxWidth: "400px" }}>
-                <h2 style={{ textAlign: "center", marginBottom: "1.5rem", fontWeight: 800 }}>mot de passe oublié</h2>
+                <h2 style={{ textAlign: "center", marginBottom: "1.5rem", fontWeight: 800 }}>Forgot Password</h2>
                 <p style={{ textAlign: "center", marginBottom: "2rem", color: "var(--text-muted)", fontSize: "0.9rem" }}>
-                    Entrez votre email pour recevoir un lien de réinitialisation.
+                    Enter your email to receive a password reset link.
                 </p>
 
                 {message ? (
@@ -83,7 +83,7 @@ export default function ForgotPasswordPage() {
                                 textAlign: "left"
                             }}>
                                 <p style={{ fontSize: "0.78rem", color: "#ca8a04", fontWeight: 700, marginBottom: "0.5rem" }}>
-                                    ⚠️ MODE DÉVELOPPEMENT — Lien de réinitialisation :
+                                    ⚠️ DEV MODE — Reset Link:
                                 </p>
                                 <p style={{
                                     fontSize: "0.72rem",
@@ -103,33 +103,33 @@ export default function ForgotPasswordPage() {
                                         className="btn-primary"
                                         style={{ flex: 1, fontSize: "0.8rem", padding: "0.5rem" }}
                                     >
-                                        {copied ? "✓ Copié !" : "Copier le lien"}
+                                        {copied ? "✓ Copied!" : "Copy link"}
                                     </button>
                                     <a
                                         href={devResetLink}
                                         className="btn-primary"
                                         style={{ flex: 1, fontSize: "0.8rem", padding: "0.5rem", textDecoration: "none", textAlign: "center", backgroundColor: "rgba(16, 185, 129, 0.8)" }}
                                     >
-                                        Ouvrir directement →
+                                        Open directly →
                                     </a>
                                 </div>
                             </div>
                         )}
 
                         <Link href="/login" className="btn-primary" style={{ display: "inline-block", textDecoration: "none", width: "100%" }}>
-                            retour à la connexion
-                        </Link>
+                                    Back to login
+                                </Link>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                         <div>
-                            <label>email</label>
+                            <label>Email</label>
                             <input
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value.toLowerCase())}
                                 required
-                                placeholder="votre@email.com"
+                                placeholder="your@email.com"
                             />
                         </div>
 
@@ -142,12 +142,12 @@ export default function ForgotPasswordPage() {
                             className="btn-primary"
                             disabled={loading}
                         >
-                            {loading ? "envoi..." : "envoyer le lien"}
+                            {loading ? "Sending..." : "Send reset link"}
                         </button>
 
                         <div style={{ textAlign: "center" }}>
                             <Link href="/login" style={{ color: "var(--text-muted)", textDecoration: "none", fontSize: "0.9rem", fontWeight: 700 }}>
-                                retour à la connexion
+                                Back to login
                             </Link>
                         </div>
                     </form>

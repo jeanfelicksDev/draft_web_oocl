@@ -43,6 +43,7 @@ export function SmallGenericForm({
 
     const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
         resolver: yupResolver(schema),
+        mode: "onChange",
         defaultValues: initialData || { [fieldName]: "" },
     });
 
@@ -97,7 +98,7 @@ export function SmallGenericForm({
 
     const handleUpper = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const val = e.target.value.toUpperCase();
-        setValue(fieldName as any, val);
+        setValue(fieldName as any, val, { shouldValidate: true });
     };
 
     return (

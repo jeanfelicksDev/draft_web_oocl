@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Box, Package, Plus, Trash2, Pencil, X, Check, ShieldCheck, Hash } from "lucide-react";
+import { Box, Package, Plus, Trash2, Pencil, X, Check, ShieldCheck, Hash, Coins } from "lucide-react";
 import toast from "react-hot-toast";
 import { Sidebar } from "@/components/Sidebar";
 
@@ -33,20 +33,28 @@ function AdminReferencesContent() {
     const [editingHsCode, setEditingHsCode] = useState("");
     const [editingHsDesc, setEditingHsDesc] = useState("");
 
+    // States pour Currency (code + name)
+    const [newCurrCode, setNewCurrCode] = useState("");
+    const [newCurrName, setNewCurrName] = useState("");
+    const [editingCurrCode, setEditingCurrCode] = useState("");
+    const [editingCurrName, setEditingCurrName] = useState("");
+
     const apiUrl = activeTab === "tc"
         ? "/api/typetc"
         : activeTab === "package"
             ? "/api/packagetypes"
             : activeTab === "hscode"
                 ? "/api/hscodes"
-                : "/api/typereleased";
+                : activeTab === "currency"
+                    ? "/api/currencies"
+                    : "/api/typereleased";
 
     const load = () => {
         setItems([]);
         fetch(apiUrl)
             .then(r => r.json())
             .then(d => { setItems(Array.isArray(d) ? d : []); })
-            .catch(() => toast.error("Erreur chargement données"));
+            .catch(() => toast.error("Error loading data"));
     };
 
     useEffect(() => { load(); }, [activeTab, apiUrl]);
@@ -60,8 +68,17 @@ function AdminReferencesContent() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ code: newHsCode.trim(), description: newHsDesc.trim() })
             });
-            if (res.ok) { setNewHsCode(""); setNewHsDesc(""); load(); toast.success("HS Code ajouté"); }
-            else { const d = await res.json(); toast.error(d.error || "Erreur ajout"); }
+            if (res.ok) { setNewHsCode(""); setNewHsDesc(""); load(); toast.success("HS Code added"); }
+            else { const d = await res.json(); toast.error(d.error || "Error adding"); }
+        } else if (activeTab === "currency") {
+            if (!newCurrCode.trim() || !newCurrName.trim()) return;
+            const res = await fetch(apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: newCurrCode.trim(), name: newCurrName.trim() })
+            });
+            if (res.ok) { setNewCurrCode(""); setNewCurrName(""); load(); toast.success("Currency added"); }
+            else { const d = await res.json(); toast.error(d.error || "Error adding"); }
         } else {
             if (!newName.trim()) return;
             const res = await fetch(apiUrl, {
@@ -69,17 +86,17 @@ function AdminReferencesContent() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ name: newName.trim() })
             });
-            if (res.ok) { setNewName(""); load(); toast.success("Ajouté"); }
-            else { const d = await res.json(); toast.error(d.error || "Erreur ajout"); }
+            if (res.ok) { setNewName(""); load(); toast.success("Added"); }
+            else { const d = await res.json(); toast.error(d.error || "Error adding"); }
         }
     };
 
     // ── Supprimer ──
     const handleDelete = async (id: string) => {
-        if (!window.confirm("Voulez-vous vraiment supprimer cet élément ?")) return;
+        if (!window.confirm("Are you sure you want to delete this item?")) return;
         const res = await fetch(`${apiUrl}/${id}`, { method: "DELETE" });
-        if (res.ok) { load(); toast.success("Supprimé"); }
-        else { const d = await res.json(); toast.error(d.error || "Erreur suppression"); }
+        if (res.ok) { load(); toast.success("Deleted"); }
+        else { const d = await res.json(); toast.error(d.error || "Error deleting"); }
     };
 
     // ── Modifier ──
@@ -91,8 +108,17 @@ function AdminReferencesContent() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ code: editingHsCode.trim(), description: editingHsDesc.trim() })
             });
-            if (res.ok) { setEditingId(null); load(); toast.success("Mis à jour"); }
-            else { const d = await res.json(); toast.error(d.error || "Erreur modification"); }
+            if (res.ok) { setEditingId(null); load(); toast.success("Updated"); }
+            else { const d = await res.json(); toast.error(d.error || "Error updating"); }
+        } else if (activeTab === "currency") {
+            if (!editingCurrCode.trim() || !editingCurrName.trim()) return;
+            const res = await fetch(`${apiUrl}/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: editingCurrCode.trim(), name: editingCurrName.trim() })
+            });
+            if (res.ok) { setEditingId(null); load(); toast.success("Updated"); }
+            else { const d = await res.json(); toast.error(d.error || "Error updating"); }
         } else {
             if (!editingName.trim()) return;
             const res = await fetch(`${apiUrl}/${id}`, {
@@ -100,22 +126,24 @@ function AdminReferencesContent() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ name: editingName.trim() })
             });
-            if (res.ok) { setEditingId(null); load(); toast.success("Mis à jour"); }
-            else { const d = await res.json(); toast.error(d.error || "Erreur modification"); }
+            if (res.ok) { setEditingId(null); load(); toast.success("Updated"); }
+            else { const d = await res.json(); toast.error(d.error || "Error updating"); }
         }
     };
 
     const getTitle = () => {
-        if (activeTab === "tc") return "Types de Conteneur (TC)";
-        if (activeTab === "package") return "Types d'Emballage (Package)";
-        if (activeTab === "hscode") return "Codes HS (Harmonized System)";
-        return "Types de Connaissement (Released)";
+        if (activeTab === "tc") return "Container Types (TC)";
+        if (activeTab === "package") return "Package Types";
+        if (activeTab === "hscode") return "HS Codes (Harmonized System)";
+        if (activeTab === "currency") return "Currencies (Devises)";
+        return "BL Release Types (Released)";
     };
 
     const getIcon = () => {
         if (activeTab === "tc") return <Box size={22} color="#e60012" />;
         if (activeTab === "package") return <Package size={22} color="#e60012" />;
         if (activeTab === "hscode") return <Hash size={22} color="#e60012" />;
+        if (activeTab === "currency") return <Coins size={22} color="#e60012" />;
         return <ShieldCheck size={22} color="#e60012" />;
     };
 
@@ -132,8 +160,8 @@ function AdminReferencesContent() {
                             </div>
                             <p style={{ margin: "0.25rem 0 0", color: "#64748b" }}>
                                 {isHSCode
-                                    ? "Gérez vos codes SH/HS pour la classification douanière des marchandises"
-                                    : "Gestion administrative du référentiel maritime"}
+                                    ? "Manage your Harmonized System (HS) codes for customs classification"
+                                    : "Administrative management of maritime reference tables"}
                             </p>
                         </div>
                     </header>
@@ -141,45 +169,45 @@ function AdminReferencesContent() {
                     <div style={{ background: "white", padding: "1.75rem", borderRadius: "16px", border: "1px solid #e2e8f0", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
 
                         {/* ── Formulaire d'ajout ── */}
-                        {isHSCode ? (
+                        {isHSCode || activeTab === "currency" ? (
                             <div style={{ marginBottom: "2rem" }}>
                                 <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr auto", gap: "12px", alignItems: "end" }}>
                                     <div>
                                         <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "6px" }}>
-                                            Code HS *
+                                            {isHSCode ? "HS Code *" : "Currency Code *"}
                                         </label>
                                         <input
                                             style={{ width: "100%", height: "46px", padding: "0 14px", borderRadius: "10px", border: "2px solid #e2e8f0", fontSize: "0.95rem", outline: "none", boxSizing: "border-box", fontFamily: "monospace", fontWeight: 700 }}
-                                            placeholder="Ex: 8703.10"
-                                            value={newHsCode}
-                                            onChange={e => setNewHsCode(e.target.value)}
+                                            placeholder={isHSCode ? "E.g. 8703.10" : "E.g. USD"}
+                                            value={isHSCode ? newHsCode : newCurrCode}
+                                            onChange={e => isHSCode ? setNewHsCode(e.target.value) : setNewCurrCode(e.target.value)}
                                             onKeyDown={e => e.key === "Enter" && handleAdd()}
                                         />
                                     </div>
                                     <div>
                                         <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "6px" }}>
-                                            Désignation de la marchandise *
+                                            {isHSCode ? "Commodity Nature / Description *" : "Currency Name / Symbol Name *"}
                                         </label>
                                         <input
                                             style={{ width: "100%", height: "46px", padding: "0 14px", borderRadius: "10px", border: "2px solid #e2e8f0", fontSize: "0.95rem", outline: "none", boxSizing: "border-box" }}
-                                            placeholder="Ex: Véhicules automobiles..."
-                                            value={newHsDesc}
-                                            onChange={e => setNewHsDesc(e.target.value)}
+                                            placeholder={isHSCode ? "E.g. Motor vehicles..." : "E.g. DOLLAR"}
+                                            value={isHSCode ? newHsDesc : newCurrName}
+                                            onChange={e => isHSCode ? setNewHsDesc(e.target.value) : setNewCurrName(e.target.value)}
                                             onKeyDown={e => e.key === "Enter" && handleAdd()}
                                         />
                                     </div>
                                     <button
                                         onClick={handleAdd}
-                                        disabled={!newHsCode.trim() || !newHsDesc.trim()}
+                                        disabled={isHSCode ? (!newHsCode.trim() || !newHsDesc.trim()) : (!newCurrCode.trim() || !newCurrName.trim())}
                                         style={{
                                             height: "46px", padding: "0 22px",
-                                            background: (newHsCode.trim() && newHsDesc.trim()) ? "#e60012" : "#cbd5e1",
+                                            background: (isHSCode ? (newHsCode.trim() && newHsDesc.trim()) : (newCurrCode.trim() && newCurrName.trim())) ? "#e60012" : "#cbd5e1",
                                             color: "white", border: "none", borderRadius: "10px",
-                                            cursor: (newHsCode.trim() && newHsDesc.trim()) ? "pointer" : "not-allowed",
+                                            cursor: (isHSCode ? (newHsCode.trim() && newHsDesc.trim()) : (newCurrCode.trim() && newCurrName.trim())) ? "pointer" : "not-allowed",
                                             fontWeight: "bold", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "6px"
                                         }}
                                     >
-                                        <Plus size={20} /> Ajouter
+                                        <Plus size={20} /> Add
                                     </button>
                                 </div>
                             </div>
@@ -187,7 +215,7 @@ function AdminReferencesContent() {
                             <div style={{ display: "flex", gap: "12px", marginBottom: "2rem" }}>
                                 <input
                                     style={{ flex: 1, height: "46px", padding: "0 18px", borderRadius: "10px", border: "2px solid #e2e8f0", fontSize: "1rem", outline: "none" }}
-                                    placeholder={`Nouveau ${activeTab === 'tc' ? 'TC' : activeTab === 'package' ? 'Package' : 'Connais.'}...`}
+                                    placeholder={`New ${activeTab === 'tc' ? 'Container Type' : activeTab === 'package' ? 'Package Type' : 'Release Type'}...`}
                                     value={newName}
                                     onChange={e => setNewName(e.target.value)}
                                     onKeyDown={e => e.key === "Enter" && handleAdd()}
@@ -206,11 +234,11 @@ function AdminReferencesContent() {
                             </div>
                         )}
 
-                        {/* ── En-tête de colonne pour HS Code ── */}
-                        {isHSCode && items.length > 0 && (
+                        {/* ── En-tête de colonne pour HS Code / Currency ── */}
+                        {(isHSCode || activeTab === "currency") && items.length > 0 && (
                             <div style={{ display: "grid", gridTemplateColumns: "140px 1fr auto", gap: "12px", padding: "0 0 8px 0", borderBottom: "2px solid #e2e8f0", marginBottom: "4px" }}>
-                                <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>Code HS</span>
-                                <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>Désignation</span>
+                                <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{isHSCode ? "HS Code" : "Currency Code"}</span>
+                                <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{isHSCode ? "Description" : "Currency Name"}</span>
                                 <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>Actions</span>
                             </div>
                         )}
@@ -220,11 +248,11 @@ function AdminReferencesContent() {
                             {items.length === 0 ? (
                                 <div style={{ textAlign: "center", padding: "3rem 1rem" }}>
                                     <p style={{ margin: 0, color: "#94a3b8", fontWeight: 500 }}>
-                                        {isHSCode ? "Aucun code HS enregistré." : "Aucun élément trouvé."}
+                                        {isHSCode ? "No HS codes registered." : activeTab === "currency" ? "No currencies registered." : "No elements found."}
                                     </p>
                                 </div>
-                            ) : isHSCode ? (
-                                // ── Liste HS Code ──
+                            ) : (isHSCode || activeTab === "currency") ? (
+                                // ── Liste HS Code / Currency ──
                                 items.map((item, i) => (
                                     <div key={item.id} style={{
                                         display: "grid", gridTemplateColumns: "140px 1fr auto", gap: "12px",
@@ -235,14 +263,14 @@ function AdminReferencesContent() {
                                             <>
                                                 <input
                                                     style={{ height: "38px", padding: "0 10px", borderRadius: "8px", border: "2px solid #e60012", outline: "none", fontSize: "0.9rem", fontFamily: "monospace", fontWeight: 700 }}
-                                                    value={editingHsCode}
-                                                    onChange={e => setEditingHsCode(e.target.value)}
+                                                    value={isHSCode ? editingHsCode : editingCurrCode}
+                                                    onChange={e => isHSCode ? setEditingHsCode(e.target.value) : setEditingCurrCode(e.target.value)}
                                                     autoFocus
                                                 />
                                                 <input
                                                     style={{ height: "38px", padding: "0 10px", borderRadius: "8px", border: "2px solid #e2e8f0", outline: "none", fontSize: "0.9rem" }}
-                                                    value={editingHsDesc}
-                                                    onChange={e => setEditingHsDesc(e.target.value)}
+                                                    value={isHSCode ? editingHsDesc : editingCurrName}
+                                                    onChange={e => isHSCode ? setEditingHsDesc(e.target.value) : setEditingCurrName(e.target.value)}
                                                     onKeyDown={e => e.key === "Enter" && handleSaveEdit(item.id)}
                                                 />
                                                 <div style={{ display: "flex", gap: "6px" }}>
@@ -253,15 +281,24 @@ function AdminReferencesContent() {
                                         ) : (
                                             <>
                                                 <span style={{ fontFamily: "monospace", fontWeight: 800, color: "#e60012", fontSize: "0.95rem", background: "#fff1f2", padding: "4px 10px", borderRadius: "6px", display: "inline-block" }}>{item.code}</span>
-                                                <span style={{ fontWeight: 600, color: "#0a1f5c", fontSize: "0.9rem", lineHeight: 1.4 }}>{item.description}</span>
+                                                <span style={{ fontWeight: 600, color: "#0a1f5c", fontSize: "0.9rem", lineHeight: 1.4 }}>{isHSCode ? item.description : item.name}</span>
                                                 <div style={{ display: "flex", gap: "6px" }}>
                                                     <button
-                                                        onClick={() => { setEditingId(item.id); setEditingHsCode(item.code); setEditingHsDesc(item.description); }}
+                                                        onClick={() => {
+                                                            setEditingId(item.id);
+                                                            if (isHSCode) {
+                                                                setEditingHsCode(item.code);
+                                                                setEditingHsDesc(item.description);
+                                                            } else {
+                                                                setEditingCurrCode(item.code);
+                                                                setEditingCurrName(item.name);
+                                                            }
+                                                        }}
                                                         style={{ background: "#f8fafc", color: "#64748b", border: "none", borderRadius: "8px", padding: "7px 12px", cursor: "pointer", fontSize: "0.8rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "5px", transition: "all 0.2s" }}
                                                         onMouseEnter={e => (e.currentTarget.style.background = "#eff6ff")}
                                                         onMouseLeave={e => (e.currentTarget.style.background = "#f8fafc")}
                                                     >
-                                                        <Pencil size={13} /> Modifier
+                                                        <Pencil size={13} /> Edit
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(item.id)}
@@ -269,7 +306,7 @@ function AdminReferencesContent() {
                                                         onMouseEnter={e => (e.currentTarget.style.background = "#ffe4e6")}
                                                         onMouseLeave={e => (e.currentTarget.style.background = "#fff1f2")}
                                                     >
-                                                        <Trash2 size={13} /> Supprimer
+                                                        <Trash2 size={13} /> Delete
                                                     </button>
                                                 </div>
                                             </>
@@ -305,7 +342,7 @@ function AdminReferencesContent() {
                                                         onMouseEnter={e => (e.currentTarget.style.background = "#eff6ff")}
                                                         onMouseLeave={e => (e.currentTarget.style.background = "#f8fafc")}
                                                     >
-                                                        <Pencil size={14} /> Modifier
+                                                        <Pencil size={14} /> Edit
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(item.id)}
@@ -313,7 +350,7 @@ function AdminReferencesContent() {
                                                         onMouseEnter={e => (e.currentTarget.style.background = "#ffe4e6")}
                                                         onMouseLeave={e => (e.currentTarget.style.background = "#fff1f2")}
                                                     >
-                                                        <Trash2 size={14} /> Supprimer
+                                                        <Trash2 size={14} /> Delete
                                                     </button>
                                                 </div>
                                             </>

@@ -63,7 +63,7 @@ export default function DashboardPage() {
                 setFetchError(err.error || `Erreur ${res.status}`);
             }
         } catch {
-            setFetchError("Erreur de connexion au serveur.");
+            setFetchError("Connection error to server.");
         } finally {
             setIsLoading(false);
         }
@@ -91,7 +91,7 @@ export default function DashboardPage() {
         }
     }, [status, startDate, endDate, selectedCompanyId, selectedHsCode, selectedYear, selectedMonth]);
 
-    const monthNames = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"];
+    const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     const chartData  = stats?.monthlyStats?.map((s: any) => ({
         name: monthNames[s.month - 1],
         Tonnage: s.tonnage,
@@ -349,16 +349,16 @@ export default function DashboardPage() {
                             <div style={{ flex: 1, minWidth: 100 }}>
                                 <div style={{ marginBottom: "-1rem" }}>
                                     <Combobox
-                                        label="Entreprise / Client"
+                                        label="Company / Client"
                                         items={[
-                                            { id: "", companyName: "Toutes les entreprises" },
+                                            { id: "", companyName: "All Companies" },
                                             ...companies.map(c => ({ id: c.id, companyName: c.companyName || c.email }))
                                         ]}
                                         displayKey="companyName"
                                         valueKey="id"
                                         value={selectedCompanyId}
                                         onChange={(val) => setSelectedCompanyId(val)}
-                                        placeholder={companies.length > 0 ? "Filtrer client…" : "Aucun client"}
+                                        placeholder={companies.length > 0 ? "Filter client…" : "No client"}
                                     />
                                 </div>
                             </div>
@@ -368,16 +368,16 @@ export default function DashboardPage() {
                         <div style={{ flex: 1, minWidth: 100 }}>
                             <div style={{ marginBottom: "-1rem" }}>
                                 <Combobox
-                                    label="HS Code / Marchandise"
+                                    label="HS Code / Commodity"
                                     items={[
-                                        { id: "", name: "Toutes les marchandises" },
+                                        { id: "", name: "All commodities" },
                                         ...hsCodes
                                     ]}
                                     displayKey="name"
                                     valueKey="id"
                                     value={selectedHsCode}
                                     onChange={(val) => setSelectedHsCode(val)}
-                                    placeholder={hsCodes.length > 0 ? "Filtrer code…" : "Aucun code"}
+                                    placeholder={hsCodes.length > 0 ? "Filter HS code…" : "No code"}
                                 />
                             </div>
                         </div>
@@ -391,7 +391,7 @@ export default function DashboardPage() {
                                 border: "4px solid var(--border)", borderTopColor: "var(--primary)",
                                 borderRadius: "50%", animation: "spin 0.9s linear infinite",
                             }} />
-                            <p style={{ color: "var(--text-muted)", fontWeight: 600 }}>Chargement des statistiques…</p>
+                            <p style={{ color: "var(--text-muted)", fontWeight: 600 }}>Loading statistics…</p>
                         </div>
 
                     ) : fetchError ? (
@@ -407,7 +407,7 @@ export default function DashboardPage() {
                             </h3>
                             <p style={{ color: "var(--text-muted)", marginBottom: "1.5rem" }}>{fetchError}</p>
                             <button onClick={fetchStats} className="btn-primary">
-                                🔄 Réessayer
+                                🔄 Retry
                             </button>
                         </div>
 
@@ -454,7 +454,7 @@ export default function DashboardPage() {
                                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
                                             <div>
                                                 <p style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.25rem" }}>
-                                                    Performance mensuelle
+                                                    Monthly performance
                                                 </p>
                                                 <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--text)", letterSpacing: "-0.02em", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                                                     <TrendingUp size={20} style={{ color: "var(--primary)" }} />
@@ -513,12 +513,12 @@ export default function DashboardPage() {
                                                 letterSpacing: "-0.01em",
                                             }}>
                                                 <Globe size={18} style={{ color: "var(--success)" }} />
-                                                Destinations desservies
+                                                Served destinations
                                             </h3>
                                             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", maxHeight: 380, overflowY: "auto" }}>
                                                 {!stats?.destList?.length ? (
                                                     <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "2rem 0", fontSize: "0.875rem" }}>
-                                                        Aucune donnée disponible
+                                                        No data available
                                                     </p>
                                                 ) : stats.destList.map((d: any, idx: number) => (
                                                     <div key={idx} style={{
@@ -540,7 +540,7 @@ export default function DashboardPage() {
                                                             </span>
                                                         </div>
                                                         <span style={{ fontWeight: 800, color: "var(--primary)", fontSize: "0.875rem" }}>
-                                                            {d.count} fois
+                                                            {d.count} times
                                                         </span>
                                                     </div>
                                                 ))}
@@ -561,12 +561,12 @@ export default function DashboardPage() {
                                                 letterSpacing: "-0.01em",
                                             }}>
                                                 <BarChart3 size={18} style={{ color: "var(--primary)" }} />
-                                                Type de marchandises (%)
+                                                Commodity Types (%)
                                             </h3>
                                             <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                                                 {!stats?.goodsList?.length ? (
                                                     <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "2rem 0", fontSize: "0.875rem" }}>
-                                                        Aucune donnée disponible
+                                                        No data available
                                                     </p>
                                                 ) : stats.goodsList.map((g: any, idx: number) => {
                                                     const colors = ["var(--primary)", "#3b82f6", "var(--success)", "var(--warning)", "#8b5cf6"];
@@ -603,19 +603,19 @@ export default function DashboardPage() {
                                     <div style={{ marginBottom: '2rem' }}>
                                         <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0a1f5c', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                             <Ship size={24} style={{ color: 'var(--primary)' }} />
-                                            Ma Flotte OOCL
+                                            My OOCL Fleet
                                         </h2>
-                                        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Vue d'ensemble de vos navires et leur activité.</p>
+                                        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Overview of your vessels and their activity.</p>
                                     </div>
 
                                     <div style={{ overflowX: 'auto' }}>
                                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                             <thead>
                                                 <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                                                    <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 800, color: '#444' }}>NAVIRE</th>
-                                                    <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 800, color: '#444' }}>DERNIER VOYAGE</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 800, color: '#444' }}>VESSEL</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 800, color: '#444' }}>LAST VOYAGE</th>
                                                     <th style={{ padding: '1rem', textAlign: 'center', fontWeight: 800, color: '#444' }}>ROTATIONS</th>
-                                                    <th style={{ padding: '1rem', textAlign: 'center', fontWeight: 800, color: '#444' }}>SI TOTAL</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'center', fontWeight: 800, color: '#444' }}>TOTAL SI</th>
                                                     <th style={{ padding: '1rem', textAlign: 'right', fontWeight: 800, color: '#444' }}>ACTION</th>
                                                 </tr>
                                             </thead>
@@ -648,7 +648,7 @@ export default function DashboardPage() {
                                                         </td>
                                                         <td style={{ padding: '1rem', textAlign: 'right' }}>
                                                             <Link href="/admin/vessels" style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#0a1f5c', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 700 }}>
-                                                                Gérer
+                                                                Manage
                                                             </Link>
                                                         </td>
                                                     </tr>
@@ -656,7 +656,7 @@ export default function DashboardPage() {
                                                 {vessels.length === 0 && (
                                                     <tr>
                                                         <td colSpan={5} style={{ padding: '4rem', textAlign: 'center', color: '#94a3b8' }}>
-                                                            Aucun navire trouvé.
+                                                            No vessels found.
                                                         </td>
                                                     </tr>
                                                 )}

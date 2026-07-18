@@ -62,7 +62,7 @@ export function ContainerTable({
     globalPackageType?: string
 }) {
     const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
-        mode: "onBlur",
+        mode: "onChange",
         resolver: yupResolver(containerSchema),
         defaultValues: {
             containerNum: "",
@@ -91,7 +91,7 @@ export function ContainerTable({
         let numbers = val.slice(4, 11).replace(/[^0-9]/g, '');
         const final = letters + numbers;
         e.currentTarget.value = final;
-        setValue("containerNum", final);
+        setValue("containerNum", final, { shouldValidate: true });
     };
 
     const openAddModal = () => {
@@ -308,7 +308,7 @@ export function ContainerTable({
                                                     type="button" 
                                                     onClick={() => editContainer(c)}
                                                     style={{ border: 'none', background: 'none', color: '#3b82f6', cursor: 'pointer', padding: '0.25rem' }}
-                                                    title="Modifier"
+                                                    title="Edit"
                                                 >
                                                     <Edit size={14} />
                                                 </button>
@@ -316,7 +316,7 @@ export function ContainerTable({
                                                     type="button" 
                                                     onClick={() => removeContainer(c.id)}
                                                     style={{ border: 'none', background: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '0.25rem' }}
-                                                    title="Supprimer"
+                                                    title="Delete"
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
@@ -364,7 +364,7 @@ export function ContainerTable({
                                         maxLength={11} 
                                         onChange={(e) => {
                                             const val = e.target.value.toUpperCase();
-                                            setValue("sealNum", val);
+                                            setValue("sealNum", val, { shouldValidate: true });
                                         }}
                                         style={{ width: "100%", height: "40px", padding: "0.5rem", borderRadius: "8px", border: errors.sealNum ? "1.5px solid var(--danger)" : "1.5px solid #cbd5e1", textTransform: 'uppercase' }}
                                     />

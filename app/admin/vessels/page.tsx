@@ -288,8 +288,8 @@ export default function AdminVesselsPage() {
 
                 {/* Header Centered */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '2.5rem' }}>
-                    <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800, color: '#0a1f5c' }}>Gestion Navires & Voyages</h1>
-                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>Flotte maritime — Accès Administrateur</p>
+                    <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800, color: '#0a1f5c' }}>Manage Vessels & Voyages</h1>
+                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>Maritime Fleet — Administrator Access</p>
                 </div>
 
                 <div style={{ maxWidth: '900px', margin: '0 auto' }}>
@@ -297,7 +297,7 @@ export default function AdminVesselsPage() {
                     {/* 1. Vessel Selection */}
                     <div style={{ background: 'white', borderRadius: '16px', padding: '2rem', marginBottom: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
                         <h3 style={{ margin: '0 0 1.25rem', fontSize: '1rem', fontWeight: 700, color: '#0a1f5c', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Anchor size={18} /> 1. Sélectionner un Navire
+                            <Anchor size={18} /> 1. Select a Vessel
                         </h3>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
                             <div style={{ flex: 1, minWidth: '250px', position: 'relative' }}>
@@ -314,7 +314,7 @@ export default function AdminVesselsPage() {
                                         background: 'white', cursor: 'pointer', fontWeight: 600
                                     }}
                                 >
-                                    <option value="">— Sélectionner un navire —</option>
+                                    <option value="">— Select a vessel —</option>
                                     {vessels
                                         .filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase()))
                                         .map(v => (
@@ -326,7 +326,7 @@ export default function AdminVesselsPage() {
 
                             <input
                                 type="text"
-                                placeholder="🔍 Filtrer..."
+                                placeholder="🔍 Filter..."
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                                 style={{ width: '120px', height: '48px', border: '2px solid #e2e8f0', borderRadius: '10px', padding: '0 0.75rem', fontSize: '0.9rem' }}
@@ -342,7 +342,7 @@ export default function AdminVesselsPage() {
                                     fontSize: '0.9rem'
                                 }}
                             >
-                                <Plus size={18} /> Nouveau Navire
+                                <Plus size={18} /> New Vessel
                             </button>
 
                             {selectedVessel && (
@@ -367,17 +367,17 @@ export default function AdminVesselsPage() {
                             <div style={{ marginTop: '1.25rem', padding: '1.25rem', background: '#f1f5f9', borderRadius: '10px', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
                                 <input
                                     type="text"
-                                    placeholder="Nom du navire (ex: OOCL BRISBANE)"
+                                    placeholder="Vessel Name (e.g. OOCL BRISBANE)"
                                     value={newVesselName}
                                     onChange={e => setNewVesselName(e.target.value.toUpperCase())}
                                     onKeyDown={e => e.key === 'Enter' && handleAddVessel()}
                                     style={{ flex: 1, minWidth: '200px', height: '42px', border: '2px solid #e2e8f0', borderRadius: '8px', padding: '0 1rem', fontSize: '0.95rem' }}
                                 />
                                 <button onClick={handleAddVessel} style={{ height: '42px', padding: '0 1.5rem', borderRadius: '8px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer' }}>
-                                    Enregistrer
+                                    Save
                                 </button>
                                 <button onClick={() => setIsAddingVessel(false)} style={{ height: '42px', padding: '0 1rem', borderRadius: '8px', background: 'white', border: '2px solid #e2e8f0', cursor: 'pointer' }}>
-                                    Annuler
+                                    Cancel
                                 </button>
                             </div>
                         )}
@@ -385,7 +385,7 @@ export default function AdminVesselsPage() {
                         {editingVesselId && (
                             <div style={{ marginTop: '1.25rem', padding: '1.25rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '10px', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
                                 <div style={{ flex: 1 }}>
-                                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#ef4444', marginBottom: '4px' }}>RÉNOMMER LE NAVIRE</label>
+                                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#ef4444', marginBottom: '4px' }}>RENAME VESSEL</label>
                                     <input
                                         type="text"
                                         value={editingVesselName}
@@ -395,10 +395,10 @@ export default function AdminVesselsPage() {
                                 </div>
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                                     <button onClick={handleUpdateVessel} style={{ height: '42px', padding: '0 1.5rem', borderRadius: '8px', background: '#ef4444', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer' }}>
-                                        Mettre à jour
+                                        Update
                                     </button>
                                     <button onClick={() => setEditingVesselId(null)} style={{ height: '42px', padding: '0 1rem', borderRadius: '8px', background: 'white', border: '2px solid #fee2e2', cursor: 'pointer' }}>
-                                        Annuler
+                                        Cancel
                                     </button>
                                     <button 
                                         onClick={(e) => handleDeleteVessel(editingVesselId, e as any)}
@@ -420,7 +420,7 @@ export default function AdminVesselsPage() {
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                             <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#0a1f5c', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <Calendar size={18} /> 2. Voyages {selectedVessel ? `— ${selectedVessel.name}` : '(choisissez un navire)'}
+                                <Calendar size={18} /> 2. Voyages {selectedVessel ? `— ${selectedVessel.name}` : '(choose a vessel)'}
                             </h3>
                             {selectedVessel && (
                                 <button
@@ -433,7 +433,7 @@ export default function AdminVesselsPage() {
                                         fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem'
                                     }}
                                 >
-                                    {showRotationForm ? 'Annuler' : <><Plus size={16} /> Ajouter une rotation</>}
+                                    {showRotationForm ? 'Cancel' : <><Plus size={16} /> Add a rotation</>}
                                 </button>
                             )}
                         </div>
@@ -441,11 +441,11 @@ export default function AdminVesselsPage() {
                         {selectedVessel && showRotationForm && (
                             <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '2rem' }}>
                                 <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', marginBottom: '1rem', letterSpacing: '0.05em' }}>
-                                    Ajouter une rotation
+                                    Add a rotation
                                 </p>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', alignItems: 'flex-end' }}>
                                     <div>
-                                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.4rem', color: '#64748b' }}>N° Voyage</label>
+                                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.4rem', color: '#64748b' }}>Voyage No</label>
                                         <input
                                             type="text"
                                             placeholder="ex: 215E"
@@ -455,7 +455,7 @@ export default function AdminVesselsPage() {
                                         />
                                     </div>
                                     <div>
-                                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.4rem', color: '#64748b' }}>Date ETD</label>
+                                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.4rem', color: '#64748b' }}>ETD Date</label>
                                         <input
                                             type="date"
                                             value={newEtdDate}
@@ -464,7 +464,7 @@ export default function AdminVesselsPage() {
                                         />
                                     </div>
                                     <div>
-                                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.4rem', color: '#64748b' }}>Date ETA</label>
+                                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.4rem', color: '#64748b' }}>ETA Date</label>
                                         <input
                                             type="date"
                                             value={newEtaDate}
@@ -476,7 +476,7 @@ export default function AdminVesselsPage() {
                                         onClick={handleAddVoyage}
                                         style={{ height: '42px', borderRadius: '8px', background: 'var(--primary)', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.9rem' }}
                                     >
-                                        Ajouter
+                                        Add
                                     </button>
                                 </div>
                             </div>
@@ -486,7 +486,7 @@ export default function AdminVesselsPage() {
                             <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
                                 <input
                                     type="text"
-                                    placeholder="🔍 Filtrer voyages..."
+                                    placeholder="🔍 Filter voyages..."
                                     value={voyageSearchTerm}
                                     onChange={e => setVoyageSearchTerm(e.target.value)}
                                     style={{ width: '200px', height: '36px', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0 0.75rem', fontSize: '0.85rem' }}
@@ -497,22 +497,22 @@ export default function AdminVesselsPage() {
                         {!selectedVessel ? (
                             <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
                                 <Ship size={40} style={{ margin: '0 auto 1rem', opacity: 0.2, display: 'block' }} />
-                                <p style={{ fontWeight: 500 }}>Veuillez sélectionner un navire pour gérer ses voyages.</p>
+                                <p style={{ fontWeight: 500 }}>Please select a vessel to manage its voyages.</p>
                             </div>
                         ) : isLoading ? (
-                            <p style={{ color: '#94a3b8', textAlign: 'center', padding: '2rem' }}>Chargement des voyages...</p>
+                            <p style={{ color: '#94a3b8', textAlign: 'center', padding: '2rem' }}>Loading voyages...</p>
                         ) : voyages.length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '4rem', background: '#f8fafc', borderRadius: '12px', border: '2px dashed #e2e8f0' }}>
-                                <p style={{ color: '#94a3b8' }}>Aucun voyage enregistré pour {selectedVessel.name}.</p>
+                                <p style={{ color: '#94a3b8' }}>No voyage registered for {selectedVessel.name}.</p>
                             </div>
                         ) : (
                             <div style={{ overflowX: 'auto' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                                     <thead>
                                         <tr style={{ borderBottom: '2px solid #f1f5f9', textAlign: 'left' }}>
-                                            <th style={{ padding: '1rem', color: '#64748b', fontWeight: 800 }}>N° VOYAGE</th>
-                                            <th style={{ padding: '1rem', color: '#64748b', fontWeight: 800 }}>DATE ETD</th>
-                                            <th style={{ padding: '1rem', color: '#64748b', fontWeight: 800 }}>DATE ETA</th>
+                                            <th style={{ padding: '1rem', color: '#64748b', fontWeight: 800 }}>VOYAGE NO</th>
+                                            <th style={{ padding: '1rem', color: '#64748b', fontWeight: 800 }}>ETD DATE</th>
+                                            <th style={{ padding: '1rem', color: '#64748b', fontWeight: 800 }}>ETA DATE</th>
                                             <th style={{ padding: '1rem', textAlign: 'right' }}>ACTIONS</th>
                                         </tr>
                                     </thead>
@@ -567,7 +567,7 @@ export default function AdminVesselsPage() {
                                                             <td colSpan={4} style={{ padding: '1rem' }}>
                                                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem', alignItems: 'flex-end' }}>
                                                                     <div>
-                                                                        <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: '#ef4444' }}>N° VOYAGE</label>
+                                                                        <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: '#ef4444' }}>VOYAGE NO</label>
                                                                         <input
                                                                             type="text"
                                                                             value={editingVoyageNumber}
@@ -594,8 +594,8 @@ export default function AdminVesselsPage() {
                                                                         />
                                                                     </div>
                                                                     <div style={{ display: 'flex', gap: '0.4rem' }}>
-                                                                        <button onClick={handleUpdateVoyage} style={{ flex: 1, height: '36px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '0.8rem' }}>Enregistrer</button>
-                                                                        <button onClick={() => setEditingVoyageId(null)} style={{ height: '36px', padding: '0 0.75rem', background: 'white', border: '1px solid #fee2e2', borderRadius: '6px' }}>Annuler</button>
+                                                                        <button onClick={handleUpdateVoyage} style={{ flex: 1, height: '36px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '0.8rem' }}>Save</button>
+                                                                        <button onClick={() => setEditingVoyageId(null)} style={{ height: '36px', padding: '0 0.75rem', background: 'white', border: '1px solid #fee2e2', borderRadius: '6px' }}>Cancel</button>
                                                                     </div>
                                                                 </div>
                                                             </td>
@@ -618,7 +618,7 @@ export default function AdminVesselsPage() {
                         transition: 'opacity 0.3s'
                     }}>
                         <h3 style={{ margin: '0 0 1.5rem', fontSize: '1rem', fontWeight: 700, color: '#0a1f5c', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Ship size={18} /> 3. Bookings Attendus {selectedVoyage ? `— ${selectedVoyage.number}` : '(cliquez sur un voyage)'}
+                            <Ship size={18} /> 3. Expected Bookings {selectedVoyage ? `— ${selectedVoyage.number}` : '(click on a voyage)'}
                         </h3>
 
                         {selectedVoyage ? (
@@ -626,7 +626,7 @@ export default function AdminVesselsPage() {
                                 <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center' }}>
                                     <input
                                         type="text"
-                                        placeholder="Numéro de Booking (ex: 1234567890)"
+                                        placeholder="Booking Number (e.g. 1234567890)"
                                         value={newBookingNumber}
                                         onChange={e => setNewBookingNumber(e.target.value.toUpperCase())}
                                         onKeyDown={e => e.key === 'Enter' && handleAddBooking()}
@@ -636,7 +636,7 @@ export default function AdminVesselsPage() {
                                         onClick={handleAddBooking}
                                         style={{ height: '42px', padding: '0 1.5rem', borderRadius: '10px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer' }}
                                     >
-                                        Ajouter
+                                        Add
                                     </button>
 
                                     <input 
@@ -667,15 +667,15 @@ export default function AdminVesselsPage() {
                                         onMouseLeave={(e) => { e.currentTarget.style.background = 'white'; }}
                                     >
                                         <FileUp size={16} />
-                                        Importer Excel
+                                        Import Excel
                                     </button>
                                 </div>
 
                                 {isBookingLoading ? (
-                                    <p style={{ color: '#94a3b8', textAlign: 'center' }}>Chargement...</p>
+                                    <p style={{ color: '#94a3b8', textAlign: 'center' }}>Loading...</p>
                                 ) : expectedBookings.length === 0 ? (
                                     <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8', background: '#f8fafc', borderRadius: '12px', border: '2px dashed #e2e8f0' }}>
-                                        Aucun booking attendu pour ce voyage.
+                                        No expected bookings for this voyage.
                                     </div>
                                 ) : (
                                     <div className="custom-scrollbar" style={{ 
@@ -740,7 +740,7 @@ export default function AdminVesselsPage() {
                             </>
                         ) : (
                             <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
-                                <p>Veuillez sélectionner un voyage dans la liste ci-dessus.</p>
+                                <p>Please select a voyage from the list above.</p>
                             </div>
                         )}
                     </div>

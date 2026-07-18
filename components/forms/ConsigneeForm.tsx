@@ -10,36 +10,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { SearchableDropdown } from "../SearchableDropdown";
 import { MARITIME_COUNTRIES, WORLD_PORTS_BY_COUNTRY } from "../../lib/world-ports-data";
 
-const schema = yup.object().shape({
-    name: yup.string().required("Name is required"),
-    address: yup.string().required("Address is required"),
-    country: yup.string().required("Country is required"),
-    city: yup.string().required("City is required"),
-    phone: yup.string().required("Phone is required"),
-    email: yup.string().email("Invalid email").required("Email is required"),
-    vat: yup.string().nullable().when(["country", "city"], {
-        is: (country: string, city: string) => countryRequirements[country]?.includes("VAT") || cityRequirements[city]?.includes("VAT"),
-        then: (s: any) => s.required("VAT No is required for this destination."),
-        otherwise: (s: any) => s.nullable(),
-    }),
-    eori: yup.string().nullable().when(["country", "city"], {
-        is: (country: string, city: string) => countryRequirements[country]?.includes("EORI") || cityRequirements[city]?.includes("EORI"),
-        then: (s: any) => s.required("EORI No is required for this destination."),
-        otherwise: (s: any) => s.nullable(),
-    }),
-    bin: yup.string().nullable().when(["country", "city"], {
-        is: (country: string, city: string) => countryRequirements[country]?.includes("BIN") || cityRequirements[city]?.includes("BIN"),
-        then: (s: any) => s.required("BIN is required for this destination."),
-        otherwise: (s: any) => s.nullable(),
-    }),
-    usci: yup.string().nullable().when(["country", "city"], {
-        is: (country: string, city: string) => countryRequirements[country]?.includes("USCI") || cityRequirements[city]?.includes("USCI"),
-        then: (s: any) => s.required("USCI is required for this destination."),
-        otherwise: (s: any) => s.nullable(),
-    }),
-    paymentPlace: yup.string().nullable().optional(),
-    paymentCurrency: yup.string().nullable().optional(),
-});
+// Schema is defined dynamically inside ConsigneeForm to adapt to isFreightPayer status
 
 const defaultValues = {
     name: "",
@@ -60,6 +31,35 @@ const defaultValues = {
 function ConsigneeFormBody({ register, errors, watch, setValue, isFreightPayer }: any) {
     const country = watch("country");
     const city = watch("city");
+    const paymentPlace = watch("paymentPlace");
+    const paymentCurrency = watch("paymentCurrency");
+
+    const [dbCountries, setDbCountries] = React.useState<string[]>([]);
+    const [dbCurrencies, setDbCurrencies] = React.useState<string[]>([]);
+
+    React.useEffect(() => {
+        // Fetch countries
+        fetch("/api/globals/countries")
+            .then(r => r.ok ? r.json() : [])
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setDbCountries(data.map((c: any) => c.name.toUpperCase()));
+                }
+            })
+            .catch(e => console.error("Error fetching countries:", e));
+
+        // Fetch currencies
+        fetch("/api/currencies")
+            .then(r => r.ok ? r.json() : [])
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setDbCurrencies(data.map((curr: any) => curr.name.toUpperCase()));
+                }
+            })
+            .catch(e => console.error("Error fetching currencies:", e));
+    }, []);
+
+    const countriesList = dbCountries.length > 0 ? dbCountries : MARITIME_COUNTRIES;
 
     const availablePorts = country ? (WORLD_PORTS_BY_COUNTRY[country] || []) : [];
 
@@ -77,7 +77,7 @@ function ConsigneeFormBody({ register, errors, watch, setValue, isFreightPayer }
     // Helper to ensure uppercase and sync with react-hook-form
     const handleUpper = (fieldName: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const val = e.target.value.toUpperCase();
-        setValue(fieldName, val);
+        setValue(fieldName, val, { shouldValidate: true });
     };
 
     return (
@@ -102,6 +102,7 @@ function ConsigneeFormBody({ register, errors, watch, setValue, isFreightPayer }
                 />
                 {errors.address && <span className="error-msg">{errors.address.message}</span>}
             </div>
+
 
             <div className="grid-2">
                 <div>
@@ -153,88 +154,88 @@ function ConsigneeFormBody({ register, errors, watch, setValue, isFreightPayer }
                 </div>
             </div>
 
-            {isFreightPayer && (
-                <>
-                    <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
-                    <h4 style={{ color: 'var(--text-muted)' }}>Payment Details</h4>
-                    <div className="grid-2">
+
+            {/* Conditional Fields (EORI, VAT, BIN, USCI) integrated into the main zone */}
+            {(isNeeded("VAT") || isNeeded("EORI")) && (
+                <div className="grid-2">
+                    {isNeeded("VAT") && (
                         <div>
-                            <label>Place of Payment</label>
+                            <label>VAT No *</label>
                             <input 
-                                {...register("paymentPlace")} 
-                                placeholder="e.g. PARIS"
-                                onChange={handleUpper("paymentPlace")} 
+                                {...register("vat")} 
+                                onChange={handleUpper("vat")} 
                                 style={{ textTransform: 'uppercase' }} 
                             />
-                            {errors.paymentPlace && <span className="error-msg">{errors.paymentPlace.message}</span>}
+                            {errors.vat && <span className="error-msg">{errors.vat.message}</span>}
                         </div>
+                    )}
+                    {isNeeded("EORI") && (
                         <div>
-                            <label>Payment Currency</label>
+                            <label>EORI No *</label>
                             <input 
-                                {...register("paymentCurrency")} 
-                                placeholder="e.g. EUR"
-                                onChange={handleUpper("paymentCurrency")} 
+                                {...register("eori")} 
+                                onChange={handleUpper("eori")} 
                                 style={{ textTransform: 'uppercase' }} 
                             />
-                            {errors.paymentCurrency && <span className="error-msg">{errors.paymentCurrency.message}</span>}
+                            {errors.eori && <span className="error-msg">{errors.eori.message}</span>}
                         </div>
-                    </div>
-                </>
+                    )}
+                </div>
             )}
 
-            {/* Conditional Fields */}
-            {(isNeeded("VAT") || isNeeded("EORI") || isNeeded("BIN") || isNeeded("USCI")) && (
-                <>
-                    <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
-                    <h4 style={{ color: 'var(--text-muted)' }}>Destination Specific Information</h4>
-                    <div className="grid-2">
-                        {isNeeded("VAT") && (
-                            <div>
-                                <label>VAT No *</label>
-                                <input 
-                                    {...register("vat")} 
-                                    onChange={handleUpper("vat")} 
-                                    style={{ textTransform: 'uppercase' }} 
-                                />
-                                {errors.vat && <span className="error-msg">{errors.vat.message}</span>}
-                            </div>
-                        )}
-                        {isNeeded("EORI") && (
-                            <div>
-                                <label>EORI No *</label>
-                                <input 
-                                    {...register("eori")} 
-                                    onChange={handleUpper("eori")} 
-                                    style={{ textTransform: 'uppercase' }} 
-                                />
-                                {errors.eori && <span className="error-msg">{errors.eori.message}</span>}
-                            </div>
-                        )}
-                    </div>
+            {(isNeeded("BIN") || isNeeded("USCI")) && (
+                <div className="grid-2">
+                    {isNeeded("BIN") && (
+                        <div>
+                            <label>BIN *</label>
+                            <input 
+                                {...register("bin")} 
+                                onChange={handleUpper("bin")} 
+                                style={{ textTransform: 'uppercase' }} 
+                            />
+                            {errors.bin && <span className="error-msg">{errors.bin.message}</span>}
+                        </div>
+                    )}
+                    {isNeeded("USCI") && (
+                        <div>
+                            <label>USCI *</label>
+                            <input 
+                                {...register("usci")} 
+                                onChange={handleUpper("usci")} 
+                                style={{ textTransform: 'uppercase' }} 
+                            />
+                            {errors.usci && <span className="error-msg">{errors.usci.message}</span>}
+                        </div>
+                    )}
+                </div>
+            )}
 
+            {/* Payment Details at the end of the page */}
+            {isFreightPayer && (
+                <>
+                    <hr style={{ borderColor: 'var(--border-color)', margin: '1.5rem 0 1rem' }} />
+                    <h4 style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Payment Details</h4>
                     <div className="grid-2">
-                        {isNeeded("BIN") && (
-                            <div>
-                                <label>BIN *</label>
-                                <input 
-                                    {...register("bin")} 
-                                    onChange={handleUpper("bin")} 
-                                    style={{ textTransform: 'uppercase' }} 
-                                />
-                                {errors.bin && <span className="error-msg">{errors.bin.message}</span>}
-                            </div>
-                        )}
-                        {isNeeded("USCI") && (
-                            <div>
-                                <label>USCI *</label>
-                                <input 
-                                    {...register("usci")} 
-                                    onChange={handleUpper("usci")} 
-                                    style={{ textTransform: 'uppercase' }} 
-                                />
-                                {errors.usci && <span className="error-msg">{errors.usci.message}</span>}
-                            </div>
-                        )}
+                        <div>
+                            <SearchableDropdown
+                                label="Place of Payment *"
+                                options={countriesList}
+                                value={paymentPlace || ""}
+                                onSelect={(val) => setValue("paymentPlace", val, { shouldValidate: true })}
+                                placeholder="Select place of payment..."
+                                error={errors.paymentPlace?.message}
+                            />
+                        </div>
+                        <div>
+                            <SearchableDropdown
+                                label="Payment Currency *"
+                                options={dbCurrencies}
+                                value={paymentCurrency || ""}
+                                onSelect={(val) => setValue("paymentCurrency", val, { shouldValidate: true })}
+                                placeholder="Select currency..."
+                                error={errors.paymentCurrency?.message}
+                            />
+                        </div>
                     </div>
                 </>
             )}
@@ -245,8 +246,48 @@ function ConsigneeFormBody({ register, errors, watch, setValue, isFreightPayer }
 export function ConsigneeForm({ isOpen, onClose, onSuccess, onDelete, title = "New Consignee", endpoint, initialData }: { isOpen: boolean, onClose: () => void, onSuccess: (data: any) => void, onDelete?: (id: string) => void, title?: string, endpoint: string, initialData?: any }) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+    const isFreightPayer = title === "Freight Payer" || endpoint.includes("freightbuyers");
+
+    const schema = React.useMemo(() => {
+        return yup.object().shape({
+            name: yup.string().required("Name is required"),
+            address: yup.string().required("Address is required"),
+            country: yup.string().required("Country is required"),
+            city: yup.string().required("City is required"),
+            phone: yup.string().required("Phone is required"),
+            email: yup.string().email("Invalid email").required("Email is required"),
+            vat: yup.string().nullable().when(["country", "city"], {
+                is: (country: string, city: string) => countryRequirements[country]?.includes("VAT") || cityRequirements[city]?.includes("VAT"),
+                then: (s: any) => s.required("VAT No is required for this destination."),
+                otherwise: (s: any) => s.nullable(),
+            }),
+            eori: yup.string().nullable().when(["country", "city"], {
+                is: (country: string, city: string) => countryRequirements[country]?.includes("EORI") || cityRequirements[city]?.includes("EORI"),
+                then: (s: any) => s.required("EORI No is required for this destination."),
+                otherwise: (s: any) => s.nullable(),
+            }),
+            bin: yup.string().nullable().when(["country", "city"], {
+                is: (country: string, city: string) => countryRequirements[country]?.includes("BIN") || cityRequirements[city]?.includes("BIN"),
+                then: (s: any) => s.required("BIN is required for this destination."),
+                otherwise: (s: any) => s.nullable(),
+            }),
+            usci: yup.string().nullable().when(["country", "city"], {
+                is: (country: string, city: string) => countryRequirements[country]?.includes("USCI") || cityRequirements[city]?.includes("USCI"),
+                then: (s: any) => s.required("USCI is required for this destination."),
+                otherwise: (s: any) => s.nullable(),
+            }),
+            paymentPlace: isFreightPayer 
+                ? yup.string().required("Place of Payment is required") 
+                : yup.string().nullable().optional(),
+            paymentCurrency: isFreightPayer 
+                ? yup.string().required("Payment Currency is required") 
+                : yup.string().nullable().optional(),
+        });
+    }, [isFreightPayer]);
+
     const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
         resolver: yupResolver(schema),
+        mode: "onChange",
         defaultValues: initialData ? { ...defaultValues, ...initialData } : defaultValues,
     });
 
@@ -328,7 +369,7 @@ export function ConsigneeForm({ isOpen, onClose, onSuccess, onDelete, title = "N
 
     return (
         <ModalForm
-            title={initialData ? `Modifier ${title.replace("Nouveau ", "")}` : title}
+            title={initialData ? `Edit ${title.replace("New ", "")}` : title}
             isOpen={isOpen}
             onClose={onClose}
             onSubmit={handleSubmit(handleFormSubmit)}

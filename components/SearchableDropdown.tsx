@@ -122,7 +122,7 @@ export function SearchableDropdown({
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Rechercher..."
+                    placeholder="Search..."
                     style={{
                         border: "none",
                         padding: "0.4rem",
@@ -141,7 +141,7 @@ export function SearchableDropdown({
             <div style={{ maxHeight: "240px", overflowY: "auto" }}>
                 {filtered.length === 0 ? (
                     <div style={{ padding: "1rem", textAlign: "center", color: "var(--text-muted)", fontSize: "0.9rem" }}>
-                        Aucun résultat
+                        No results
                     </div>
                 ) : (
                     filtered.map((opt) => (
@@ -197,6 +197,7 @@ export function SearchableDropdown({
                     justifyContent: "space-between",
                     width: "100%",
                     padding: "0.6rem 1rem",
+                    height: "46px",
                     backgroundColor: disabled
                         ? "var(--secondary)"
                         : value
@@ -213,8 +214,8 @@ export function SearchableDropdown({
                     }`,
                     borderRadius: "12px",
                     color: disabled ? "var(--text-muted)" : value ? "#0a1f5c" : "#4b4b4b",
-                    fontSize: "0.7rem",
-                    fontWeight: 500,
+                    fontSize: !value ? "0.9rem" : "1.1rem",
+                    fontWeight: !value ? 500 : 700,
                     cursor: disabled ? "not-allowed" : "pointer",
                     opacity: disabled ? 0.45 : 1,
                     transition: "all 0.2s ease-in-out",
@@ -240,7 +241,7 @@ export function SearchableDropdown({
                                 e.stopPropagation();
                                 onSelect("");
                             }}
-                            title="Effacer"
+                            title="Clear"
                             style={{ cursor: "pointer", color: "var(--text-muted)", display: "flex" }}
                         >
                             <X size={14} />

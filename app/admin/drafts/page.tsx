@@ -21,7 +21,7 @@ export default function AdminDraftsPage() {
         fetch("/api/vessels")
             .then(r => r.ok ? r.json() : [])
             .then(data => setVessels(Array.isArray(data) ? data : []))
-            .catch(() => toast.error("Impossible de charger les navires"));
+            .catch(() => toast.error("Unable to load vessels"));
     }, []);
 
     // Load voyages when vessel changes
@@ -45,7 +45,7 @@ export default function AdminDraftsPage() {
                 setExpectedBookings(data.expected || []);
                 setClientDrafts(data.drafts || []);
             })
-            .catch(() => toast.error("Erreur de chargement des données"))
+            .catch(() => toast.error("Error loading data"))
             .finally(() => setIsLoading(false));
     }, [selectedVoyage]);
 
@@ -64,7 +64,7 @@ export default function AdminDraftsPage() {
             await generateBLPDF(hydratedData, true);
         } catch (e: any) {
             console.error("PDF Preview Error:", e);
-            toast.error("Erreur lors de la génération du PDF");
+            toast.error("Error generating PDF");
         }
     };
 
@@ -72,9 +72,9 @@ export default function AdminDraftsPage() {
     const getStatusBadge = (status: string) => {
         switch (status) {
             case "VALIDATED":
-                return <span style={{ background: "#dcfce7", color: "#166534", padding: "2px 8px", borderRadius: "6px", fontSize: "0.7rem", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px" }}><CheckCircle size={10} /> VALIDÉ</span>;
+                return <span style={{ background: "#dcfce7", color: "#166534", padding: "2px 8px", borderRadius: "6px", fontSize: "0.7rem", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px" }}><CheckCircle size={10} /> VALIDATED</span>;
             case "DRAFT":
-                return <span style={{ background: "#fef9c3", color: "#854d0e", padding: "2px 8px", borderRadius: "6px", fontSize: "0.7rem", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px" }}><Clock size={10} /> BROUILLON</span>;
+                return <span style={{ background: "#fef9c3", color: "#854d0e", padding: "2px 8px", borderRadius: "6px", fontSize: "0.7rem", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px" }}><Clock size={10} /> DRAFT</span>;
             default:
                 return <span style={{ background: "#f1f5f9", color: "#475569", padding: "2px 8px", borderRadius: "6px", fontSize: "0.7rem", fontWeight: 700 }}>{status}</span>;
         }
@@ -126,54 +126,54 @@ export default function AdminDraftsPage() {
             <main className="main-content">
                 <div className="main-content-inner">
                     <header className="content-header">
-                        <h1>Suivi des Drafts Clients</h1>
+                        <h1>Client Drafts Tracking</h1>
                     </header>
 
                     <div className="grid-2" style={{ marginBottom: "2rem" }}>
                         <div className="form-container glass-panel">
-                            <label><Ship size={14} style={{ marginRight: "6px" }} /> Sélectionner un Navire</label>
+                            <label><Ship size={14} style={{ marginRight: "6px" }} /> Select a Vessel</label>
                             <select 
                                 value={selectedVessel?.id || ""} 
                                 onChange={(e) => setSelectedVessel(vessels.find(v => v.id === e.target.value))}
                             >
-                                <option value="">-- Choisir un navire --</option>
+                                <option value="">-- Choose a vessel --</option>
                                 {vessels.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
                             </select>
                         </div>
 
                         <div className="form-container glass-panel" style={{ opacity: selectedVessel ? 1 : 0.5 }}>
-                            <label><FileText size={14} style={{ marginRight: "6px" }} /> Sélectionner un Voyage</label>
+                            <label><FileText size={14} style={{ marginRight: "6px" }} /> Select a Voyage</label>
                             <select 
                                 disabled={!selectedVessel}
                                 value={selectedVoyage?.id || ""} 
                                 onChange={(e) => setSelectedVoyage(voyages.find(v => v.id === e.target.value))}
                             >
-                                <option value="">-- Choisir un voyage --</option>
+                                <option value="">-- Choose a voyage --</option>
                                 {voyages.map(v => <option key={v.id} value={v.id}>{v.number}</option>)}
                             </select>
                         </div>
                     </div>
 
                     <div className="form-container glass-panel" style={{ padding: "1.5rem" }}>
-                        <div className="form-section-title">Comparaison des Bookings</div>
+                        <div className="form-section-title">Bookings Comparison</div>
                         
                         {!selectedVoyage ? (
                             <div style={{ textAlign: "center", padding: "3rem", color: "#94a3b8" }}>
                                 <Search size={40} style={{ marginBottom: "1rem", opacity: 0.3 }} />
-                                <p>Veuillez sélectionner un navire et un voyage pour afficher le suivi.</p>
+                                <p>Please select a vessel and a voyage to display tracking.</p>
                             </div>
                         ) : isLoading ? (
-                            <div style={{ textAlign: "center", padding: "3rem" }}>Chargement en cours...</div>
+                            <div style={{ textAlign: "center", padding: "3rem" }}>Loading...</div>
                         ) : comparisonRows.length === 0 ? (
                             <div style={{ textAlign: "center", padding: "3rem", color: "#94a3b8" }}>
-                                Aucun booking trouvé pour ce voyage.
+                                No bookings found for this voyage.
                             </div>
                         ) : (
                             <table style={{ border: "none", background: "transparent" }}>
                                 <thead>
                                     <tr>
-                                        <th style={{ background: "#f8fafc", borderRadius: "10px 0 0 0" }}>Booking Attendu</th>
-                                        <th style={{ background: "#f8fafc" }}>Draft Client</th>
+                                        <th style={{ background: "#f8fafc", borderRadius: "10px 0 0 0" }}>Expected Booking</th>
+                                        <th style={{ background: "#f8fafc" }}>Client Draft</th>
                                         <th style={{ background: "#f8fafc", textAlign: "center", borderRadius: "0 10px 0 0" }}>Action</th>
                                     </tr>
                                 </thead>
@@ -186,7 +186,7 @@ export default function AdminDraftsPage() {
                                             <td style={{ fontWeight: 800, color: row.expected ? "#0a1f5c" : "#94a3b8", fontSize: "0.95rem" }}>
                                                 {row.expected || (
                                                     <span style={{ fontSize: "0.75rem", fontStyle: "italic", fontWeight: 400, color: "#ef4444", display: "flex", alignItems: "center", gap: "4px" }}>
-                                                        <AlertCircle size={12} /> Non répertorié
+                                                        <AlertCircle size={12} /> Not listed
                                                     </span>
                                                 )}
                                             </td>
@@ -197,7 +197,7 @@ export default function AdminDraftsPage() {
                                                         {getStatusBadge(row.draftStatus)}
                                                     </div>
                                                 ) : (
-                                                    <span style={{ color: "#cbd5e1", fontStyle: "italic", fontSize: "0.85rem" }}>En attente de soumission...</span>
+                                                    <span style={{ color: "#cbd5e1", fontStyle: "italic", fontSize: "0.85rem" }}>Waiting for submission...</span>
                                                 )}
                                             </td>
                                             <td style={{ textAlign: "center" }}>
@@ -207,7 +207,7 @@ export default function AdminDraftsPage() {
                                                         className="btn-outline"
                                                         style={{ padding: "6px 12px", fontSize: "0.75rem", background: "white" }}
                                                     >
-                                                        <Eye size={14} /> Voir Draft PDF
+                                                        <Eye size={14} /> View Draft PDF
                                                     </button>
                                                 )}
                                             </td>

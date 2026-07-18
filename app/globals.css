@@ -11,7 +11,7 @@
   /* Color Palette - Premium Milky White Theme (CotaLog Ergonomics) */
   --bg:             #faf8f5;         /* Milky White Background */
   --bg-card:        rgba(255, 255, 255, 0.7);
-  --bg-sidebar:     rgba(255, 255, 255, 0.85);
+  --bg-sidebar:     #f1f5f9;         /* Very Light Gray Sidebar */
   
   --primary:        #E60012;         /* OOCL Red retained as primary accent */
   --primary-dark:   #b8000e;
@@ -30,7 +30,7 @@
   --shadow-premium: 0 12px 40px -12px rgba(0, 0, 0, 0.08);
 
   /* Layout Constants */
-  --sidebar-width:  280px;
+  --sidebar-width:  310px;
   --explorer-width: 320px;
   
   --radius-sm:      0.5rem;
@@ -138,6 +138,11 @@ label,
   50%       { box-shadow: none; }
 }
 
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.8); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
 /* ════════════════════════════════════════════
    LAYOUT SHELL
    ════════════════════════════════════════════ */
@@ -206,18 +211,19 @@ img[src*="logo-oocl.png"] {
   gap: 0.875rem;
   padding: 0.875rem 1.25rem;
   border-radius: var(--radius);
-  color: var(--text-muted);
+  color: #000000;
   cursor: pointer;
   font-weight: 600;
   font-size: 0.95rem;
   text-decoration: none;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid transparent;
+  white-space: nowrap;
 }
 
 .nav-item:hover {
   background: var(--primary-light);
-  color: var(--primary);
+  color: #000000;
   border-color: rgba(230, 0, 18, 0.12);
   transform: translateX(2px);
 }
@@ -241,14 +247,23 @@ img[src*="logo-oocl.png"] {
   color: var(--text);
   font-size: 0.85rem;
   margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sidebar-user-email {
   font-weight: 600;
   color: var(--primary);
   font-size: 0.8rem;
-  word-break: break-all;
   margin-bottom: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-item-action {
+  white-space: nowrap !important;
 }
 
 /* ─── Main Content ─── */

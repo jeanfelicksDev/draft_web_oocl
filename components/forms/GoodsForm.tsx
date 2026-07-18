@@ -46,6 +46,7 @@ export function GoodsForm({
 
     const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm({
         resolver: yupResolver(schema),
+        mode: "onChange",
         defaultValues: initialData || defaultValues,
     });
 
@@ -162,7 +163,7 @@ export function GoodsForm({
                         rows={4} 
                         onChange={(e) => {
                             const val = e.target.value.toUpperCase();
-                            setValue("description", val);
+                            setValue("description", val, { shouldValidate: true });
                             autoResize();
                         }}
                         style={{ overflow: 'hidden', resize: 'none', minHeight: '12cm', textTransform: 'uppercase' }}
@@ -200,7 +201,7 @@ export function GoodsForm({
                             {...register("declNo")} 
                             onChange={(e) => {
                                 const val = e.target.value.toUpperCase();
-                                setValue("declNo", val);
+                                setValue("declNo", val, { shouldValidate: true });
                             }}
                             style={{ textTransform: 'uppercase' }}
                         />

@@ -73,7 +73,7 @@ function ShipperFormBody({ register, errors, watch, setValue }: any) {
     // Helper to ensure uppercase and sync with react-hook-form
     const handleUpper = (fieldName: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const val = e.target.value.toUpperCase();
-        setValue(fieldName, val);
+        setValue(fieldName, val, { shouldValidate: true });
     };
 
     return (
@@ -212,6 +212,7 @@ export function ShipperForm({ title = "", isOpen, onClose, onSuccess, onDelete, 
 
     const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
         resolver: yupResolver(schema),
+        mode: "onChange",
         defaultValues: initialData ? { ...defaultValues, ...initialData } : defaultValues,
     });
 

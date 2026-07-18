@@ -20,12 +20,12 @@ function ResetPasswordContent() {
         e.preventDefault();
         
         if (password !== confirmPassword) {
-            setError("Les mots de passe ne correspondent pas");
+            setError("Passwords do not match");
             return;
         }
 
         if (password.length < 6) {
-            setError("Le mot de passe doit faire au moins 6 caractères");
+            setError("Password must be at least 6 characters");
             return;
         }
 
@@ -47,10 +47,10 @@ function ResetPasswordContent() {
                     router.push("/login");
                 }, 3000);
             } else {
-                setError(data.error || "Une erreur est survenue");
+                setError(data.error || "An error occurred");
             }
         } catch (err) {
-            setError("Erreur de connexion");
+            setError("Connection error");
         } finally {
             setLoading(false);
         }
@@ -59,7 +59,7 @@ function ResetPasswordContent() {
     if (!token) {
         return (
             <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div className="error-msg">Token manquant. Veuillez utiliser le lien reçu par email.</div>
+                <div className="error-msg">Missing token. Please use the link received by email.</div>
             </div>
         );
     }
@@ -79,9 +79,9 @@ function ResetPasswordContent() {
             </div>
 
             <div className="form-container" style={{ width: "100%", maxWidth: "400px" }}>
-                <h2 style={{ textAlign: "center", marginBottom: "1.5rem", fontWeight: 800 }}>réinitialisation</h2>
+                <h2 style={{ textAlign: "center", marginBottom: "1.5rem", fontWeight: 800 }}>Reset Password</h2>
                 <p style={{ textAlign: "center", marginBottom: "2rem", color: "var(--text-muted)", fontSize: "0.9rem" }}>
-                    Choisissez votre nouveau mot de passe.
+                    Choose your new password.
                 </p>
 
                 {message ? (
@@ -89,12 +89,12 @@ function ResetPasswordContent() {
                         <div style={{ padding: "1rem", backgroundColor: "rgba(16, 185, 129, 0.1)", color: "#10b981", borderRadius: "8px", marginBottom: "1.5rem" }}>
                             {message}
                         </div>
-                        <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Redirection vers la connexion...</p>
+                        <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Redirecting to login...</p>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                         <div>
-                            <label>nouveau mot de passe</label>
+                            <label>New Password</label>
                             <input
                                 type="password"
                                 value={password}
@@ -105,7 +105,7 @@ function ResetPasswordContent() {
                         </div>
 
                         <div>
-                            <label>confirmer le mot de passe</label>
+                            <label>Confirm Password</label>
                             <input
                                 type="password"
                                 value={confirmPassword}
@@ -123,7 +123,7 @@ function ResetPasswordContent() {
                             className="btn-primary"
                             disabled={loading}
                         >
-                            {loading ? "réinitialisation..." : "changer le mot de passe"}
+                            {loading ? "Resetting..." : "Change Password"}
                         </button>
                     </form>
                 )}
@@ -134,7 +134,7 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
     return (
-        <Suspense fallback={<div>Chargement...</div>}>
+        <Suspense fallback={<div>Loading...</div>}>
             <ResetPasswordContent />
         </Suspense>
     );

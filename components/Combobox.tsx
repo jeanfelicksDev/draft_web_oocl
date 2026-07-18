@@ -32,7 +32,7 @@ export function Combobox({
     onChange,
     onAddNew,
     onEdit,
-    placeholder = "Sélectionner...",
+    placeholder = "Select...",
     error,
     disabled = false,
     multiline = false,
@@ -109,7 +109,7 @@ export function Combobox({
                             <button
                                 type="button"
                                 onClick={onEdit}
-                                title="Modifier"
+                                title="Edit"
                                 style={{
                                     width: '38px',
                                     height: '38px',
@@ -130,7 +130,7 @@ export function Combobox({
                             <button
                                 type="button"
                                 onClick={onAddNew}
-                                title="Ajouter"
+                                title="Add new"
                                 style={{
                                     width: '38px',
                                     height: '38px',
@@ -154,7 +154,7 @@ export function Combobox({
             {multiline && value && (
                 <div style={{ marginTop: '0.75rem' }}>
                     <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-light)', marginBottom: '0.25rem' }}>
-                        Description complète :
+                        Full description:
                     </label>
                     <textarea
                         value={selectedText}

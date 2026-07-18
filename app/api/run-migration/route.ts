@@ -127,10 +127,10 @@ export async function GET() {
 
                 await prisma.voyage.createMany({
                     data: [
-                        { name: "015E", vesselId: vessel1.id, userId },
-                        { name: "016W", vesselId: vessel1.id, userId },
-                        { name: "024E", vesselId: vessel2.id, userId },
-                        { name: "025W", vesselId: vessel2.id, userId }
+                        { number: "015E", vesselId: vessel1.id, userId },
+                        { number: "016W", vesselId: vessel1.id, userId },
+                        { number: "024E", vesselId: vessel2.id, userId },
+                        { number: "025W", vesselId: vessel2.id, userId }
                     ]
                 });
             }

@@ -25,13 +25,13 @@ export default function LoginPage() {
             });
 
             if (result?.error) {
-                setError("Email ou mot de passe incorrect");
+                setError("Incorrect email or password");
             } else {
                 router.push("/");
                 router.refresh();
             }
         } catch (err) {
-            setError("Une erreur est survenue");
+            setError("An error occurred");
         } finally {
             setLoading(false);
         }
@@ -52,11 +52,11 @@ export default function LoginPage() {
             </div>
 
             <div className="form-container" style={{ width: "100%", maxWidth: "400px" }}>
-                <h2 style={{ textAlign: "center", marginBottom: "2rem", fontWeight: 800 }}>connexion</h2>
+                <h2 style={{ textAlign: "center", marginBottom: "2rem", fontWeight: 800 }}>Log In</h2>
 
                 <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                     <div>
-                        <label>email</label>
+                        <label>Email</label>
                         <input
                             type="email"
                             value={email}
@@ -65,7 +65,7 @@ export default function LoginPage() {
                         />
                     </div>
                     <div>
-                        <label>mot de passe</label>
+                        <label>Password</label>
                         <input
                             type="password"
                             value={password}
@@ -84,19 +84,19 @@ export default function LoginPage() {
                         disabled={loading}
                         style={{ marginTop: "1rem", width: "100%" }}
                     >
-                        {loading ? "connexion..." : "se connecter"}
+                        {loading ? "Logging in..." : "Log In"}
                     </button>
                     
                 </form>
 
                 <div style={{ textAlign: "center", marginTop: "1rem" }}>
                     <Link href="/forgot-password" style={{ fontSize: "0.9rem", color: "var(--primary)", textDecoration: "underline", fontWeight: 600 }}>
-                        Mot de passe oublié ?
+                        Forgot password?
                     </Link>
                 </div>
 
                 <div style={{ marginTop: "2rem", textAlign: "center", fontWeight: 700, color: "var(--text-muted)" }}>
-                    Pas encore de compte ? <Link href="/register" style={{ color: "var(--primary)", textDecoration: "none" }}>S'inscrire</Link>
+                    Don't have an account yet? <Link href="/register" style={{ color: "var(--primary)", textDecoration: "none" }}>Sign Up</Link>
                 </div>
             </div>
         </div>

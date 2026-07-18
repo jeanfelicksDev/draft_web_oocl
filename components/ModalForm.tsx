@@ -80,7 +80,7 @@ export function ModalForm({
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.25)'}
                         onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                        title="Fermer"
+                        title="Close"
                     >
                         &times;
                     </button>
@@ -96,7 +96,7 @@ export function ModalForm({
                                     type="button"
                                     onClick={async (e) => {
                                         e.preventDefault();
-                                        if (window.confirm("Voulez-vous vraiment supprimer cet enregistrement ?")) {
+                                        if (window.confirm("Are you sure you want to delete this record?")) {
                                             await onDelete();
                                         }
                                     }}
@@ -114,7 +114,7 @@ export function ModalForm({
                                     }}
                                     onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
                                     onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                                    title="Supprimer définitivement"
+                                    title="Delete permanently"
                                 >
                                     <Trash2 size={24} />
                                 </button>
@@ -146,7 +146,7 @@ export function ModalForm({
                             }}
                             disabled={isSubmitting}
                         >
-                            {isSubmitting ? "Enregistrement..." : "Enregistrer"}
+                            {isSubmitting ? "Saving..." : "Save"}
                         </button>
                     </div>
                 </form>

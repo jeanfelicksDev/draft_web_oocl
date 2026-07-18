@@ -13,7 +13,10 @@ import {
     ShieldAlert,
     BookOpen,
     Eye,
-    Edit
+    Edit,
+    Info,
+    Plus,
+    Edit3
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useForm } from "react-hook-form";
@@ -31,6 +34,8 @@ import { Combobox } from "./Combobox";
 import { ContainerTable } from "./ContainerTable";
 import { generateBLPDF } from "@/lib/pdfGenerator";
 import { LinkedPortSelector } from "./LinkedPortSelector";
+import { SplitBLModal } from "./SplitBLModal";
+
 
 /* ════════════════════════════════════════════
    MAIN PAGE WITH STEPPER WIZARD
@@ -49,7 +54,7 @@ const blSchema = yup.object().shape({
     freightBuyerId: yup.string().required("Freight Payer is required"),
     goodsId: yup.string().required("Nature of Goods is required"),
     vesselId: yup.string().required("Vessel is required"),
-    voyageId: yup.string().optional().nullable(),
+    voyageId: yup.string().required("Voyage is required"),
     globalTypeTc: yup.string().required("Global Container Type is required"),
     globalPackageType: yup.string().required("Global Packaging Type is required"),
     hsCode: yup.string().optional().nullable(),
@@ -87,12 +92,19 @@ export default function MainPage() {
     const [bookingDuplicateError, setBookingDuplicateError] = useState<string | null>(null);
     const bookingRef = useRef<HTMLInputElement>(null);
 
+    // ── Split BL state ──
+    const [splitTargetBL, setSplitTargetBL] = useState<any | null>(null);
+    const [isSplitModalOpen, setIsSplitModalOpen] = useState(false);
+    const [hoveredBLId, setHoveredBLId] = useState<string | null>(null);
+
+
     // Stepper wizard navigation states
     const [activeStep, setActiveStep] = useState(1);
     const [activeSubStep, setActiveSubStep] = useState(1);
 
     const { register, handleSubmit, setValue, getValues, watch, reset, trigger, formState: { errors } } = useForm({
         resolver: yupResolver(blSchema),
+        mode: "onChange",
         defaultValues: {
             bookingNumber: "", contractNumber: "",
             shipperId: "", consigneeId: "", notifyId: "", alsoNotifyId: "",
@@ -350,6 +362,7 @@ export default function MainPage() {
                 // Reset stepper to step 1
                 setActiveStep(1);
                 setActiveSubStep(1);
+                trigger();
 
                 if (!bookingNumArg) toast.success("Booking data loaded!");
             } else if (res.status === 404) {
@@ -556,7 +569,7 @@ export default function MainPage() {
                             boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
                             zIndex: 1
                         }}
-                        title="Fermer"
+                        title="Close"
                     >
                         &times;
                     </button>
@@ -795,6 +808,10 @@ export default function MainPage() {
                             <span className="recap-value">{vessels.find(v => v.id === values.vesselId)?.name || <span className="empty">Not specified</span>}</span>
                         </div>
                         <div className="recap-field">
+                            <span className="recap-label">Voyage</span>
+                            <span className="recap-value">{filteredVoyages.find(v => v.id === values.voyageId)?.number || <span className="empty">Not specified</span>}</span>
+                        </div>
+                        <div className="recap-field">
                             <span className="recap-label">Port of Discharge</span>
                             <span className="recap-value">{values.portCountryText ? `${values.portCityText}, ${values.portCountryText}` : <span className="empty">Not specified</span>}</span>
                         </div>
@@ -1012,10 +1029,144 @@ export default function MainPage() {
                     {/* Horizontal progress bar */}
                     {renderStepper()}
 
+                    {/* Explication zone */}
+                    <style>{`
+                        @keyframes anthropicFadeIn {
+                            0% {
+                                opacity: 0;
+                                transform: translateY(20px);
+                            }
+                            100% {
+                                opacity: 1;
+                                transform: translateY(0);
+                            }
+                        }
+                    `}</style>
+
+                    {activeStep === 1 && (
+                        <div style={{
+                            marginTop: "2rem",
+                            marginBottom: "2rem",
+                            textAlign: "center",
+                            animation: "anthropicFadeIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+                            padding: "0 1.5rem"
+                        }}>
+                            <p style={{
+                                margin: 0,
+                                fontSize: "1.9rem",
+                                fontFamily: "Georgia, 'Times New Roman', serif",
+                                fontWeight: 400,
+                                color: "#0a1f5c",
+                                lineHeight: 1.4,
+                                letterSpacing: "-0.015em"
+                            }}>
+                                Tous les champs de cette fenêtre sont obligatoires. Renseignez-les puis cliquez sur le bouton 
+                                <span style={{
+                                    background: "linear-gradient(135deg, #E60012 0%, #b8000e 100%)",
+                                    color: "#fff",
+                                    padding: "0 1.2rem",
+                                    height: "32px",
+                                    borderRadius: "10px",
+                                    fontWeight: 700,
+                                    fontSize: "0.8rem",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: "0.25rem",
+                                    boxShadow: "0 3px 10px rgba(230,0,18,0.2)",
+                                    margin: "0 8px",
+                                    verticalAlign: "middle",
+                                    letterSpacing: "normal"
+                                }}>
+                                    Next →
+                                </span>
+                                pour continuer...
+                            </p>
+                        </div>
+                    )}
+
+                    {activeStep === 2 && activeSubStep >= 1 && activeSubStep <= 6 && (() => {
+                        const entityName = [
+                            "Shipper",
+                            "Consignee",
+                            "Notify",
+                            "Also Notify",
+                            "Freight Payer",
+                            "Forwarder"
+                        ][activeSubStep - 1];
+
+                        return (
+                            <div style={{
+                                marginTop: "2rem",
+                                marginBottom: "2rem",
+                                textAlign: "center",
+                                animation: "anthropicFadeIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+                                padding: "0 1.5rem"
+                            }}>
+                                <p style={{
+                                    margin: 0,
+                                    fontSize: "1.9rem",
+                                    fontFamily: "Georgia, 'Times New Roman', serif",
+                                    fontWeight: 400,
+                                    color: "#0a1f5c",
+                                    lineHeight: 1.6,
+                                    letterSpacing: "-0.015em"
+                                }}>
+                                    Sélectionnez le {entityName}. S'il n'apparaît pas dans la liste, cliquez sur le bouton 
+                                    <span style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        width: "38px",
+                                        height: "38px",
+                                        borderRadius: "10px",
+                                        border: "1.5px solid var(--border)",
+                                        backgroundColor: "white",
+                                        color: "var(--success)",
+                                        margin: "0 8px",
+                                        verticalAlign: "middle",
+                                        boxShadow: "0 2px 5px rgba(0,0,0,0.05)"
+                                    }}>
+                                        <Plus size={20} />
+                                    </span>
+                                    pour en ajouter un. Le bouton 
+                                    <span style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        width: "38px",
+                                        height: "38px",
+                                        borderRadius: "10px",
+                                        border: "1.5px solid var(--border)",
+                                        backgroundColor: "white",
+                                        color: "var(--primary)",
+                                        margin: "0 8px",
+                                        verticalAlign: "middle",
+                                        boxShadow: "0 2px 5px rgba(0,0,0,0.05)"
+                                    }}>
+                                        <Edit3 size={16} />
+                                    </span>
+                                    sert à modifier les informations du {entityName}...
+                                </p>
+                            </div>
+                        );
+                    })()}
+
                     {/* ─── FORM CARD ─── */}
-                    <form id="si-form" onSubmit={handleSubmit(onSubmit)} className="form-container" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    <form
+                        id="si-form"
+                        onSubmit={handleSubmit(onSubmit)}
+                        className="form-container"
+                        style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+                        onKeyDown={(e) => {
+                            // Prevent accidental form submission via Enter key
+                            if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
+                                e.preventDefault();
+                            }
+                        }}
+                    >
                         
-                        {/* ── STEP 1 : Références & Voyage ── */}
+                        {/* ── STEP 1 : References & Voyage ── */}
                         {activeStep === 1 && (
                             <section className="fade-in">
                                 <p className="form-section-title">
@@ -1051,7 +1202,7 @@ export default function MainPage() {
                                                 if (!currentBlId) checkBookingDuplicate(e.target.value);
                                             }}
                                             onChange={(e) => {
-                                                // N'accepter que les chiffres à la saisie
+                                                // Accept only digits on input
                                                 const cleaned = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
                                                 e.target.value = cleaned;
                                                 register("bookingNumber").onChange(e);
@@ -1072,7 +1223,7 @@ export default function MainPage() {
                                         displayKey="name"
                                         valueKey="id"
                                         value={values.typeReleasedId}
-                                        onChange={(val) => setValue("typeReleasedId", val)}
+                                        onChange={(val) => setValue("typeReleasedId", val, { shouldValidate: true })}
                                         error={errors.typeReleasedId?.message as string}
                                         disabled={!canWrite}
                                     />
@@ -1087,7 +1238,7 @@ export default function MainPage() {
                                             disabled={!canWrite}
                                             onChange={(e) => {
                                                 const val = e.target.value.toUpperCase();
-                                                setValue("contractNumber", val);
+                                                setValue("contractNumber", val, { shouldValidate: true });
                                             }}
                                             style={{ textTransform: 'uppercase' }}
                                         />
@@ -1103,18 +1254,19 @@ export default function MainPage() {
                                         valueKey="id"
                                         value={values.vesselId}
                                         onChange={(val) => {
-                                            setValue("vesselId", val);
+                                            setValue("vesselId", val, { shouldValidate: true });
                                         }}
                                         error={errors.vesselId?.message as string}
                                         disabled={!canWrite}
                                     />
                                     <Combobox
-                                        label="Voyage"
+                                        label="Voyage *"
                                         items={filteredVoyages}
                                         displayKey="number"
                                         valueKey="id"
                                         value={values.voyageId ?? ""}
-                                        onChange={(val) => setValue("voyageId", val)}
+                                        onChange={(val) => setValue("voyageId", val, { shouldValidate: true })}
+                                        error={errors.voyageId?.message as string}
                                         disabled={!canWrite || filteredVoyages.length === 0}
                                         placeholder={values.vesselId ? "Select a voyage..." : "— Select a vessel first"}
                                     />
@@ -1123,9 +1275,9 @@ export default function MainPage() {
                                 <div className="grid-2" style={{ marginTop: "1.5rem" }}>
                                     <LinkedPortSelector
                                         portCountryValue={values.portCountryText}
-                                        onPortCountryChange={(name) => setValue("portCountryText", name)}
+                                        onPortCountryChange={(name) => setValue("portCountryText", name, { shouldValidate: true })}
                                         portCityValue={values.portCityText}
-                                        onPortCityChange={(name) => setValue("portCityText", name)}
+                                        onPortCityChange={(name) => setValue("portCityText", name, { shouldValidate: true })}
                                         portCountryError={errors.portCountryText?.message as string}
                                         portCityError={errors.portCityText?.message as string}
                                         disabled={!canWrite}
@@ -1134,7 +1286,7 @@ export default function MainPage() {
                             </section>
                         )}
 
-                        {/* ── STEP 2 : Acteurs (Parties) ── */}
+                        {/* ── STEP 2 : Parties ── */}
                         {activeStep === 2 && (
                             <section className="fade-in">
                                 <p className="form-section-title">
@@ -1146,7 +1298,7 @@ export default function MainPage() {
                                 {activeSubStep === 1 && (
                                     <div className="fade-in">
                                         <Combobox label="Shipper *" items={shippers} displayKey="name" valueKey="id"
-                                            value={values.shipperId} onChange={(val) => setValue("shipperId", val)}
+                                            value={values.shipperId} onChange={(val) => setValue("shipperId", val, { shouldValidate: true })}
                                             onAddNew={canEditRefTables ? () => handleAddNew("SHIPPER") : undefined}
                                             onEdit={canEditRefTables ? () => handleEdit("SHIPPER", shippers, values.shipperId) : undefined}
                                             error={errors.shipperId?.message as string}
@@ -1158,7 +1310,7 @@ export default function MainPage() {
                                 {activeSubStep === 2 && (
                                     <div className="fade-in">
                                         <Combobox label="Consignee *" items={consignees} displayKey="name" valueKey="id"
-                                            value={values.consigneeId} onChange={(val) => setValue("consigneeId", val)}
+                                            value={values.consigneeId} onChange={(val) => setValue("consigneeId", val, { shouldValidate: true })}
                                             onAddNew={canEditRefTables ? () => handleAddNew("CONSIGNEE") : undefined}
                                             onEdit={canEditRefTables ? () => handleEdit("CONSIGNEE", consignees, values.consigneeId) : undefined}
                                             error={errors.consigneeId?.message as string}
@@ -1170,7 +1322,7 @@ export default function MainPage() {
                                 {activeSubStep === 3 && (
                                     <div className="fade-in">
                                         <Combobox label="Notify *" items={notifys} displayKey="name" valueKey="id"
-                                            value={values.notifyId} onChange={(val) => setValue("notifyId", val)}
+                                            value={values.notifyId} onChange={(val) => setValue("notifyId", val, { shouldValidate: true })}
                                             onAddNew={canEditRefTables ? () => handleAddNew("NOTIFY") : undefined}
                                             onEdit={canEditRefTables ? () => handleEdit("NOTIFY", notifys, values.notifyId) : undefined}
                                             error={errors.notifyId?.message as string}
@@ -1182,7 +1334,7 @@ export default function MainPage() {
                                 {activeSubStep === 4 && (
                                     <div className="fade-in">
                                         <Combobox label="Also Notify" items={alsoNotifys} displayKey="name" valueKey="id"
-                                            value={values.alsoNotifyId || ""} onChange={(val) => setValue("alsoNotifyId", val)}
+                                            value={values.alsoNotifyId || ""} onChange={(val) => setValue("alsoNotifyId", val, { shouldValidate: true })}
                                             onAddNew={canEditRefTables ? () => handleAddNew("ALSO_NOTIFY") : undefined}
                                             onEdit={canEditRefTables ? () => handleEdit("ALSO_NOTIFY", alsoNotifys, values.alsoNotifyId || "") : undefined}
                                             error={errors.alsoNotifyId?.message as string}
@@ -1194,7 +1346,7 @@ export default function MainPage() {
                                 {activeSubStep === 5 && (
                                     <div className="fade-in">
                                         <Combobox label="Freight Payer *" items={freightBuyers} displayKey="name" valueKey="id"
-                                            value={values.freightBuyerId} onChange={(val) => setValue("freightBuyerId", val)}
+                                            value={values.freightBuyerId} onChange={(val) => setValue("freightBuyerId", val, { shouldValidate: true })}
                                             onAddNew={canEditRefTables ? () => handleAddNew("FREIGHT_BUYER") : undefined}
                                             onEdit={canEditRefTables ? () => handleEdit("FREIGHT_BUYER", freightBuyers, values.freightBuyerId) : undefined}
                                             error={errors.freightBuyerId?.message as string}
@@ -1206,7 +1358,7 @@ export default function MainPage() {
                                 {activeSubStep === 6 && (
                                     <div className="fade-in">
                                         <Combobox label="Forwarder *" items={forwarders} displayKey="name" valueKey="id"
-                                            value={values.forwarderId} onChange={(val) => setValue("forwarderId", val)}
+                                            value={values.forwarderId} onChange={(val) => setValue("forwarderId", val, { shouldValidate: true })}
                                             onAddNew={canEditRefTables ? () => handleAddNew("FORWARDER") : undefined}
                                             onEdit={canEditRefTables ? () => handleEdit("FORWARDER", forwarders, values.forwarderId) : undefined}
                                             error={errors.forwarderId?.message as string}
@@ -1217,7 +1369,7 @@ export default function MainPage() {
                             </section>
                         )}
 
-                        {/* ── STEP 3 : Marchandises & Conteneurs ── */}
+                        {/* ── STEP 3 : Goods & Containers ── */}
                         {activeStep === 3 && (
                             <section className="fade-in">
                                 {renderSubStepIndicator()}
@@ -1226,7 +1378,7 @@ export default function MainPage() {
                                     <div className="fade-in" style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                                         <Combobox label="Nature of Goods *" items={goods} displayKey="description" valueKey="id"
                                             value={values.goodsId} onChange={(val) => {
-                                                setValue("goodsId", val);
+                                                setValue("goodsId", val, { shouldValidate: true });
                                                 const selected = goods.find(g => g.id === val);
                                                 if (selected) setValue("hsCode", selected.hsCode);
                                             }}
@@ -1244,7 +1396,7 @@ export default function MainPage() {
                                                 displayKey="name" 
                                                 valueKey="name" 
                                                 value={values.globalTypeTc} 
-                                                onChange={(val) => setValue("globalTypeTc", val)}
+                                                onChange={(val) => setValue("globalTypeTc", val, { shouldValidate: true })}
                                                 error={errors.globalTypeTc?.message as string}
                                                 disabled={!canWrite}
                                             />
@@ -1255,7 +1407,7 @@ export default function MainPage() {
                                                 displayKey="name" 
                                                 valueKey="name" 
                                                 value={values.globalPackageType} 
-                                                onChange={(val) => setValue("globalPackageType", val)}
+                                                onChange={(val) => setValue("globalPackageType", val, { shouldValidate: true })}
                                                 error={errors.globalPackageType?.message as string}
                                                 disabled={!canWrite}
                                             />
@@ -1277,7 +1429,7 @@ export default function MainPage() {
                             </section>
                         )}
 
-                        {/* ── STEP 4 : Récapitulatif ── */}
+                        {/* ── STEP 4 : Summary ── */}
                         {activeStep === 4 && (
                             <section className="fade-in">
                                 <p className="form-section-title">
@@ -1326,10 +1478,10 @@ export default function MainPage() {
                             </button>
                         ) : (
                             <button
-                                type="submit"
-                                form="si-form"
+                                type="button"
                                 className="btn-finalize"
                                 disabled={isGeneratingPDF || !canWrite}
+                                onClick={() => handleSubmit(onSubmit)()}
                             >
                                 {isGeneratingPDF ? (
                                     <>
@@ -1470,21 +1622,21 @@ export default function MainPage() {
                 <div className="modal-overlay" style={{ zIndex: 9999 }}>
                     <div className="modal-content" style={{ maxWidth: "400px", textAlign: "center" }}>
                         <ShieldAlert size={48} color="var(--primary)" style={{ marginBottom: "1rem" }} />
-                        <h2 style={{ fontWeight: 800 }}>Changement Obligatoire</h2>
+                        <h2 style={{ fontWeight: 800 }}>Mandatory Change</h2>
                         <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
-                            Vous utilisez un mot de passe temporaire. Vous devez impérativement le modifier avant de continuer.
+                            You are using a temporary password. You must change it before continuing.
                         </p>
                         <div style={{ textAlign: "left", marginBottom: "1.5rem" }}>
-                            <label>Nouveau mot de passe</label>
+                            <label>New Password</label>
                             <input 
                                 type="password" 
                                 value={newPass} 
                                 onChange={(e) => setNewPass(e.target.value)} 
-                                placeholder="6 caractères minimum"
+                                placeholder="6 characters minimum"
                             />
                         </div>
                         <button className="btn-primary" onClick={handlePasswordChange} style={{ width: "100%" }}>
-                            Enregistrer et se reconnecter
+                            Save and reconnect
                         </button>
                     </div>
                 </div>
@@ -1505,7 +1657,7 @@ export default function MainPage() {
                         <Search size={16} style={{ color: "var(--text-muted)", marginRight: "0.5rem" }} />
                         <input 
                             type="text" 
-                            placeholder="Rechercher un booking..." 
+                            placeholder="Search booking..." 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             style={{ 
@@ -1530,31 +1682,77 @@ export default function MainPage() {
                             color: "var(--text-light)", fontSize: "0.85rem"
                         }}>
                             <Ship size={32} style={{ margin: "0 auto 0.75rem", opacity: 0.3 }} />
-                            <p>Aucun booking trouvé.</p>
+                            <p>No booking found.</p>
                         </div>
                     ) : (
                         billOfLadings
                             .filter(bl => bl.bookingNumber.includes(searchQuery))
                             .map((bl) => {
                             const isDraft = bl.saveStatus === "DRAFT";
+                            const isHovered = hoveredBLId === bl.id;
                             return (
                                 <div
                                     key={bl.id}
                                     className={`booking-card ${currentBlId === bl.id ? "active" : ""} ${isDraft ? "draft" : "validated"}`}
                                     onClick={() => handleSearchBooking(bl.bookingNumber)}
+                                    onMouseEnter={() => setHoveredBLId(bl.id)}
+                                    onMouseLeave={() => setHoveredBLId(null)}
+                                    style={{ position: "relative" }}
                                 >
                                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
                                         <span className="booking-card-num" style={{ margin: 0, flexShrink: 0 }}>#{bl.bookingNumber}</span>
 
                                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                            {/* Split button — appears on hover */}
+                                            {isHovered && canWrite && (
+                                                <button
+                                                    type="button"
+                                                    title="Splitter ce BL"
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        // Fetch full BL data (with containers)
+                                                        try {
+                                                            const res = await fetch(`/api/billoflading?bookingNumber=${bl.bookingNumber}`);
+                                                            if (res.ok) {
+                                                                const data = await res.json();
+                                                                setSplitTargetBL(data);
+                                                                setIsSplitModalOpen(true);
+                                                            } else {
+                                                                toast.error("Impossible de charger les données du BL.");
+                                                            }
+                                                        } catch {
+                                                            toast.error("Erreur de connexion.");
+                                                        }
+                                                    }}
+                                                    style={{
+                                                        background: "linear-gradient(135deg,#0a1f5c,#1e3a8a)",
+                                                        border: "none",
+                                                        borderRadius: "6px",
+                                                        color: "#fff",
+                                                        cursor: "pointer",
+                                                        padding: "3px 8px",
+                                                        fontSize: "0.65rem",
+                                                        fontWeight: 800,
+                                                        letterSpacing: "0.03em",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: "3px",
+                                                        boxShadow: "0 2px 6px rgba(10,31,92,0.3)",
+                                                        animation: "fadeInScale 0.15s ease",
+                                                    }}
+                                                >
+                                                    ✂ Split
+                                                </button>
+                                            )}
+
                                             {isDraft
-                                                ? <span className="badge-draft" title="En traitement" style={{ padding: "0.2rem 0.4rem" }}>⏳</span>
-                                                : <span className="badge-validated" title="Terminé" style={{ padding: "0.2rem 0.4rem" }}>✓</span>}
+                                                ? <span className="badge-draft" title="Processing" style={{ padding: "0.2rem 0.4rem" }}>⏳</span>
+                                                : <span className="badge-validated" title="Completed" style={{ padding: "0.2rem 0.4rem" }}>✓</span>}
 
                                             {canDelete && (
                                                 <button
                                                     type="button"
-                                                    title="Supprimer ce BL"
+                                                    title="Delete this BL"
                                                     onClick={(e) => handleDeleteBL(bl.id, bl.bookingNumber, e)}
                                                     style={{
                                                         background: "none", border: "none",
@@ -1577,6 +1775,22 @@ export default function MainPage() {
                     )}
                 </div>
             </aside>
+
+            {/* ──────────── SPLIT MODAL ──────────── */}
+            <SplitBLModal
+                isOpen={isSplitModalOpen}
+                bl={splitTargetBL}
+                onClose={() => { setIsSplitModalOpen(false); setSplitTargetBL(null); }}
+                onSuccess={async (newBLs) => {
+                    // Refresh BL list from server
+                    const bls = await fetch('/api/billoflading').then(r => r.ok ? r.json() : []);
+                    setBillOfLadings(Array.isArray(bls) ? bls : []);
+                    // If the split'd BL was currently open in the form, reset to new form
+                    if (splitTargetBL && currentBlId === splitTargetBL.id) {
+                        handleNewForm();
+                    }
+                }}
+            />
 
         </div>
     );

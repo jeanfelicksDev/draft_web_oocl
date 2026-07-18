@@ -73,6 +73,7 @@ export function AlsoNotifyForm({
 
     const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
         resolver: yupResolver(schema),
+        mode: "onChange",
         defaultValues: initialData ? { ...defaultValues, ...initialData } : defaultValues,
     });
 
@@ -169,7 +170,7 @@ export function AlsoNotifyForm({
     // Helper to ensure uppercase and sync with react-hook-form
     const handleUpper = (fieldName: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const val = e.target.value.toUpperCase();
-        setValue(fieldName, val);
+        setValue(fieldName, val, { shouldValidate: true });
     };
 
     return (

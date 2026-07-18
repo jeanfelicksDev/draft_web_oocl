@@ -46,13 +46,13 @@ export default function RegisterPage() {
             const data = await res.json();
 
             if (!res.ok) {
-                setError(data.error || "Erreur lors de l'inscription");
+                setError(data.error || "Error during registration");
             } else {
-                alert("Compte créé avec succès ! Connectez-vous.");
+                alert("Account successfully created! Please log in.");
                 router.push("/login");
             }
         } catch (err) {
-            setError("Une erreur est survenue");
+            setError("An error occurred");
         } finally {
             setLoading(false);
         }
@@ -73,11 +73,11 @@ export default function RegisterPage() {
             </div>
 
             <div className="form-container" style={{ width: "100%", maxWidth: "400px" }}>
-                <h2 style={{ textAlign: "center", marginBottom: "2rem", fontWeight: 800 }}>créer un compte</h2>
+                <h2 style={{ textAlign: "center", marginBottom: "2rem", fontWeight: 800 }}>Create Account</h2>
 
                 <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
                     <div>
-                        <label>Nom de l'entreprise</label>
+                        <label>Company Name</label>
                         <input
                             type="text"
                             value={companyName}
@@ -87,7 +87,7 @@ export default function RegisterPage() {
                     </div>
                     {!adminExists && (
                         <div>
-                             <label>type de compte</label>
+                             <label>Account Type</label>
                             <select
                                 value={role}
                                 onChange={(e) => setRole(e.target.value)}
@@ -102,12 +102,12 @@ export default function RegisterPage() {
                                 }}
                             >
                                 <option value="CLIENT">Client</option>
-                                <option value="ADMIN">Administrateur</option>
+                                <option value="ADMIN">Administrator</option>
                             </select>
                         </div>
                     )}
                     <div>
-                         <label>email</label>
+                          <label>Email</label>
                         <input
                             type="email"
                             value={email}
@@ -116,7 +116,7 @@ export default function RegisterPage() {
                         />
                     </div>
                     <div>
-                         <label>N° Téléphone</label>
+                          <label>Phone Number</label>
                         <input
                             type="tel"
                             value={phone}
@@ -125,7 +125,7 @@ export default function RegisterPage() {
                         />
                     </div>
                     <div>
-                         <label>mot de passe</label>
+                          <label>Password</label>
                         <input
                             type="password"
                             value={password}
@@ -144,12 +144,12 @@ export default function RegisterPage() {
                         disabled={loading}
                         style={{ marginTop: "1rem" }}
                     >
-                         {loading ? "chargement..." : "s'inscrire"}
+                          {loading ? "Registering..." : "Register"}
                     </button>
                 </form>
 
                 <div style={{ marginTop: "2rem", textAlign: "center", fontWeight: 700, color: "var(--text-muted)" }}>
-                    Déjà un compte ? <Link href="/login" style={{ color: "var(--primary)", textDecoration: "none" }}>Se connecter</Link>
+                    Already have an account? <Link href="/login" style={{ color: "var(--primary)", textDecoration: "none" }}>Log In</Link>
                 </div>
             </div>
         </div>
